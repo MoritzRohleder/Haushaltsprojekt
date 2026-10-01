@@ -1,7 +1,7 @@
 # Haushalt-Spec
 
 > Spezifikation für die Webanwendung **Haushaltsprojekt** zur Verwaltung der monatlichen Finanzen.
-> Status: **Entwurf v0.4** – Grundlage für die Planung, noch keine Implementierung.
+> Status: **v0.5** – abgestimmte Grundlage für die Entwicklung; ein erster Prototyp ist umgesetzt.
 > Getroffene Entscheidungen stehen in [Kapitel 13.1](#131-entscheidungen), offene Punkte in [Kapitel 13.2](#132-offene-fragen) (im Text mit `❓` markiert).
 
 ---
@@ -46,7 +46,7 @@ Kernfragen, die die Anwendung beantworten soll:
 | P1 | **Generisch statt maßgeschneidert** | Die Software kennt keine konkreten Personen, Konten oder Kategorien. Die eigene Situation wird ausschließlich über das Anlegen von Daten (Nutzer, Konten, Anlagen, Kategorien, …) abgebildet. Die Standard-Kategorien werden beim ersten Start einmalig als Startdaten erzeugt und danach nur noch in der JSON-Datei gepflegt. |
 | P2 | **Einfach bleiben** | Kleine, server-gerenderte Webanwendung. Kein SPA-Framework, kein Build-Schritt fürs Frontend. |
 | P3 | **Nachvollziehbarkeit** | Kontostände und Anlagenwerte werden aus den gespeicherten Daten berechnet, nicht separat gespeichert. Jede Zahl in einer Übersicht lässt sich auf einzelne Buchungen bzw. Stände zurückführen. |
-| P4 | **Korrekte Beträge** | Geldbeträge werden als ganze Zahlen in Cent gespeichert, nie als Gleitkommazahl. |
+| P4 | **Korrekte Beträge** | Geldbeträge werden intern als ganze Zahlen in Cent gespeichert und berechnet, nie als Gleitkommazahl. **Angezeigt und eingegeben** werden sie immer in Euro (`1.234,56 €`). |
 | P5 | **Daten gehören uns** | Selbst gehostet, Daten liegen lokal als JSON-Dateien, Export und Backup sind einfach. |
 | P6 | **Austauschbare Datenhaltung** | Die Anwendung greift nie direkt auf Dateien zu, sondern nur über eine Speicherschicht. JSON-Dateien lassen sich später durch eine Datenbank ersetzen, ohne den Rest der Anwendung zu ändern (siehe [10.3](#103-speicherschicht)). |
 
@@ -64,7 +64,7 @@ Kernfragen, die die Anwendung beantworten soll:
 | **Transfer** | Geld wird zwischen **zwei Konten oder einem Konto und einer Anlage** verschoben, die der erfassende Nutzer **beide sieht**. Zwischen zwei Konten besteht ein Transfer aus **zwei verknüpften Buchungen** (eine pro Konto). |
 | **Einzahlung / Auszahlung (Anlage)** | Ein Transfer zwischen einem Konto und einer Anlage, z. B. die monatliche Sparrate in einen Fonds. Auf dem Konto entsteht eine Buchung, der Wert der Anlage verändert sich um denselben Betrag. |
 | **Kategorie** | Einordnung von Einnahmen/Ausgaben (z. B. „Lebensmittel“, „Gehalt“). Es gibt eine **Standard-Liste** für alle und **eigene Kategorien** je Nutzer. |
-| **Wiederkehrende Buchung** | Eine Buchung (Einnahme, Ausgabe oder Transfer), die als „regelmäßig“ markiert ist und in einem Rhythmus (z. B. monatlich, jährlich) automatisch gebucht wird. |
+| **Wiederkehrende Buchung** | Eine Buchung (Einnahme, Ausgabe oder Transfer), die als „regelmäßig“ markiert ist und in einem Rhythmus automatisch gebucht wird. Der Rhythmus besteht aus **Anzahl** und **Einheit**, z. B. „alle 20 Tage“, „alle 3 Monate“, „alle 4 Jahre“. |
 | **Anlage** | Ein Vermögenswert, der **nicht wie ein Konto** geführt wird: Fonds, Depot, Bausparvertrag, Versicherung mit Rückkaufswert, … Sein Wert ergibt sich aus dem zuletzt manuell eingetragenen **Stand** plus den Ein- und Auszahlungen danach. |
 | **Stand (einer Anlage)** | Ein manuell eingetragener Gesamtwert zu einem Datum (z. B. „Fonds XY: 12.340,00 € am 01.10.2026“). Die Historie der Stände bleibt erhalten. |
 | **Periode / Monat** | Die Standard-Betrachtungseinheit der Übersichten ist ein Kalendermonat. |
@@ -111,28 +111,44 @@ IDs sind zufällige UUIDs (`crypto.randomUUID()`), damit sie unabhängig von der
 
 ### 5.1 Überblick
 
+Pfeile zeigen in Richtung des Verweises: `A ──► B` heißt „A speichert die ID von B“.
+
 ```
-                 ┌─────────┐ 0..1    n ┌───────────┐
-                 │  Nutzer │───────────│ Kategorie │  (eigene Kategorien; Standard-Kategorien ohne Nutzer)
-                 └────┬────┘           └─────┬─────┘
-           Inhaber n:m│ n:m Inhaber          │ 0..1
-          ┌───────────┴───────────┐          │
-          ▼                       ▼          │
-     ┌─────────┐             ┌─────────┐ 1    n ┌──────────────┐
-     │  Konto  │             │ Anlage  │────────│ Anlage-Stand │
-     └────┬────┘             └────▲────┘        └──────────────┘
-          │ 1                     │ 0..1 (Ein-/Auszahlung)
-          ▼ n                     │
- ┌──────────────────────────────────┐ n
- │             Buchung              │───────────────┘ (Kategorie, siehe oben)
- │ (Einnahme | Ausgabe | Transfer)  │
- └───────┬──────────────────────────┘
-         │  Transfer Konto↔Konto: 2 Buchungen mit gleicher transfer_id
-         │
-         │ n   erzeugt aus (optional)   0..1 ┌───────────────────────────┐
-         └───────────────────────────────────│  Wiederkehrende Buchung   │
-                                             └───────────────────────────┘
+                 ┌──────────────────────────────────────────────────┐
+                 │                      Nutzer                      │
+                 └──────▲─────────────────▲─────────────────▲───────┘
+                        │ owner_ids       │ owner_id        │ owner_ids
+                        │ (1..n)          │ (0..1, leer =   │ (1..n)
+                        │                 │  Standard)      │
+                 ┌──────┴──────┐   ┌──────┴──────┐   ┌──────┴──────┐  asset_id  ┌──────────────┐
+                 │    Konto    │   │  Kategorie  │   │   Anlage    │◄───────────┤ Anlage-Stand │
+                 └──────▲──────┘   └──────▲──────┘   └──────▲──────┘            └──────────────┘
+                        │ account_id      │ category_id     │ counter_asset_id
+                        │ (genau 1)       │ (0..1)          │ (0..1, Ein-/Auszahlung)
+                 ┌──────┴─────────────────┴─────────────────┴───────┐
+                 │                     Buchung                      │
+                 │ (Einnahme | Ausgabe | Transfer)                  │
+                 │ + counter_account_id ──► Konto (Transfer)        │
+                 └────────────────────────┬─────────────────────────┘
+                                          │ recurring_id (0..1)
+                                          ▼
+                 ┌──────────────────────────────────────────────────┐
+                 │              Wiederkehrende Buchung              │
+                 │ ──► Konto, Kategorie, Ziel-Konto/-Anlage         │
+                 └──────────────────────────────────────────────────┘
 ```
+
+| Verweis | Von → Nach | Bedeutung |
+|---------|-----------|-----------|
+| `owner_ids` | Konto / Anlage → Nutzer | Inhaber (einer oder mehrere) |
+| `owner_id` | Kategorie → Nutzer | Eigene Kategorie eines Nutzers; leer = Standard-Kategorie |
+| `account_id` | Buchung → Konto | Das Konto, zu dem die Buchung gehört (immer genau eins) |
+| `category_id` | Buchung → Kategorie | Einordnung der Einnahme/Ausgabe (optional, nicht bei Transfers) |
+| `counter_account_id` | Buchung → Konto | Gegenkonto bei Transfer Konto↔Konto |
+| `transfer_id` | Buchung ↔ Buchung | Verknüpft die zwei Hälften eines Transfers |
+| `counter_asset_id` | Buchung → Anlage | Anlage bei Ein-/Auszahlung |
+| `recurring_id` | Buchung → Wiederkehrende Buchung | Vorlage, aus der die Buchung erzeugt wurde |
+| `asset_id` | Anlage-Stand → Anlage | Zu welcher Anlage der Stand gehört |
 
 ### 5.2 Entitäten
 
@@ -141,8 +157,7 @@ IDs sind zufällige UUIDs (`crypto.randomUUID()`), damit sie unabhängig von der
 | Feld | Typ | Pflicht | Beschreibung |
 |------|-----|---------|--------------|
 | `id` | UUID | ja | |
-| `username` | Text | ja | Login-Name, eindeutig, nicht case-sensitiv |
-| `display_name` | Text | ja | Anzeigename |
+| `username` | Text | ja | Login-Name, eindeutig, nicht case-sensitiv. Wird auch überall als Name angezeigt (kein separater Anzeigename) |
 | `password_hash` | Text | ja | Gehashtes Passwort inkl. Salt – **nie** das Klartext-Passwort (siehe [10.4](#104-login-und-sitzungen)) |
 | `created_at` | Zeitstempel | ja | |
 
@@ -223,14 +238,15 @@ Entsteht, wenn beim Erfassen einer Buchung „regelmäßig“ angehakt wird. Sie
 | `to_asset_id` | UUID | Transfer in Anlage | Ziel-Anlage (z. B. Sparplan) |
 | `amount_cents` | Integer | ja | Betrag (positiv, Richtung ergibt sich aus `type`) |
 | `category_id`, `description`, `note` | | | wie bei der Buchung |
-| `interval` | Enum | ja | `weekly`, `monthly`, `quarterly`, `half_yearly`, `yearly` |
+| `interval_unit` | Enum | ja | Einheit des Rhythmus: `day`, `week`, `month`, `year` |
+| `interval_count` | Integer ≥ 1 | ja | Anzahl der Einheiten zwischen zwei Terminen, z. B. `20` + `day` = alle 20 Tage, `3` + `month` = vierteljährlich, `4` + `year` = alle 4 Jahre |
 | `start_date` | Datum | ja | Erste Ausführung. Bestimmt auch den Tag im Rhythmus (z. B. „jeden 15.“) |
 | `end_date` | Datum | nein | Letzte mögliche Ausführung |
 | `active` | Boolean | ja | Pausieren ohne Löschen |
 | `last_generated_date` | Datum | nein | Bis wohin bereits Buchungen erzeugt wurden |
 | `created_by` | UUID → users | ja | |
 
-Fällt der Tag auf einen Tag, den der Monat nicht hat (z. B. 31.), wird der letzte Tag des Monats verwendet.
+Der n-te Termin wird immer vom `start_date` aus berechnet (`start_date + n × interval_count × interval_unit`), damit sich bei Monaten nichts verschiebt. Fällt der Tag auf einen Tag, den der Monat nicht hat (z. B. 31.), wird für diesen Termin der letzte Tag des Monats verwendet.
 
 #### Anlage (`assets`)
 
@@ -300,6 +316,7 @@ Wert(Anlage, Stichtag) = S.value
 ```
 
 - Eine Ein-/Auszahlung **am selben Tag** wie ein manueller Stand gilt als darin bereits enthalten.
+- **Manuelle Korrektur**: Für jeden manuellen Stand wird angezeigt, um wie viel er vom bis dahin berechneten Wert abweicht (`Korrektur = manueller Stand − berechneter Wert am Vortag`). Im Beispiel unten beträgt die Korrektur am 20.10. −50 €.
 - Beispiel: Stand 01.09. = 10.000 €; Sparrate 15.09. = 200 € → Wert 10.200 €; Sparrate 15.10. = 200 € → Wert 10.400 €; am 20.10. wird laut Depotauszug ein Stand von 10.350 € eingetragen → Wert 10.350 €; Sparrate 15.11. → 10.550 €.
 - Eine Ein-/Auszahlung zählt zum Anlagenwert, **auch wenn der jeweilige Nutzer das Konto nicht sieht**, von dem sie kam. Der Anlagenwert ist für alle Inhaber gleich.
 
@@ -331,7 +348,8 @@ Kontrollrechnung (für Tests):
 
 ### 6.6 Beträge und Formate
 
-- Speicherung in Cent (`Integer`), Anzeige als `1.234,56 €`.
+- Speicherung und Berechnung in Cent (`Integer`). Cent-Werte sind ein reines Implementierungsdetail und tauchen in der Oberfläche **nie** auf.
+- Anzeige immer in Euro mit zwei Nachkommastellen: `1.234,56 €`.
 - Eingabe akzeptiert `1234,56`, `1.234,56` und `1234.56`. Im Formular wird der Betrag immer **positiv** eingegeben, das Vorzeichen ergibt sich aus der Buchungsart.
 - Währung fest **EUR** (eine Währung pro Installation).
 - Datumsanzeige `TT.MM.JJJJ`, intern ISO `JJJJ-MM-TT`.
@@ -344,10 +362,10 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 
 | ID | Anforderung | Prio |
 |----|-------------|------|
-| F-01 | Registrieren mit Nutzername, Anzeigename und Passwort (mit Wiederholung) | M |
+| F-01 | Registrieren mit Nutzername und Passwort (mit Wiederholung) | M |
 | F-02 | Anmelden mit Nutzername und Passwort; Abmelden | M |
 | F-03 | Alle Seiten außer Login/Registrierung nur angemeldet erreichbar | M |
-| F-04 | Eigenes Passwort und Anzeigenamen ändern | S |
+| F-04 | Eigenes Passwort ändern | S |
 
 ### 7.2 Stammdaten
 
@@ -376,7 +394,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 
 | ID | Anforderung | Prio |
 |----|-------------|------|
-| F-30 | Beim Erfassen einer Einnahme, Ausgabe oder eines Transfers (auch in eine Anlage) die Option **„regelmäßig“** mit Rhythmus (wöchentlich, monatlich, vierteljährlich, halbjährlich, jährlich) und optionalem Enddatum | M |
+| F-30 | Beim Erfassen einer Einnahme, Ausgabe oder eines Transfers (auch in eine Anlage) die Option **„regelmäßig“** mit Rhythmus aus **Anzahl + Einheit** (z. B. alle 1 Monat, alle 20 Tage, alle 3 Monate, alle 4 Jahre) und optionalem Enddatum | M |
 | F-31 | Nach dem Anlegen werden alle fälligen Termine **automatisch gebucht** – ohne Bestätigung (siehe 8.4) | M |
 | F-32 | Übersicht aller wiederkehrenden Buchungen auf den eigenen Konten; bearbeiten, pausieren, beenden | M |
 | F-33 | Eine automatisch erzeugte Buchung kann einzeln geändert oder gelöscht werden, ohne die Vorlage zu ändern | M |
@@ -389,7 +407,8 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-40 | Anlagen anlegen, bearbeiten, archivieren, löschen (Name, Typ, Anbieter, Inhaber, Notiz, Startwert) | M |
 | F-41 | Neuen **Stand** manuell erfassen (Datum, Gesamtwert, Notiz) – schnell erreichbar direkt aus der Übersicht | M |
 | F-42 | **Einzahlung** von einem eigenen Konto in eine Anlage und **Auszahlung** aus einer Anlage auf ein eigenes Konto als Transfer erfassen, auch regelmäßig (Sparrate) | M |
-| F-43 | Anlagedetail: Verlauf aus manuellen Ständen und Ein-/Auszahlungen mit jeweils resultierendem Wert | M |
+| F-43 | Anlagedetail: Verlauf aus manuellen Ständen und Ein-/Auszahlungen mit jeweils resultierendem Wert; manuelle Stände sind als **„manuell“** gekennzeichnet und zeigen ihre Korrektur (6.3) | M |
+| F-46 | Anlagenübersicht und Dashboard zeigen je Anlage das **Datum der letzten manuellen Aktualisierung** und deren Korrektur (z. B. „manuell aktualisiert am 20.10.2026, −50,00 €“) | M |
 | F-44 | Hinweis, wenn der letzte manuelle Stand einer Anlage älter als X Monate ist (X konfigurierbar) | K |
 | F-45 | Wertverlauf als Diagramm | K |
 
@@ -419,7 +438,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 ### 8.1 Registrierung und erste Schritte
 
 1. Nicht angemeldet → Login-Seite mit Link „Registrieren“.
-2. Registrieren: Nutzername, Anzeigename, Passwort, Passwort wiederholen.
+2. Registrieren: Nutzername, Passwort, Passwort wiederholen.
 3. Nach der Registrierung ist der Nutzer angemeldet. Hat er noch keine Konten, zeigt das Dashboard einen Hinweis „Lege dein erstes Konto an“.
 4. Konto anlegen: Name, Typ, Anfangssaldo und Stichtag (z. B. Kontostand laut Bank am 01. des Monats), optional weitere Inhaber.
 5. Optional: Anlagen mit Startwert anlegen, eigene Kategorien ergänzen (die Standard-Kategorien sind bereits vorhanden).
@@ -427,7 +446,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 ### 8.2 Einnahme / Ausgabe erfassen
 
 1. „+ Ausgabe“ bzw. „+ Einnahme“ – global in der Navigation erreichbar.
-2. Formular: Datum (heute), Betrag, Konto (nur sichtbare), Kategorie (Standard + eigene, nur passende Art), Beschreibung, Notiz, ☐ regelmäßig (→ Rhythmus, Enddatum).
+2. Formular: Datum (heute), Betrag, Konto (nur sichtbare), Kategorie (Standard + eigene, nur passende Art), Beschreibung, Notiz, ☐ regelmäßig (→ alle [Anzahl] [Tage/Wochen/Monate/Jahre], Enddatum).
 3. Serverseitige Prüfung: Betrag > 0, Konto existiert, ist für den Nutzer sichtbar und nicht archiviert, Datum ≥ Stichtag des Kontos.
 4. Speichern → Rückkehr zur vorherigen Seite mit Erfolgsmeldung.
 
@@ -451,12 +470,13 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 
 ### 8.5 Anlage pflegen
 
-**Sparrate einrichten:** Transfer von einem eigenen Konto in die Anlage erfassen, ☐ regelmäßig, Rhythmus „monatlich“. Ab dann wird jeden Monat automatisch vom Konto abgebucht und auf den Anlagenwert aufaddiert.
+**Sparrate einrichten:** Transfer von einem eigenen Konto in die Anlage erfassen, ☐ regelmäßig, Rhythmus „alle 1 Monat“. Ab dann wird jeden Monat automatisch vom Konto abgebucht und auf den Anlagenwert aufaddiert.
 
 **Stand aktualisieren** (z. B. weil sich der Fondskurs täglich ändert):
 1. Im Dashboard oder in der Anlagenliste bei der Anlage auf „Stand aktualisieren“.
 2. Formular: Datum (heute), aktueller Gesamtwert, Notiz.
 3. Speichern → Der neue Stand ersetzt den bisher berechneten Wert und ist Ausgangspunkt für künftige Sparraten. Frühere Stände und Einzahlungen bleiben im Verlauf sichtbar.
+4. In Übersicht, Dashboard und Verlauf ist erkennbar, dass und wann der Stand manuell geändert wurde und um wie viel (F-43, F-46).
 
 ## 9. Seiten und Navigation
 
@@ -480,7 +500,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | Stand erfassen | `GET/POST /anlagen/:id/stand` | |
 | Wiederkehrend | `GET /wiederkehrend` | Vorlagen verwalten |
 | Kategorien | `GET /kategorien` | Standard-Kategorien (nur lesen) und eigene Kategorien |
-| Profil | `GET/POST /profil` | Anzeigename, Passwort |
+| Profil | `GET/POST /profil` | Passwort ändern |
 
 Da HTML-Formulare nur `GET` und `POST` kennen, werden Änderungen und Löschungen über `POST` umgesetzt (Muster *Post/Redirect/Get*).
 Ruft ein Nutzer ein Konto, eine Anlage oder eine Buchung auf, die er nicht sehen darf, antwortet der Server mit **404** (nicht 403), damit nicht erkennbar ist, ob es den Datensatz gibt.
@@ -663,7 +683,7 @@ Haushaltsprojekt/
 | E-04 | Transfer-Ziel | Als Quelle und Ziel eines Transfers sind nur selbst sichtbare Konten/Anlagen wählbar. Alles andere ist eine Buchung (Ausgabe). |
 | E-05 | Berechtigungen | Alle Inhaber eines Kontos/einer Anlage dürfen alles anlegen, ändern und löschen. |
 | E-06 | Kategorien | Es gibt eine Standard-Liste für alle; zusätzlich kann jeder Nutzer eigene Kategorien anlegen. |
-| E-07 | Wiederkehrende Buchungen | Beim Anlegen einer Buchung als „regelmäßig“ markierbar, mit Rhythmus (wöchentlich bis jährlich). Nach dem Anlegen wird automatisch gebucht, ohne Bestätigung. |
+| E-07 | Wiederkehrende Buchungen | Beim Anlegen einer Buchung als „regelmäßig“ markierbar. Rhythmus = Anzahl + Einheit (Tag, Woche, Monat, Jahr). Nach dem Anlegen wird automatisch gebucht, ohne Bestätigung. |
 | E-08 | Anlagen | Fonds, Bausparverträge usw. werden als Anlagen ohne eigene Buchungen geführt. Einzahlungen (z. B. Sparrate) werden automatisch auf den letzten Stand aufaddiert; der Gesamtwert kann jederzeit manuell überschrieben werden. |
 | E-09 | Gemeinschaftskonten | Alle Inhaber sehen das Konto vollständig; der volle Kontostand zählt zur Gesamtübersicht jedes Inhabers. |
 | E-10 | Datenhaltung | Lokal als JSON-Dateien, keine Datenbank. Zugriff nur über eine austauschbare Speicherschicht. |
@@ -675,12 +695,14 @@ Haushaltsprojekt/
 | E-16 | Styling | Fertiges Stylesheet (Pico.css), später anpassbar; Grundfarben werden von Anfang an festgelegt (10.7). |
 | E-17 | Registrierung | Dauerhaft offen. |
 | E-18 | Farben | Die Farbpalette aus 10.7 ist bestätigt. |
+| E-19 | Startliste Kategorien | Die vorgeschlagene Liste (5.2) wird übernommen. |
+| E-20 | Anzeige von Beträgen | Immer in Euro; Cent nur intern. |
+| E-21 | Nutzername | Kein Anzeigename; der Nutzername wird überall angezeigt. |
+| E-22 | Anlagen | Manuelle Aktualisierungen des Stands sind in Übersicht und Verlauf sichtbar (Datum und Korrektur). |
 
 ### 13.2 Offene Fragen
 
-| # | Frage | Vorschlag |
-|---|-------|-----------|
-| Q-01 | **Standard-Kategorien**: Passt die vorgeschlagene Startliste (5.2, Kategorie)? | Ja; Feinschliff danach direkt in der JSON-Datei. |
+Aktuell keine.
 
 ## 14. Meilensteine
 
@@ -692,7 +714,7 @@ Haushaltsprojekt/
 | M3 | **Stammdaten** | F-10 bis F-14: Konten mit Inhabern, Standard- und eigene Kategorien. Sichtbarkeitsregeln inkl. Tests. |
 | M4 | **Buchungen** | F-20 bis F-24: Einnahmen, Ausgaben, Transfer-Paare erfassen, bearbeiten, listen. |
 | M5 | **Übersichten** | F-50 bis F-55, F-61: Dashboard, Monatsbilanz, Kontoübersicht, Transfers. Tests der Berechnungsregeln. |
-| M6 | **Wiederkehrend & Anlagen** | F-30 bis F-34, F-40 bis F-43: regelmäßige Buchungen, Anlagen mit Ständen und Sparraten. → **MVP fertig** |
+| M6 | **Wiederkehrend & Anlagen** | F-30 bis F-34, F-40 bis F-43, F-46: regelmäßige Buchungen, Anlagen mit Ständen und Sparraten. → **MVP fertig** |
 | M7 | **Komfort & Sicherheit** | F-04, F-25, F-56, F-60, CSRF-Schutz, Login-Bremse. |
 | M8 | **Ausbau** | Diagramme, Import, Budgets nach Bedarf. |
 
@@ -709,3 +731,4 @@ In der `package.json` wird entsprechend `"license": "GPL-3.0-or-later"` eingetra
 | v0.2 | Buchungen gehören zu Konten, nicht zu Nutzern; Transfer = zwei verknüpfte Buchungen; Sichtbarkeit pro Nutzer und interne/externe Transfers (Kap. 4, 6.3); Login mit Registrierung; JSON-Speicher hinter austauschbarer Speicherschicht; Express 5; Gemeinschaftskonten zählen voll; „regelmäßig“-Option mit Rhythmus beim Erfassen; neue Entität **Anlagen** mit manuell gepflegtem Stand; offene Fragen aktualisiert. |
 | v0.3 | Nur eine Transfer-Hälfte sichtbar → für den Nutzer eine normale Einnahme/Ausgabe; Transfers nur zwischen selbst sichtbaren Konten/Anlagen; alle Inhaber dürfen alles; Standard-Kategorien plus eigene Kategorien je Nutzer; wiederkehrende Buchungen werden automatisch gebucht; Ein-/Auszahlungen in Anlagen (Sparraten) werden auf den letzten manuellen Stand aufaddiert (Kap. 6.3); wiederkehrende Buchungen und Anlagen sind jetzt Teil des MVP. |
 | v0.4 | Standard-Kategorien werden beim ersten Start als Startdaten erzeugt und danach in der JSON-Datei gepflegt (mit Vorschlag für die Liste); Kreditkarten gestrichen, neuer Kontotyp `prepaid`; Pico.css als Stylesheet mit festgelegter Farbpalette (neues Kap. 10.7); Registrierung dauerhaft offen (F-05 und `REGISTRATION_OPEN` entfallen); Farbpalette bestätigt. |
+| v0.5 | Diagramm in 5.1 neu (Verweise klar erkennbar) plus Verweistabelle; Anzeige immer in Euro, Cent nur intern; Rhythmus als Anzahl + Einheit (`interval_count`, `interval_unit`); manuelle Anlagen-Stände in Übersicht und Verlauf mit Datum und Korrektur sichtbar (F-46); kein Anzeigename mehr; Startliste der Kategorien bestätigt; keine offenen Fragen. |
