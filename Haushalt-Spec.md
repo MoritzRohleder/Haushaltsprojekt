@@ -285,7 +285,7 @@ Nur **manuell** eingetragene Gesamtwerte. Ein- und Auszahlungen stehen als Buchu
 | `note` | Text | nein | z. B. „laut Depotauszug“ |
 | `created_by` | UUID → users | ja | |
 
-Beim Anlegen einer Anlage wird ein erster Stand (Startwert, Datum) mit erfasst.
+Beim Anlegen einer Anlage wird ihr aktueller Stand als erster manueller Stand mit erfasst. `date` eines manuellen Stands ist immer der Tag der Eingabe; der genaue Zeitpunkt steht in `created_at`.
 
 ## 6. Berechnungsregeln
 
@@ -316,7 +316,7 @@ Transfers ohne sichtbare Gegenseite haben keine Kategorie. Sie erscheinen in der
 
 ### 6.3 Wert einer Anlage
 
-Ein- und Auszahlungen werden automatisch auf den **letzten manuellen Stand** aufaddiert. Ein neuer manueller Stand überschreibt den Wert und ist der neue Ausgangspunkt.
+**Ein manueller Stand hat immer Vorrang: Er ist der Stand zum Zeitpunkt der Eingabe.** Es gibt kein wählbares Datum; Datum ist der Tag der Eingabe. Der neue Stand ersetzt den bisher berechneten Wert inklusive aller bis dahin erfassten Ein- und Auszahlungen und ist der neue Ausgangspunkt. Ein- und Auszahlungen danach werden automatisch aufaddiert.
 
 ```
 S = letzter manueller Stand der Anlage mit Datum ≤ Stichtag
@@ -327,6 +327,7 @@ Wert(Anlage, Stichtag) = S.value
 ```
 
 - **Am selben Tag** wie ein manueller Stand entscheidet die Reihenfolge der Erfassung: Eine Ein-/Auszahlung, die **nach** dem Stand erfasst wurde, wird aufaddiert (z. B. Anlage heute angelegt, danach heutige Sparrate gebucht). Eine **vorher** erfasste gilt als im Stand enthalten.
+- Eine Ein-/Auszahlung, die **nach** dem Stand erfasst, aber auf einen Tag **vor** dem Stand datiert wird (nachgetragen), gilt als im Stand enthalten – der Stand beschreibt ja den Wert „jetzt“. Auf dem Konto wird sie trotzdem gebucht.
 - Stände und Werte einer Anlage dürfen **negativ** sein (z. B. Bauspardarlehen). Einzahlungen verringern dann die Schulden.
 - **Manuelle Korrektur**: Für jeden manuellen Stand wird angezeigt, um wie viel er vom bis dahin berechneten Wert abweicht (`Korrektur = manueller Stand − berechneter Wert unmittelbar davor`, inklusive vorher erfasster Ein-/Auszahlungen desselben Tages). Im Beispiel unten beträgt die Korrektur am 20.10. −50 €.
 - Beispiel: Stand 01.09. = 10.000 €; Sparrate 15.09. = 200 € → Wert 10.200 €; Sparrate 15.10. = 200 € → Wert 10.400 €; am 20.10. wird laut Depotauszug ein Stand von 10.350 € eingetragen → Wert 10.350 €; Sparrate 15.11. → 10.550 €.
@@ -419,7 +420,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | ID | Anforderung | Prio |
 |----|-------------|------|
 | F-40 | Anlagen anlegen, bearbeiten, archivieren, löschen (Name, Typ, Anbieter, Inhaber, Notiz, Startwert) | M |
-| F-41 | Neuen **Stand** manuell erfassen (Datum, Gesamtwert, Notiz) – schnell erreichbar direkt aus der Übersicht | M |
+| F-41 | Neuen **Stand** manuell erfassen (aktueller Gesamtwert, Notiz; gilt immer für den Zeitpunkt der Eingabe und hat Vorrang, siehe 6.3) – schnell erreichbar direkt aus der Übersicht | M |
 | F-42 | **Einzahlung** von einem eigenen Konto in eine Anlage und **Auszahlung** aus einer Anlage auf ein eigenes Konto als Transfer erfassen, auch regelmäßig (Sparrate) | M |
 | F-43 | Anlagedetail: Verlauf aus manuellen Ständen und Ein-/Auszahlungen mit jeweils resultierendem Wert; manuelle Stände sind als **„manuell“** gekennzeichnet und zeigen ihre Korrektur (6.3) | M |
 | F-46 | Anlagenübersicht und Dashboard zeigen je Anlage das **Datum der letzten manuellen Aktualisierung** und deren Korrektur (z. B. „manuell aktualisiert am 20.10.2026, −50,00 €“) | M |
@@ -488,9 +489,9 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 
 **Stand aktualisieren** (z. B. weil sich der Fondskurs täglich ändert):
 1. Im Dashboard oder in der Anlagenliste bei der Anlage auf „Stand aktualisieren“.
-2. Formular: Datum (heute), aktueller Gesamtwert, Notiz.
-3. Speichern → Der neue Stand ersetzt den bisher berechneten Wert und ist Ausgangspunkt für künftige Sparraten. Frühere Stände und Einzahlungen bleiben im Verlauf sichtbar.
-4. In Übersicht, Dashboard und Verlauf ist erkennbar, dass und wann der Stand manuell geändert wurde und um wie viel (F-43, F-46).
+2. Formular: aktueller Gesamtwert (Guthaben/Schulden), Notiz. Kein Datum – der Stand gilt für jetzt.
+3. Speichern → Der neue Stand ersetzt sofort den bisher berechneten Wert und ist Ausgangspunkt für künftige Sparraten. Frühere Stände und Einzahlungen bleiben im Verlauf sichtbar.
+4. In Übersicht, Dashboard und Verlauf ist erkennbar, dass und wann (Datum und Uhrzeit) der Stand manuell geändert wurde und um wie viel (F-43, F-46).
 
 ## 9. Seiten und Navigation
 
@@ -783,3 +784,4 @@ In der `package.json` wird entsprechend `"license": "GPL-3.0-or-later"` eingetra
 | v0.6 | Regelmäßige Buchungen: fester Tag (Monat) bzw. Tag und Monat (Jahr) über `day_of_month`/`month_of_year`; `start_date` ist das „gültig ab“-Datum; Rhythmusänderung gilt ab dem nächsten Termin. |
 | v1.0 | Hell/Dunkel-Umschalter pro Nutzer (F-06, `users.theme`); ausgeblendete Standard-Kategorien (`users.hidden_category_ids`); Auswertungsseite mit Diagrammen; CSV-Export; Nochmal buchen; veraltete Anlagenstände; Login-Bremse, Sicherheits-Header, `TRUST_PROXY`, `ASSET_STALE_MONTHS`, `TZ`; Betrieb mit Docker (10.8); Meilensteine aktualisiert. |
 | v1.0.1 | Ein-/Auszahlungen am selben Tag wie ein manueller Stand: Reihenfolge der Erfassung entscheidet (vorher: immer „enthalten“); negative Anlagenwerte ausdrücklich erlaubt, Vorzeichen-Auswahl Guthaben/Schulden; `1.000` wird als Tausender gelesen; angemeldete Seiten mit `Cache-Control: no-store`. |
+| v1.0.2 | Manueller Stand hat immer Vorrang und gilt für den Zeitpunkt der Eingabe: kein Datumsfeld mehr bei „Stand aktualisieren“ und beim Startwert; nachgetragene Ein-/Auszahlungen mit Datum vor dem Stand gelten als enthalten; Uhrzeit der Eingabe im Verlauf. |

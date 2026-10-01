@@ -15,13 +15,11 @@
   </div>
   <label>Anbieter (optional) <input name="provider" maxlength="80" value="<%= values.provider || '' %>"></label>
   <% if (!asset) { %>
-    <div class="grid">
-      <label>Startwert in €
-        <input name="start_value" inputmode="decimal" required value="<%= values.start_value || '' %>">
-        <%- include('../partials/sign', { field: 'start_value', plusLabel: 'Guthaben', minusLabel: 'Schulden (negativ), z. B. Bauspardarlehen' }) %>
-      </label>
-      <label>Stand vom <input type="date" name="start_date" required value="<%= values.start_date || '' %>"></label>
-    </div>
+    <label>Aktueller Stand in €
+      <input name="start_value" inputmode="decimal" required value="<%= values.start_value || '' %>">
+      <%- include('../partials/sign', { field: 'start_value', plusLabel: 'Guthaben', minusLabel: 'Schulden (negativ), z. B. Bauspardarlehen' }) %>
+      <small>Der Stand gilt ab jetzt. Ein- und Auszahlungen, die du danach erfasst, werden aufaddiert.</small>
+    </label>
   <% } %>
   <label>Notiz (optional) <textarea name="note" rows="2" maxlength="500"><%= values.note || '' %></textarea></label>
   <%- include('../partials/owners') %>

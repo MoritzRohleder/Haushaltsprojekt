@@ -49,7 +49,7 @@ module.exports = (repos) => {
 
   router.get('/anlagen/neu', async (req, res) => {
     await renderForm(req, res, {
-      values: { type: 'fund', start_value: '0,00', start_date: today(), owner_ids: [req.session.user.id] },
+      values: { type: 'fund', start_value: '0,00', owner_ids: [req.session.user.id] },
     });
   });
 
@@ -103,7 +103,6 @@ module.exports = (repos) => {
     await renderValueForm(req, res, {
       asset,
       values: {
-        date: today(),
         value: centsToInput(Math.abs(ctx.assetSummary(asset).value_cents)),
         value_sign: ctx.assetSummary(asset).value_cents < 0 ? 'minus' : 'plus',
       },

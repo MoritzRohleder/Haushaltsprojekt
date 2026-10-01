@@ -24,6 +24,7 @@ function locals(repos) {
     res.locals.euro = formatEuro;
     res.locals.inputEuro = centsToInput;
     res.locals.date = formatDate;
+    res.locals.time = (iso) => (iso ? new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '');
     res.locals.monthName = formatMonth;
     res.locals.today = today();
     res.locals.path = req.path;

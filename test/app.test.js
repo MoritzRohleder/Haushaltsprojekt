@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const session = require('express-session');
 const { setup } = require('./helpers');
 const { createApp } = require('../src/app');
+const { today } = require('../src/utils/dates');
 
 /** Kleiner Browser-Ersatz: merkt sich das Session-Cookie und liest CSRF-Tokens aus. */
 function client(base) {
@@ -77,12 +78,12 @@ test('Kompletter Ablauf: Registrieren, Konto, Buchungen, Anlage, Übersicht', as
   // Anlage mit Startwert und Sparrate
   res = await anna.request('/anlagen', {
     method: 'POST',
-    form: { _csrf: token, name: 'ETF', type: 'fund', start_value: '500', start_date: '2026-01-01', owner_ids: userId },
+    form: { _csrf: token, name: 'ETF', type: 'fund', start_value: '500', owner_ids: userId },
   });
   const assetId = res.location.split('/').pop();
   res = await anna.request('/buchungen', {
     method: 'POST',
-    form: { _csrf: token, type: 'transfer', date: '2026-01-15', amount: '100', description: 'Sparrate', from: `account:${accountId}`, to: `asset:${assetId}` },
+    form: { _csrf: token, type: 'transfer', date: today(), amount: '100', description: 'Sparrate', from: `account:${accountId}`, to: `asset:${assetId}` },
   });
   assert.equal(res.status, 302);
 
@@ -93,9 +94,10 @@ test('Kompletter Ablauf: Registrieren, Konto, Buchungen, Anlage, Übersicht', as
   assert.match(anlage.html, /Einzahlung/);
 
   // Stand manuell aktualisieren → Korrektur sichtbar
-  await anna.request(`/anlagen/${assetId}/stand`, { method: 'POST', form: { _csrf: token, date: '2026-01-20', value: '590' } });
+  await anna.request(`/anlagen/${assetId}/stand`, { method: 'POST', form: { _csrf: token, value: '590' } });
   const liste = await anna.request('/anlagen');
-  assert.match(liste.html, /20\.01\.2026/);
+  const heute = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  assert.ok(liste.html.includes(heute));
   assert.match(liste.html, /Korrektur −10,00/);
 
   for (const page of ['/', '/monat/2026/1', '/buchungen?monat=2026-01', '/konten', '/wiederkehrend', '/kategorien', '/profil']) {

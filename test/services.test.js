@@ -91,8 +91,8 @@ test('Buchungen werden geprüft', async (t) => {
 test('Anlagenwert: Einzahlungen auf letzten manuellen Stand, Korrektur sichtbar (Spec 6.3)', async (t) => {
   const h = await household(t);
   const fund = await assets.createAsset(h.repos, h.a.id, {
-    name: 'ETF', type: 'fund', owner_ids: [h.a.id], start_value: '10000', start_date: '2026-09-01',
-  });
+    name: 'ETF', type: 'fund', owner_ids: [h.a.id], start_value: '10000', 
+  }, { today: '2026-09-01' });
   const deposit = (date) => tx.createTransfer(h.repos, { userId: h.a.id }, {
     date, amount: '200', description: 'Sparrate', from: `account:${h.giroA.id}`, to: `asset:${fund.id}`,
   });
@@ -101,7 +101,7 @@ test('Anlagenwert: Einzahlungen auf letzten manuellen Stand, Korrektur sichtbar 
   let ctx = await loadContext(h.repos, h.a.id);
   assert.equal(ctx.assetSummary(fund).value_cents, 1040000);
 
-  await assets.addValue(h.repos, h.a.id, fund.id, { date: '2026-10-20', value: '10350' });
+  await assets.addValue(h.repos, h.a.id, fund.id, { value: '10350' }, { today: '2026-10-20' });
   await deposit('2026-11-15');
   ctx = await loadContext(h.repos, h.a.id);
   const summary = ctx.assetSummary(fund);
@@ -119,12 +119,12 @@ test('Anlagenwert: Einzahlungen auf letzten manuellen Stand, Korrektur sichtbar 
 test('Einzahlung am selben Tag wie ein manueller Stand ist darin enthalten', async (t) => {
   const h = await household(t);
   const fund = await assets.createAsset(h.repos, h.a.id, {
-    name: 'Bauspar', type: 'building_savings', owner_ids: [h.a.id], start_value: '1000', start_date: '2026-01-01',
-  });
+    name: 'Bauspar', type: 'building_savings', owner_ids: [h.a.id], start_value: '1000', 
+  }, { today: '2026-01-01' });
   await tx.createTransfer(h.repos, { userId: h.a.id }, {
     date: '2026-02-01', amount: '100', description: 'Rate', from: `account:${h.giroA.id}`, to: `asset:${fund.id}`,
   });
-  await assets.addValue(h.repos, h.a.id, fund.id, { date: '2026-02-01', value: '1105' });
+  await assets.addValue(h.repos, h.a.id, fund.id, { value: '1105' }, { today: '2026-02-01' });
   const ctx = await loadContext(h.repos, h.a.id);
   assert.equal(ctx.assetSummary(fund).value_cents, 110500);
   assert.equal(ctx.assetSummary(fund).last_manual_correction_cents, 500);
@@ -134,8 +134,8 @@ test('Einzahlung am selben Tag, aber nach dem Stand erfasst, wird aufaddiert (ne
   const h = await household(t);
   const fund = await assets.createAsset(h.repos, h.a.id, {
     name: 'Bauspar', type: 'building_savings', owner_ids: [h.a.id],
-    start_value: '5.000,00', start_value_sign: 'minus', start_date: '2026-10-01',
-  });
+    start_value: '5.000,00', start_value_sign: 'minus', 
+  }, { today: '2026-10-01' });
   let ctx = await loadContext(h.repos, h.a.id);
   assert.equal(ctx.assetSummary(fund).value_cents, -500000);
   const before = totals(ctx);
@@ -151,12 +151,35 @@ test('Einzahlung am selben Tag, aber nach dem Stand erfasst, wird aufaddiert (ne
   assert.equal(after.netWorth, before.netWorth);
 });
 
+test('Manueller Stand gilt für jetzt: vorher Erfasstes ist enthalten, später Erfasstes kommt dazu', async (t) => {
+  const h = await household(t);
+  const fund = await assets.createAsset(h.repos, h.a.id, {
+    name: 'ETF', type: 'fund', owner_ids: [h.a.id], start_value: '1000',
+  }, { today: '2026-09-01' });
+  const deposit = (date) => tx.createTransfer(h.repos, { userId: h.a.id }, {
+    date, amount: '100', description: 'Rate', from: `account:${h.giroA.id}`, to: `asset:${fund.id}`,
+  });
+  await deposit('2026-09-15');
+  await deposit('2026-10-05');
+  // Am 15.10. wird der aktuelle Stand eingetragen: er enthält beide Einzahlungen
+  await assets.addValue(h.repos, h.a.id, fund.id, { value: '1250' }, { today: '2026-10-15' });
+  let ctx = await loadContext(h.repos, h.a.id);
+  assert.equal(ctx.assetSummary(fund).value_cents, 125000);
+  assert.equal(ctx.assetSummary(fund).last_manual_correction_cents, 5000);
+  // Danach erfasst: rückdatiert (vor dem Stand) zählt nicht, heute und später schon
+  await deposit('2026-10-10');
+  await deposit('2026-10-15');
+  await deposit('2026-11-15');
+  ctx = await loadContext(h.repos, h.a.id);
+  assert.equal(ctx.assetSummary(fund).value_cents, 125000 + 20000);
+});
+
 test('Negative Werte über Vorzeichen-Auswahl oder Minus', async (t) => {
   const h = await household(t);
   const fund = await assets.createAsset(h.repos, h.a.id, {
-    name: 'Darlehen', type: 'building_savings', owner_ids: [h.a.id], start_value: '-1.000', start_date: '2026-01-01',
-  });
-  await assets.addValue(h.repos, h.a.id, fund.id, { date: '2026-02-01', value: '900', value_sign: 'minus' });
+    name: 'Darlehen', type: 'building_savings', owner_ids: [h.a.id], start_value: '-1.000', 
+  }, { today: '2026-01-01' });
+  await assets.addValue(h.repos, h.a.id, fund.id, { value: '900', value_sign: 'minus' }, { today: '2026-02-01' });
   const ctx = await loadContext(h.repos, h.a.id);
   assert.equal(ctx.assetSummary(fund).value_cents, -90000);
   assert.equal(ctx.assetSummary(fund).last_manual_correction_cents, 10000);
@@ -165,8 +188,8 @@ test('Negative Werte über Vorzeichen-Auswahl oder Minus', async (t) => {
 test('Kontrollrechnung Spec 6.5: Veränderung Konten = Saldo − In Anlagen gespart', async (t) => {
   const h = await household(t);
   const fund = await assets.createAsset(h.repos, h.a.id, {
-    name: 'ETF', type: 'fund', owner_ids: [h.a.id], start_value: '0', start_date: '2026-01-01',
-  });
+    name: 'ETF', type: 'fund', owner_ids: [h.a.id], start_value: '0', 
+  }, { today: '2026-01-01' });
   const actor = { userId: h.a.id };
   const expenseCat = (await h.repos.categories.findAll({ kind: 'expense' }))[0];
   await tx.createBooking(h.repos, actor, { type: 'income', date: '2026-10-01', amount: '3000', description: 'Gehalt', account_id: h.giroA.id });

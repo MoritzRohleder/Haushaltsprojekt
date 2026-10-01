@@ -40,7 +40,7 @@
   <tbody>
   <% history.forEach((e) => { %>
     <tr>
-      <td><%= date(e.date) %></td>
+      <td><%= date(e.date) %><% if (e.kind === 'manual') { %><br><small class="muted"><%= time(e.row.created_at) %> Uhr</small><% } %></td>
       <td>
         <% if (e.kind === 'manual') { %><span class="badge warning">manuell</span>
         <% } else if (e.kind === 'deposit') { %><span class="badge asset">Einzahlung</span>

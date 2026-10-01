@@ -77,7 +77,7 @@ test('Monatsvergleich und Vermögensverlauf', async (t) => {
   t.after(env.cleanup);
   const a = await user(env.repos, 'anna');
   const giro = await account(env.repos, 'Giro', [a.id], { opening_balance_cents: 100000, opening_date: '2026-08-01' });
-  const fund = await assets.createAsset(env.repos, a.id, { name: 'ETF', type: 'fund', owner_ids: [a.id], start_value: '500', start_date: '2026-08-01' });
+  const fund = await assets.createAsset(env.repos, a.id, { name: 'ETF', type: 'fund', owner_ids: [a.id], start_value: '500' }, { today: '2026-08-01' });
   await tx.createBooking(env.repos, { userId: a.id }, { type: 'income', date: '2026-09-05', amount: '2000', description: 'Gehalt', account_id: giro.id });
   await tx.createTransfer(env.repos, { userId: a.id }, { date: '2026-09-10', amount: '100', description: 'Sparrate', from: `account:${giro.id}`, to: `asset:${fund.id}` });
 
@@ -95,7 +95,7 @@ test('Veralteter Anlagenstand wird erkannt', async (t) => {
   const env = await setup();
   t.after(env.cleanup);
   const a = await user(env.repos, 'anna');
-  const fund = await assets.createAsset(env.repos, a.id, { name: 'Bauspar', type: 'building_savings', owner_ids: [a.id], start_value: '1000', start_date: '2026-01-01' });
+  const fund = await assets.createAsset(env.repos, a.id, { name: 'Bauspar', type: 'building_savings', owner_ids: [a.id], start_value: '1000' }, { today: '2026-01-01' });
   assert.equal((await loadContext(env.repos, a.id, { today: '2026-06-30' })).assetSummary(fund).stale, false);
   assert.equal((await loadContext(env.repos, a.id, { today: '2026-07-02' })).assetSummary(fund).stale, true);
   assert.equal((await loadContext(env.repos, a.id, { today: '2026-07-02', assetStaleMonths: 12 })).assetSummary(fund).stale, false);

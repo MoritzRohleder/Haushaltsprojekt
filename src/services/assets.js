@@ -4,6 +4,7 @@ const v = require('../utils/validate');
 const { ValidationError } = require('../utils/errors');
 const { getVisibleAsset } = require('./visibility');
 const { checkOwners } = require('./accounts');
+const { today: todayIso } = require('../utils/dates');
 
 const ASSET_TYPES = {
   fund: 'Fonds',
@@ -74,11 +75,12 @@ async function readForm(repos, input, errors) {
   };
 }
 
-async function createAsset(repos, userId, input) {
+/** Anlage anlegen. Der Startwert ist ein manueller Stand und gilt ab jetzt (Datum = heute). */
+async function createAsset(repos, userId, input, { today = todayIso() } = {}) {
   const errors = [];
   const fields = await readForm(repos, input, errors);
   const start = v.signedAmount(input.start_value, input.start_value_sign, 'Startwert', errors);
-  const date = v.date(input.start_date, 'Datum des Startwerts', errors);
+  const date = today;
   if (!fields.owner_ids.includes(userId)) errors.push('Du musst selbst Inhaber der neuen Anlage sein.');
   if (errors.length) throw new ValidationError(errors);
 
@@ -102,11 +104,15 @@ async function setArchived(repos, userId, id, archived) {
   return repos.assets.update(asset.id, { archived });
 }
 
-/** Manuellen Stand erfassen (F-41). */
-async function addValue(repos, userId, id, input) {
+/**
+ * Manuellen Stand erfassen (F-41). Ein manueller Stand ist immer der Stand zum
+ * Zeitpunkt der Eingabe: Datum = heute, er ersetzt den bisher berechneten Wert
+ * und enthält alles bis jetzt Erfasste. Nur spätere Ein-/Auszahlungen kommen dazu.
+ */
+async function addValue(repos, userId, id, input, { today = todayIso() } = {}) {
   const asset = await getVisibleAsset(repos, userId, id);
   const errors = [];
-  const date = v.date(input.date, 'Datum', errors);
+  const date = today;
   const value = v.signedAmount(input.value, input.value_sign, 'Wert', errors);
   const note = v.text(input.note, { label: 'Notiz', max: 200 }, errors);
   if (errors.length) throw new ValidationError(errors);
