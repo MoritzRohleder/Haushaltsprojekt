@@ -1,0 +1,20 @@
+<%# Säulendiagramm mit Nulllinie. Erwartet: chart (utils/charts.columnChart), cssClass, title %>
+<figure class="chart">
+  <svg viewBox="0 0 <%= chart.width %> <%= chart.height %>" class="chart-svg <%= cssClass %>" role="img" aria-label="<%= title %>">
+    <% chart.yTicks.forEach((t) => { %>
+      <line class="grid" x1="<%= chart.pad.left %>" x2="<%= chart.width - chart.pad.right %>" y1="<%= t.y %>" y2="<%= t.y %>"/>
+      <text class="axis" x="<%= chart.pad.left - 8 %>" y="<%= t.y + 4 %>" text-anchor="end"><%= t.label %></text>
+    <% }) %>
+    <% chart.xTicks.forEach((t) => { %>
+      <text class="axis" x="<%= t.x %>" y="<%= chart.height - 10 %>" text-anchor="middle"><%= t.label %></text>
+    <% }) %>
+    <% chart.bars.forEach((b) => { %>
+      <g class="hit">
+        <title><%= b.tooltip %></title>
+        <rect class="hit-area" x="<%= b.hit.x %>" y="<%= chart.pad.top %>" width="<%= b.hit.width %>" height="<%= chart.height - chart.pad.top - chart.pad.bottom %>"/>
+        <% if (b.path) { %><path class="bar" d="<%= b.path %>"/><% } %>
+      </g>
+    <% }) %>
+    <line class="baseline" x1="<%= chart.pad.left %>" x2="<%= chart.width - chart.pad.right %>" y1="<%= chart.zeroY %>" y2="<%= chart.zeroY %>"/>
+  </svg>
+</figure>

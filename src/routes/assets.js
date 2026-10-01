@@ -6,8 +6,23 @@ const { loadContext } = require('../services/overview');
 const { getVisibleAsset } = require('../services/visibility');
 const { flash } = require('../middleware');
 const { centsToInput } = require('../utils/money');
-const { today } = require('../utils/dates');
-const { handleForm, sortByName } = require('./helpers');
+const { today, formatDate } = require('../utils/dates');
+const { lineChart } = require('../utils/charts');
+const { formatEuro } = require('../utils/money');
+const { handleForm, sortByName, contextOptions } = require('./helpers');
+
+/** Wertverlauf (F-45): ein Punkt je Tag mit Änderung, verlängert bis heute. */
+function valueChart(history) {
+  const byDate = new Map();
+  for (const e of history) byDate.set(e.date, e.value_cents);
+  const now = today();
+  if (byDate.size && [...byDate.keys()].at(-1) < now) byDate.set(now, [...byDate.values()].at(-1));
+  if (byDate.size < 2) return null;
+  return lineChart([...byDate].map(([date, value]) => ({
+    key: date, label: formatDate(date).slice(0, 6) + date.slice(2, 4), value,
+    tooltip: `${formatDate(date)}: ${formatEuro(value)}`,
+  })), { step: true });
+}
 
 module.exports = (repos) => {
   const router = express.Router();
@@ -24,7 +39,7 @@ module.exports = (repos) => {
   }
 
   router.get('/anlagen', async (req, res) => {
-    const ctx = await loadContext(repos, req.session.user.id);
+    const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     res.render('assets/list', {
       title: 'Anlagen', ctx, types: assets.ASSET_TYPES,
       active: sortByName(ctx.assets.filter((a) => !a.archived)),
@@ -48,12 +63,14 @@ module.exports = (repos) => {
 
   router.get('/anlagen/:id', async (req, res) => {
     const asset = await getVisibleAsset(repos, req.session.user.id, req.params.id);
-    const ctx = await loadContext(repos, req.session.user.id);
+    const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     const usersById = new Map((await allUsers()).map((u) => [u.id, u.username]));
+    const history = assets.assetHistory(asset, ctx.values, ctx.transactions);
     res.render('assets/detail', {
       title: asset.name, ctx, asset, usersById, types: assets.ASSET_TYPES,
       summary: ctx.assetSummary(asset),
-      history: assets.assetHistory(asset, ctx.values, ctx.transactions).reverse(),
+      history: [...history].reverse(),
+      chart: valueChart(history),
     });
   });
 
@@ -74,7 +91,7 @@ module.exports = (repos) => {
   // ---- Stand manuell aktualisieren (F-41) ------------------------------------
 
   async function renderValueForm(req, res, { asset, values, errors = [] }) {
-    const ctx = await loadContext(repos, req.session.user.id);
+    const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     res.render('assets/value', {
       title: `Stand aktualisieren: ${asset.name}`, asset, values, errors, summary: ctx.assetSummary(asset),
     });
@@ -82,7 +99,7 @@ module.exports = (repos) => {
 
   router.get('/anlagen/:id/stand', async (req, res) => {
     const asset = await getVisibleAsset(repos, req.session.user.id, req.params.id);
-    const ctx = await loadContext(repos, req.session.user.id);
+    const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     await renderValueForm(req, res, {
       asset, values: { date: today(), value: centsToInput(ctx.assetSummary(asset).value_cents) },
     });

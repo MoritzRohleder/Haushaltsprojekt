@@ -49,7 +49,12 @@ async function register(repos, { username, password, passwordRepeat }) {
   checkNewPassword(password, passwordRepeat, errors);
   if (errors.length) throw new ValidationError(errors);
 
-  const user = await repos.users.insert({ username: name, password_hash: await hashPassword(password) });
+  const user = await repos.users.insert({
+    username: name,
+    password_hash: await hashPassword(password),
+    theme: 'auto',
+    hidden_category_ids: [],
+  });
   return publicUser(user);
 }
 

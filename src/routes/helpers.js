@@ -19,4 +19,9 @@ async function handleForm(res, action, renderOnError) {
 
 const sortByName = (list) => [...list].sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
-module.exports = { handleForm, sortByName };
+/** Optionen für loadContext aus der Konfiguration (z. B. ASSET_STALE_MONTHS). */
+function contextOptions(req) {
+  return { assetStaleMonths: req.app.get('config')?.assetStaleMonths ?? 6 };
+}
+
+module.exports = { handleForm, sortByName, contextOptions };

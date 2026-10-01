@@ -13,7 +13,20 @@ function loadConfig(env = process.env) {
     storage: env.STORAGE || 'json',
     sessionSecret: env.SESSION_SECRET || sessionSecretFromFile(dataDir),
     cookieSecure: env.COOKIE_SECURE === 'true',
+    trustProxy: parseTrustProxy(env.TRUST_PROXY),
+    assetStaleMonths: Number(env.ASSET_STALE_MONTHS) || 6,
   };
+}
+
+/**
+ * TRUST_PROXY für den Betrieb hinter einem Reverse Proxy (z. B. Caddy, Traefik, nginx).
+ * "true"/"false", eine Anzahl Proxys ("1") oder eine Liste wie "loopback, 10.0.0.0/8".
+ */
+function parseTrustProxy(value) {
+  if (value === undefined || value === '' || value === 'false') return false;
+  if (value === 'true') return true;
+  if (/^\d+$/.test(value)) return Number(value);
+  return value;
 }
 
 /**

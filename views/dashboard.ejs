@@ -41,6 +41,7 @@
             <td>
               <a href="/anlagen/<%= a.id %>"><%= a.name %></a><br>
               <small class="muted"><% if (s.last_manual_correction_cents === null) { %>Startwert vom <%= date(s.last_manual_date) %><% } else { %>manuell am <%= date(s.last_manual_date) %>, Korrektur <%= euro(s.last_manual_correction_cents, { sign: true }) %><% } %></small>
+              <% if (s.stale) { %><br><span class="badge warning-badge">⚠ Stand veraltet</span><% } %>
             </td>
             <td class="amount strong asset"><%= euro(s.value_cents) %></td>
             <td><a href="/anlagen/<%= a.id %>/stand" title="Stand aktualisieren">Stand</a></td>

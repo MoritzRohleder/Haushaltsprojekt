@@ -57,6 +57,11 @@ class JsonStorage {
     return this.meta[key];
   }
 
+  /** Wartet, bis alle laufenden Schreibzugriffe abgeschlossen sind (z. B. vor dem Beenden). */
+  async idle() {
+    await this.queue;
+  }
+
   // ---- Schreiben ---------------------------------------------------------
 
   async insert(collection, record) {

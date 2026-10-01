@@ -8,7 +8,7 @@ const { ledger } = require('../services/balances');
 const { flash } = require('../middleware');
 const { centsToInput } = require('../utils/money');
 const { today } = require('../utils/dates');
-const { handleForm, sortByName } = require('./helpers');
+const { handleForm, sortByName, contextOptions } = require('./helpers');
 
 module.exports = (repos) => {
   const router = express.Router();
@@ -25,7 +25,7 @@ module.exports = (repos) => {
   }
 
   router.get('/konten', async (req, res) => {
-    const ctx = await loadContext(repos, req.session.user.id);
+    const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     const usersById = new Map((await allUsers()).map((u) => [u.id, u.username]));
     res.render('accounts/list', {
       title: 'Konten', ctx, usersById, types: accounts.ACCOUNT_TYPES,
@@ -50,7 +50,7 @@ module.exports = (repos) => {
 
   router.get('/konten/:id', async (req, res) => {
     const account = await getVisibleAccount(repos, req.session.user.id, req.params.id);
-    const ctx = await loadContext(repos, req.session.user.id);
+    const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     const usersById = new Map((await allUsers()).map((u) => [u.id, u.username]));
     res.render('accounts/detail', {
       title: account.name, ctx, account, usersById, types: accounts.ACCOUNT_TYPES,

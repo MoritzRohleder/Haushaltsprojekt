@@ -3,13 +3,13 @@
 const express = require('express');
 const { loadContext, totals, monthlySummary } = require('../services/overview');
 const { parts, today } = require('../utils/dates');
-const { sortByName } = require('./helpers');
+const { sortByName, contextOptions } = require('./helpers');
 
 module.exports = (repos) => {
   const router = express.Router();
 
   router.get('/', async (req, res) => {
-    const ctx = await loadContext(repos, req.session.user.id);
+    const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     const { year, month } = parts(today());
     const recent = [...ctx.rows]
       .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at))

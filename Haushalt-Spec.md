@@ -1,7 +1,7 @@
 # Haushalt-Spec
 
 > Spezifikation für die Webanwendung **Haushaltsprojekt** zur Verwaltung der monatlichen Finanzen.
-> Status: **v0.6** – abgestimmte Grundlage für die Entwicklung; ein erster Prototyp ist umgesetzt.
+> Status: **v1.0** – umgesetzt in Version 1.0.0 der Anwendung (inkl. Betrieb mit Docker).
 > Getroffene Entscheidungen stehen in [Kapitel 13.1](#131-entscheidungen), offene Punkte in [Kapitel 13.2](#132-offene-fragen) (im Text mit `❓` markiert).
 
 ---
@@ -159,6 +159,8 @@ Pfeile zeigen in Richtung des Verweises: `A ──► B` heißt „A speichert d
 | `id` | UUID | ja | |
 | `username` | Text | ja | Login-Name, eindeutig, nicht case-sensitiv. Wird auch überall als Name angezeigt (kein separater Anzeigename) |
 | `password_hash` | Text | ja | Gehashtes Passwort inkl. Salt – **nie** das Klartext-Passwort (siehe [10.4](#104-login-und-sitzungen)) |
+| `theme` | Enum | ja | Darstellungsmodus: `auto` (wie System), `light`, `dark`. Default `auto` (F-06) |
+| `hidden_category_ids` | Liste von UUIDs | ja | Für diesen Nutzer ausgeblendete Standard-Kategorien (F-15). Default leer |
 | `created_at` | Zeitstempel | ja | |
 
 #### Konto (`accounts`)
@@ -375,6 +377,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-02 | Anmelden mit Nutzername und Passwort; Abmelden | M |
 | F-03 | Alle Seiten außer Login/Registrierung nur angemeldet erreichbar | M |
 | F-04 | Eigenes Passwort ändern | S |
+| F-06 | **Hell/Dunkel-Umschalter** in der Navigation; die Wahl (Automatisch, Hell, Dunkel) wird pro Nutzer gespeichert und gilt auf allen Geräten | M |
 
 ### 7.2 Stammdaten
 
@@ -509,7 +512,12 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | Stand erfassen | `GET/POST /anlagen/:id/stand` | |
 | Wiederkehrend | `GET /wiederkehrend` | Vorlagen verwalten |
 | Kategorien | `GET /kategorien` | Standard-Kategorien (nur lesen) und eigene Kategorien |
-| Profil | `GET/POST /profil` | Passwort ändern |
+| Auswertung | `GET /auswertung?monate=6\|12\|24` | Saldo je Monat, Verlauf Gesamtvermögen, Monatsvergleich (F-56, F-57) |
+| CSV-Export | `GET /buchungen/export.csv` | Gefilterte Buchungen als CSV (gleiche Filter wie die Liste, `alle=1` = alle Monate) |
+| Nochmal buchen | `GET /buchungen/neu?vorlage=:id` | Formular mit Werten einer bestehenden Buchung (F-26) |
+| Profil | `GET/POST /profil` | Darstellungsmodus, Passwort ändern |
+| Darstellung | `POST /einstellungen/darstellung` | Theme speichern (vom Umschalter per `fetch`, ohne JS als Formular) |
+| Health-Check | `GET /health` | `{"status":"ok"}` – für Docker/Monitoring, ohne Login |
 
 Da HTML-Formulare nur `GET` und `POST` kennen, werden Änderungen und Löschungen über `POST` umgesetzt (Muster *Post/Redirect/Get*).
 Ruft ein Nutzer ein Konto, eine Anlage oder eine Buchung auf, die er nicht sehen darf, antwortet der Server mit **404** (nicht 403), damit nicht erkennbar ist, ob es den Datensatz gibt.
@@ -586,10 +594,13 @@ Regel: Nur `storage/` weiß, wie und wo Daten gespeichert sind. Routes und Servi
 - Passwort-Mindestlänge: 8 Zeichen.
 - Nach erfolgreichem Login wird die Session-ID erneuert (`req.session.regenerate`).
 - Session-Cookie: `httpOnly`, `sameSite: 'lax'`, `secure` sobald HTTPS verwendet wird.
-- Sitzungen werden in einer Datei gespeichert, damit man nach einem Neustart des Servers nicht abgemeldet ist. Ob dafür ein fertiges Paket oder ein kleiner eigener Store über die Speicherschicht genutzt wird, wird in M1 entschieden.
-- Formulare erhalten ein CSRF-Token (S).
-- Fehlgeschlagene Logins werden gebremst (z. B. kurze Wartezeit nach mehreren Fehlversuchen) (S).
+- Sitzungen werden in `data/sessions.json` gespeichert (eigener kleiner Store), damit man nach einem Neustart des Servers nicht abgemeldet ist. Gültigkeit: 30 Tage.
+- Alle Formulare angemeldeter Nutzer tragen ein CSRF-Token (Formularfeld `_csrf` oder Header `X-CSRF-Token`).
+- **Login-Bremse:** Nach 5 Fehlversuchen je IP-Adresse und Nutzername muss gewartet werden (30 s, danach jeweils verdoppelt, höchstens 15 min). Zusätzlich höchstens 30 Fehlversuche je IP-Adresse in 15 min. Antwort dann `429` mit Wartezeit.
 - Fehlermeldung beim Login immer neutral: „Nutzername oder Passwort falsch“.
+- **Sicherheits-Header** auf allen Seiten: strenge Content-Security-Policy (nur eigene Skripte, Styles und Bilder; keine Inline-Skripte oder -Styles), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`; bei `COOKIE_SECURE=true` zusätzlich HSTS.
+- Rücksprungziele nach Formularen werden nur als interne Pfade akzeptiert (kein Open Redirect).
+- CSV-Export entschärft Zellen, die wie Tabellenformeln beginnen (`=`, `+`, `-`, `@`).
 
 ### 10.5 Projektstruktur (Vorschlag)
 
@@ -635,14 +646,19 @@ Haushaltsprojekt/
 | `DATA_DIR` | `./data` | Ordner der JSON-Dateien |
 | `STORAGE` | `json` | Gewählter Speicher-Adapter |
 | `SESSION_SECRET` | zufällig, in `data/.session-secret` | Schlüssel zum Signieren des Session-Cookies. Ist er nicht gesetzt, wird beim ersten Start ein zufälliger Schlüssel im Datenordner abgelegt |
-| `COOKIE_SECURE` | `false` | Auf `true` setzen, sobald die Seite über HTTPS läuft |
+| `COOKIE_SECURE` | `false` | Auf `true` setzen, sobald die Seite über HTTPS läuft (aktiviert auch HSTS) |
+| `TRUST_PROXY` | `false` | Hinter einem Reverse Proxy: Anzahl der Proxys (z. B. `1`) oder Adressbereiche. Nötig, damit die Login-Bremse die echte IP sieht |
+| `ASSET_STALE_MONTHS` | `6` | Ab so vielen Monaten ohne manuellen Stand gilt eine Anlage als „veraltet“ (F-44) |
+| `NODE_ENV` | – | `production` aktiviert Template-Cache und Browser-Caching statischer Dateien (im Docker-Image gesetzt) |
+| `TZ` | Systemzeit | Zeitzone, z. B. `Europe/Berlin` – bestimmt, wann „heute“ ist (regelmäßige Buchungen) |
 
 ### 10.7 Gestaltung und Farben
 
 - Grundlage ist **Pico.css** (klassenloses Stylesheet): Formulare, Tabellen und Navigation sehen ohne eigene CSS-Klassen ordentlich aus und sind responsive.
 - Pico wird über npm installiert und von Express aus `node_modules` ausgeliefert (**kein CDN**, die Seite funktioniert auch ohne Internet).
 - Alle Farben stehen als CSS-Variablen in **einer** Datei `public/css/theme.css`, die nach Pico geladen wird. Spätere Anpassungen passieren nur dort.
-- Hell- und Dunkelmodus folgen automatisch der Systemeinstellung (Pico-Standard); für beide ist jede Farbe festgelegt.
+- Hell- und Dunkelmodus: Standard ist „Automatisch“ (folgt der Systemeinstellung). Über den Umschalter (☾/☀) in der Navigation wählt jeder Nutzer Hell oder Dunkel; die Wahl wird gespeichert (`users.theme`) und als `data-theme` am `<html>`-Element gesetzt. Für beide Modi ist jede Farbe festgelegt.
+- **Diagramme** werden auf dem Server als SVG erzeugt (keine Bibliothek, kein Inline-Skript). Jedes Diagramm zeigt **eine** Datenreihe; Farbe kommt aus der Palette, Beschriftungen in Textfarbe, Werte zusätzlich per Tooltip und in einer Tabelle. Einnahmen/Ausgaben werden nicht als Rot/Grün-Paar gegenübergestellt (bei Rot-Grün-Sehschwäche nicht unterscheidbar); der Monatssaldo zeigt das Vorzeichen über die Lage zur Nulllinie.
 - Farbe ist nie das einzige Merkmal: Beträge haben immer ein Vorzeichen (`+` / `−`), Buchungsarten zusätzlich ein Symbol oder Text.
 
 **Farbpalette**
@@ -655,6 +671,15 @@ Haushaltsprojekt/
 | Transfer | `--hh-transfer` | `#475569` (Schiefergrau) | `#94a3b8` | Transfers zwischen eigenen Konten |
 | Anlage | `--hh-asset` | `#6d28d9` (Violett) | `#a78bfa` | Anlagen, Sparraten, „In Anlagen gespart“ |
 | Hinweis | `--hh-warning` | `#b45309` (Bernstein) | `#fbbf24` | Hinweise, z. B. veralteter Anlagenstand |
+
+### 10.8 Betrieb mit Docker
+
+- `Dockerfile`: Basis `node:24-alpine`, nur Produktionsabhängigkeiten (`npm ci --omit=dev`), läuft als unprivilegierter Nutzer `node` (UID 1000), `NODE_ENV=production`.
+- Daten liegen im Volume `/app/data` (JSON-Dateien, Sicherungen, Sitzungen, Session-Schlüssel).
+- Health-Check über `GET /health`.
+- `docker-compose.yml` mit benanntem Volume, `restart: unless-stopped`, Einstellungen aus `.env` (Vorlage `.env.example`).
+- Beim Stoppen (`SIGTERM`) nimmt der Server keine neuen Anfragen an, schließt laufende Schreibzugriffe ab und sichert die Sitzungen.
+- HTTPS übernimmt ein vorgeschalteter Reverse Proxy (z. B. Caddy); dann `COOKIE_SECURE=true` und `TRUST_PROXY=1` setzen. Anleitung im README.
 
 ## 11. Nicht-funktionale Anforderungen
 
@@ -725,16 +750,18 @@ Aktuell keine.
 | M4 | **Buchungen** | F-20 bis F-24: Einnahmen, Ausgaben, Transfer-Paare erfassen, bearbeiten, listen. |
 | M5 | **Übersichten** | F-50 bis F-55, F-61: Dashboard, Monatsbilanz, Kontoübersicht, Transfers. Tests der Berechnungsregeln. |
 | M6 | **Wiederkehrend & Anlagen** | F-30 bis F-34, F-40 bis F-43, F-46: regelmäßige Buchungen, Anlagen mit Ständen und Sparraten. → **MVP fertig** |
-| M7 | **Komfort & Sicherheit** | F-04, F-25, F-56, F-60, CSRF-Schutz, Login-Bremse. |
+| M7 | **Komfort & Sicherheit** | F-04, F-06, F-15, F-25, F-26, F-44, F-56, F-60, CSRF-Schutz, Login-Bremse, Sicherheits-Header. |
+| M8 | **Betrieb & Auswertung** | Docker (10.8), Diagramme F-45/F-57, Health-Check. → **Version 1.0** |
+| M9 | **Ausbau** | CSV-Import (F-62), Budgets, weitere Auswertungen nach Bedarf. |
 
-**Stand Prototyp (v0.1.0):** M1 bis M6 sind umgesetzt, dazu aus M7 bereits F-04 (Passwort ändern), „Speichern & weitere erfassen“ aus F-25 und der CSRF-Schutz. Offen sind F-15, F-26, F-44, F-45, F-56, F-57, F-60, F-62 und die Login-Bremse.
+**Stand Version 1.0.0:** M0 bis M8 sind umgesetzt. Offen ist nur F-62 (CSV-Import, Priorität K).
 
-Einschränkungen im Prototyp:
+Bekannte Einschränkungen:
 
 - Bei einem bestehenden Transfer sind nur Datum, Betrag, Beschreibung und Notiz änderbar. Für andere Konten oder Anlagen wird er gelöscht und neu angelegt.
 - Regelmäßige Transfers sind nur von einem Konto aus möglich (auf ein Konto oder in eine Anlage), nicht als regelmäßige Auszahlung aus einer Anlage.
 - An einer regelmäßigen Buchung sind nachträglich Betrag, Beschreibung, Notiz, Rhythmus (inkl. Tag/Monat) und Enddatum änderbar, nicht aber Konten oder Kategorie.
-| M8 | **Ausbau** | Diagramme, Import, Budgets nach Bedarf. |
+- Der JSON-Speicher ist für **eine** laufende Instanz gedacht (kein gleichzeitiger Betrieb mehrerer Container auf denselben Daten).
 
 ## 15. Lizenz
 
@@ -752,3 +779,4 @@ In der `package.json` wird entsprechend `"license": "GPL-3.0-or-later"` eingetra
 | v0.5 | Diagramm in 5.1 neu (Verweise klar erkennbar) plus Verweistabelle; Anzeige immer in Euro, Cent nur intern; Rhythmus als Anzahl + Einheit (`interval_count`, `interval_unit`); manuelle Anlagen-Stände in Übersicht und Verlauf mit Datum und Korrektur sichtbar (F-46); kein Anzeigename mehr; Startliste der Kategorien bestätigt; keine offenen Fragen. |
 | v0.5.1 | Korrektur-Definition präzisiert (Ein-/Auszahlungen desselben Tages); `SESSION_SECRET`-Fallback und `COOKIE_SECURE` ergänzt; Stand und Einschränkungen des Prototyps in Kap. 14. |
 | v0.6 | Regelmäßige Buchungen: fester Tag (Monat) bzw. Tag und Monat (Jahr) über `day_of_month`/`month_of_year`; `start_date` ist das „gültig ab“-Datum; Rhythmusänderung gilt ab dem nächsten Termin. |
+| v1.0 | Hell/Dunkel-Umschalter pro Nutzer (F-06, `users.theme`); ausgeblendete Standard-Kategorien (`users.hidden_category_ids`); Auswertungsseite mit Diagrammen; CSV-Export; Nochmal buchen; veraltete Anlagenstände; Login-Bremse, Sicherheits-Header, `TRUST_PROXY`, `ASSET_STALE_MONTHS`, `TZ`; Betrieb mit Docker (10.8); Meilensteine aktualisiert. |

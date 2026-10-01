@@ -27,7 +27,7 @@ function client(base) {
     const { html } = await request(path);
     return /name="_csrf" value="([^"]+)"/.exec(html)?.[1];
   }
-  return { request, csrf };
+  return { request, csrf, cookie: () => cookie };
 }
 
 async function start(t) {
@@ -112,6 +112,56 @@ test('Kompletter Ablauf: Registrieren, Konto, Buchungen, Anlage, Übersicht', as
   res = await anna.request('/logout', { method: 'POST', form: { _csrf: token } });
   assert.equal(res.location, '/login');
   assert.equal((await anna.request('/')).location, '/login');
+});
+
+test('Sicherheits-Header, Health-Check, Theme, Auswertung, Export, Nochmal buchen', async (t) => {
+  const { base, repos } = await start(t);
+  const health = await fetch(`${base}/health`);
+  assert.equal(health.status, 200);
+  assert.deepEqual(await health.json(), { status: 'ok' });
+  const login = await fetch(`${base}/login`);
+  assert.match(login.headers.get('content-security-policy'), /script-src 'self'/);
+  assert.equal(login.headers.get('x-frame-options'), 'DENY');
+
+  const c = client(base);
+  await c.request('/registrieren', { method: 'POST', form: { username: 'dora', password: 'geheim123', passwordRepeat: 'geheim123' } });
+  const userId = (await repos.users.findAll())[0].id;
+  const token = await c.csrf('/');
+
+  // Theme umschalten (per fetch → 204) und wird beim nächsten Seitenaufruf gesetzt
+  const res = await fetch(`${base}/einstellungen/darstellung`, {
+    method: 'POST',
+    headers: { cookie: c.cookie(), 'x-requested-with': 'fetch', 'x-csrf-token': token, 'content-type': 'application/x-www-form-urlencoded' },
+    body: 'theme=dark',
+  });
+  assert.equal(res.status, 204);
+  assert.match((await c.request('/')).html, /<html lang="de" data-theme="dark">/);
+  await c.request('/einstellungen/darstellung', { method: 'POST', form: { _csrf: token, theme: 'light', back: '//evil.example' } })
+    .then((r) => assert.equal(r.location, '/profil')); // kein Open Redirect
+
+  // Buchung, Export, Nochmal buchen
+  const acc = await c.request('/konten', { method: 'POST', form: { _csrf: token, name: 'Giro', type: 'giro', opening_balance: '0', opening_date: '2026-01-01', owner_ids: userId } });
+  const accountId = acc.location.split('/').pop();
+  await c.request('/buchungen', { method: 'POST', form: { _csrf: token, type: 'expense', date: '2026-02-03', amount: '12,34', description: 'Bäcker; Brot', account_id: accountId } });
+  const csv = await c.request('/buchungen/export.csv?alle=1');
+  assert.match(csv.html, /03\.02\.2026;Giro;Ausgabe;Ohne Kategorie;"Bäcker; Brot";;-12,34;/);
+  const rowId = (await repos.transactions.findAll())[0].id;
+  const dup = await c.request(`/buchungen/neu?vorlage=${rowId}`);
+  assert.match(dup.html, /value="12,34"/);
+  assert.match(dup.html, /Bäcker; Brot/);
+
+  for (const page of ['/auswertung', '/auswertung?monate=24', '/monat/2026/2', `/konten/${accountId}`, '/kategorien']) {
+    assert.equal((await c.request(page)).status, 200, page);
+  }
+});
+
+test('Login-Bremse greift über HTTP', async (t) => {
+  const { base } = await start(t);
+  const c = client(base);
+  for (let i = 0; i < 5; i++) await c.request('/login', { method: 'POST', form: { username: 'x', password: 'falsch' } });
+  const res = await c.request('/login', { method: 'POST', form: { username: 'x', password: 'falsch' } });
+  assert.equal(res.status, 429);
+  assert.match(res.html, /Zu viele Fehlversuche/);
 });
 
 test('Login mit falschem Passwort zeigt neutrale Meldung', async (t) => {

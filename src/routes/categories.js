@@ -2,6 +2,7 @@
 
 const express = require('express');
 const categories = require('../services/categories');
+const preferences = require('../services/preferences');
 const { visibleCategories } = require('../services/visibility');
 const { flash } = require('../middleware');
 const { handleForm } = require('./helpers');
@@ -10,7 +11,7 @@ module.exports = (repos) => {
   const router = express.Router();
 
   async function render(req, res, { errors = [], values = {} } = {}) {
-    const all = await visibleCategories(repos, req.session.user.id, { includeArchived: true });
+    const all = await visibleCategories(repos, req.session.user.id, { includeArchived: true, includeHidden: true });
     res.render('categories', {
       title: 'Kategorien', errors, values, kinds: categories.KINDS,
       standard: all.filter((c) => c.owner_id === null && !c.archived),
@@ -34,6 +35,14 @@ module.exports = (repos) => {
       flash(req, 'Kategorie umbenannt.');
       res.redirect('/kategorien');
     }, (errors) => render(req, res, { errors, values: { kind: 'expense' } }));
+  });
+
+  /** Standard-Kategorie für sich selbst aus-/einblenden (F-15). */
+  router.post('/kategorien/:id/ausblenden', async (req, res) => {
+    const hidden = req.body.hidden === 'true';
+    await preferences.setCategoryHidden(repos, req.session.user.id, req.params.id, hidden);
+    flash(req, hidden ? 'Kategorie ausgeblendet. Sie wird bei neuen Buchungen nicht mehr angeboten.' : 'Kategorie wieder eingeblendet.');
+    res.redirect('/kategorien');
   });
 
   router.post('/kategorien/:id/archivieren', async (req, res) => {

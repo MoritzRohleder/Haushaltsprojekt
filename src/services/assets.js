@@ -48,13 +48,15 @@ function assetHistory(asset, values, transactions, asOf = null) {
 }
 
 /** Aktueller Wert und letzte manuelle Aktualisierung (für Übersicht/Dashboard, F-46). */
-function assetSummary(asset, values, transactions, asOf = null) {
+function assetSummary(asset, values, transactions, asOf = null, { staleBefore = null } = {}) {
   const history = assetHistory(asset, values, transactions, asOf);
   const lastManual = [...history].reverse().find((e) => e.kind === 'manual') || null;
   return {
     value_cents: history.length ? history[history.length - 1].value_cents : 0,
     last_manual_date: lastManual ? lastManual.date : null,
     last_manual_correction_cents: lastManual ? lastManual.change_cents : null,
+    // F-44: letzter manueller Stand älter als die konfigurierte Anzahl Monate
+    stale: Boolean(staleBefore && lastManual && lastManual.date < staleBefore),
   };
 }
 

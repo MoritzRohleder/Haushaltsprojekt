@@ -20,8 +20,18 @@
     <% if (summary.last_manual_correction_cents !== null) { %>
       <span class="muted">Korrektur <%= euro(summary.last_manual_correction_cents, { sign: true }) %></span>
     <% } %>
+    <% if (summary.stale) { %>
+      <span class="badge warning-badge" title="Bitte den aktuellen Stand eintragen">⚠ älter als <%= ctx.assetStaleMonths %> Monate</span>
+    <% } %>
   </article>
 </section>
+
+<% if (chart) { %>
+  <article>
+    <header><strong>Wertverlauf</strong></header>
+    <%- include('../partials/chart-line', { chart, cssClass: 'asset', title: `Wertverlauf ${asset.name}` }) %>
+  </article>
+<% } %>
 
 <h2>Verlauf</h2>
 <div class="table-wrap">
@@ -52,7 +62,7 @@
         <% if (e.kind === 'manual') { %>
           <form method="post" action="/anlagen/<%= asset.id %>/staende/<%= e.row.id %>/loeschen" class="inline-form" data-confirm="Diesen Stand löschen?">
             <%- include('../partials/csrf') %>
-            <button type="submit" class="secondary outline" style="padding: 0.1rem 0.5rem;" aria-label="Stand löschen">✕</button>
+            <button type="submit" class="secondary outline small" aria-label="Stand löschen">✕</button>
           </form>
         <% } else if (ctx.accountIds.has(e.row.account_id)) { %>
           <a href="/buchungen/<%= e.row.id %>/bearbeiten" aria-label="Bearbeiten">✎</a>

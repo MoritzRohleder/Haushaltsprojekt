@@ -26,3 +26,30 @@ document.querySelectorAll('[data-interval-unit]').forEach((select) => {
   select.addEventListener('change', update);
   update();
 });
+
+// Hell/Dunkel-Umschalter: sofort umschalten und für den Nutzer speichern.
+document.querySelectorAll('form[data-theme-toggle]').forEach((form) => {
+  const root = document.documentElement;
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+  const effective = () => root.dataset.theme || (systemDark.matches ? 'dark' : 'light');
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const next = effective() === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    document.querySelector('meta[name=color-scheme]')?.setAttribute('content', next);
+    form.elements.theme.value = next === 'dark' ? 'light' : 'dark';
+    const body = new URLSearchParams(new FormData(form));
+    body.set('theme', next);
+    try {
+      const res = await fetch(form.action, {
+        method: 'POST',
+        headers: { 'x-requested-with': 'fetch', 'content-type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+      if (!res.ok) throw new Error(res.statusText);
+    } catch {
+      form.submit(); // Fallback: normales Formular (lädt die Seite neu)
+    }
+  });
+});

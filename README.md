@@ -1,44 +1,116 @@
 # Haushaltsprojekt
 
-Eine kleine Webanwendung, um die monatlichen Finanzen eines Haushalts im Blick zu behalten:
-Konten (auch gemeinsame), Einnahmen, Ausgaben, Transfers, regelmäßige Buchungen und Anlagen wie Fonds oder Bausparverträge.
+Eine Webanwendung, um die monatlichen Finanzen eines Haushalts im Blick zu behalten:
+Konten (auch gemeinsame), Einnahmen, Ausgaben, Transfers, regelmäßige Buchungen, Anlagen wie Fonds oder Bausparverträge,
+Monatsübersichten, Auswertungen mit Diagrammen und CSV-Export. Hell- und Dunkelmodus wählt jeder Nutzer selbst.
 
 Planung und Anforderungen stehen in der [Haushalt-Spec](Haushalt-Spec.md).
 
-## Starten
+- [Auf einem Server mit Docker betreiben](#auf-einem-server-mit-docker-betreiben)
+- [Lokal starten (Entwicklung)](#lokal-starten-entwicklung)
+- [Konfiguration](#konfiguration)
+- [Daten, Sicherung und Wiederherstellung](#daten-sicherung-und-wiederherstellung)
 
-Voraussetzung: Node.js 22 oder neuer.
+## Auf einem Server mit Docker betreiben
+
+Voraussetzung: Docker mit Docker Compose auf dem Server.
+
+```bash
+git clone https://github.com/MoritzRohleder/Haushaltsprojekt.git
+cd Haushaltsprojekt
+cp .env.example .env        # Einstellungen anpassen (siehe unten)
+docker compose up -d --build
+```
+
+Die App läuft dann auf `http://<server>:3000`. Beim ersten Aufruf über „Registrieren“ einen Nutzer anlegen.
+
+| Befehl | Zweck |
+|--------|-------|
+| `docker compose logs -f` | Logs ansehen |
+| `docker compose ps` | Status inkl. Health-Check |
+| `docker compose down` | Stoppen (Daten bleiben im Volume erhalten) |
+| `git pull && docker compose up -d --build` | Auf neue Version aktualisieren |
+
+### HTTPS mit einem Reverse Proxy
+
+Ist die App aus dem Internet erreichbar, gehört ein Reverse Proxy mit HTTPS davor. Mit [Caddy](https://caddyserver.com)
+geht das mit wenigen Zeilen (Zertifikat von Let's Encrypt automatisch). Beispiel als Ergänzung in `docker-compose.yml`:
+
+```yaml
+services:
+  haushalt:
+    # … wie bisher, aber ohne "ports:" – nur Caddy ist von außen erreichbar
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    command: caddy reverse-proxy --from haushalt.example.de --to haushalt:3000
+    volumes: [caddy-data:/data]
+
+volumes:
+  haushalt-data:
+  caddy-data:
+```
+
+Dann in `.env` setzen:
+
+```
+COOKIE_SECURE=true
+TRUST_PROXY=1
+```
+
+`TRUST_PROXY=1` sorgt dafür, dass die App die echte IP-Adresse der Besucher sieht (wichtig für die Login-Bremse).
+
+## Lokal starten (Entwicklung)
+
+Voraussetzung: Node.js 22 oder neuer (empfohlen: aktuelle LTS-Version).
 
 ```bash
 npm install
 npm start          # http://localhost:3000
-```
-
-Für die Entwicklung startet `npm run dev` den Server bei Codeänderungen automatisch neu.
-Beim ersten Aufruf registrierst du dich unter „Registrieren“ und legst danach dein erstes Konto an.
-
-## Tests
-
-```bash
-npm test
+npm run dev        # startet bei Codeänderungen automatisch neu
+npm test           # automatische Tests
 ```
 
 ## Konfiguration
 
+Umgebungsvariablen (lokal direkt, bei Docker über `.env`):
+
 | Variable | Standard | Bedeutung |
 |----------|----------|-----------|
-| `PORT` | `3000` | HTTP-Port |
-| `DATA_DIR` | `./data` | Ordner für die JSON-Daten |
-| `STORAGE` | `json` | Speicher-Adapter |
+| `PORT` | `3000` | HTTP-Port im Container bzw. lokal |
+| `HOST_PORT` | `3000` | Nur Docker Compose: Port auf dem Server |
+| `DATA_DIR` | `./data` (Docker: `/app/data`) | Ordner für die Daten |
 | `SESSION_SECRET` | zufällig, in `data/.session-secret` | Schlüssel für das Login-Cookie |
-| `COOKIE_SECURE` | `false` | `true`, sobald die Seite über HTTPS läuft |
+| `COOKIE_SECURE` | `false` | `true`, sobald die App über HTTPS läuft (aktiviert auch HSTS) |
+| `TRUST_PROXY` | `false` | Hinter einem Reverse Proxy: Anzahl der Proxys, z. B. `1` |
+| `ASSET_STALE_MONTHS` | `6` | Hinweis „Stand veraltet“ bei Anlagen nach so vielen Monaten |
+| `TZ` | Systemzeit (Docker: `Europe/Berlin`) | Zeitzone; bestimmt, wann regelmäßige Buchungen fällig sind |
 
-## Daten
+## Daten, Sicherung und Wiederherstellung
 
-Alle Daten liegen als JSON-Dateien in `data/` (nicht im Git). Zum Sichern genügt es, diesen Ordner zu kopieren.
-Vor jedem Schreiben legt die Anwendung zusätzlich eine Sicherung in `data/backup/` an.
+Alle Daten liegen als JSON-Dateien im Datenordner (lokal `data/`, bei Docker im Volume `haushalt-data`).
+Vor jedem Schreiben legt die Anwendung zusätzlich eine Sicherung in `backup/` an.
 
-Die Standard-Kategorien werden beim ersten Start in `data/categories.json` erzeugt und können danach dort angepasst werden.
+**Sicherung bei Docker** (erzeugt `haushalt-backup.tar.gz` im aktuellen Ordner):
+
+```bash
+docker run --rm -v haushaltsprojekt_haushalt-data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/haushalt-backup.tar.gz -C /data .
+```
+
+**Wiederherstellen** (App vorher stoppen):
+
+```bash
+docker compose down
+docker run --rm -v haushaltsprojekt_haushalt-data:/data -v "$PWD":/backup alpine \
+  sh -c "rm -rf /data/* /data/.session-secret && tar xzf /backup/haushalt-backup.tar.gz -C /data && chown -R 1000:1000 /data"
+docker compose up -d
+```
+
+Den genauen Volume-Namen zeigt `docker volume ls` (Compose stellt den Ordnernamen voran).
+
+Die Standard-Kategorien werden beim ersten Start in `categories.json` erzeugt und können danach dort angepasst werden.
 Bearbeite die Dateien nur bei **gestopptem** Server, sonst überschreibt die laufende Anwendung deine Änderungen.
 
 ## Aufbau
@@ -47,12 +119,14 @@ Bearbeite die Dateien nur bei **gestopptem** Server, sonst überschreibt die lau
 src/
   app.js, server.js   Express-App und Start
   routes/             Seiten und Formulare
-  services/           Fachlogik (Salden, Monatsbilanz, Transfers, Anlagen, regelmäßige Buchungen)
+  services/           Fachlogik (Salden, Monatsbilanz, Transfers, Anlagen, regelmäßige Buchungen, Login-Bremse)
   repositories/       Zugriff auf die Daten je Entität
   storage/            austauschbarer Speicher (heute JSON-Dateien)
+  utils/              Geld, Datum, Diagramme, CSV
 views/                EJS-Templates
 public/               CSS (Farben in theme.css) und JavaScript
 test/                 Tests (node:test)
+Dockerfile, docker-compose.yml, .env.example
 ```
 
 ## Lizenz

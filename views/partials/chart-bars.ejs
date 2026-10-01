@@ -1,0 +1,18 @@
+<%# Waagerechte Balken mit Wert. Erwartet: bars (utils/charts.barList), cssClass, empty (Text bei leerer Liste) %>
+<% if (!bars.length) { %>
+  <p class="muted"><%= empty %></p>
+<% } else { %>
+  <table class="bar-table <%= cssClass %>">
+    <tbody>
+    <% bars.forEach((b) => { %>
+      <tr>
+        <td><%= b.name %></td>
+        <td class="bar-cell">
+          <svg viewBox="0 0 320 12" preserveAspectRatio="none" class="bar-svg" aria-hidden="true"><path class="bar" d="<%= b.path %>"/></svg>
+        </td>
+        <td class="amount"><%= euro(b.value) %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+<% } %>

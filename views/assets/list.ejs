@@ -19,6 +19,7 @@
           <% } else { %>
             <span class="badge muted">Startwert</span>
           <% } %>
+          <% if (s.stale) { %><span class="badge warning-badge" title="Bitte den aktuellen Stand eintragen">⚠ veraltet</span><% } %>
         </td>
         <td class="amount strong asset"><%= euro(s.value_cents) %></td>
         <td><a href="/anlagen/<%= a.id %>/stand">Stand aktualisieren</a></td>

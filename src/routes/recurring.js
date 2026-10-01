@@ -6,7 +6,7 @@ const { loadContext } = require('../services/overview');
 const { flash } = require('../middleware');
 const { centsToInput } = require('../utils/money');
 const { nextOccurrenceAfter, today, MONTH_NAMES } = require('../utils/dates');
-const { handleForm } = require('./helpers');
+const { handleForm, contextOptions } = require('./helpers');
 
 /** Nächster noch nicht gebuchter Termin einer Vorlage. */
 function nextDate(rec) {
@@ -31,13 +31,13 @@ module.exports = (repos) => {
   }
 
   router.get('/wiederkehrend', async (req, res) => {
-    const ctx = await loadContext(repos, req.session.user.id);
+    const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     const list = (await recurring.listForUser(repos, req.session.user.id)).map((r) => describe(ctx, r));
     res.render('recurring/list', { title: 'Regelmäßige Buchungen', list, today: today() });
   });
 
   async function renderForm(req, res, { rec, values, errors = [] }) {
-    const ctx = await loadContext(repos, req.session.user.id);
+    const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     res.render('recurring/form', {
       title: 'Regelmäßige Buchung bearbeiten', rec: describe(ctx, rec), values, errors,
       unitLabels: recurring.UNIT_LABELS, monthNames: MONTH_NAMES,

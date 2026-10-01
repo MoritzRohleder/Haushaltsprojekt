@@ -31,7 +31,7 @@
       <td>
         <form method="post" action="/kategorien/<%= c.id %>/umbenennen" class="actions">
           <%- include('partials/csrf') %>
-          <input name="name" required maxlength="60" value="<%= c.name %>" aria-label="Name" style="margin: 0;">
+          <input name="name" required maxlength="60" value="<%= c.name %>" aria-label="Name" class="compact">
           <button type="submit" class="secondary outline">Umbenennen</button>
         </form>
       </td>
@@ -57,14 +57,27 @@
 <% } %>
 
 <h2>Standard-Kategorien</h2>
-<p class="muted">Für alle Nutzer. Sie werden in <code>data/categories.json</code> gepflegt (bei gestopptem Server).</p>
+<p class="muted">Für alle Nutzer. Sie werden in <code>data/categories.json</code> gepflegt (bei gestopptem Server). Kategorien, die du nicht brauchst, kannst du für dich ausblenden.</p>
 <div class="grid">
   <% Object.entries(kinds).forEach(([key, label]) => { %>
     <article>
       <header><strong><%= label %>n</strong></header>
-      <ul>
-        <% standard.filter((c) => c.kind === key).forEach((c) => { %><li><%= c.name %></li><% }) %>
-      </ul>
+      <table class="compact-table">
+        <tbody>
+        <% standard.filter((c) => c.kind === key).forEach((c) => { const isHidden = hiddenCategoryIds.includes(c.id); %>
+          <tr>
+            <td class="<%= isHidden ? 'muted' : '' %>"><%= c.name %><% if (isHidden) { %> <span class="badge muted">ausgeblendet</span><% } %></td>
+            <td class="amount">
+              <form method="post" action="/kategorien/<%= c.id %>/ausblenden" class="inline-form">
+                <%- include('partials/csrf') %>
+                <input type="hidden" name="hidden" value="<%= isHidden ? 'false' : 'true' %>">
+                <button type="submit" class="secondary outline small"><%= isHidden ? 'Einblenden' : 'Ausblenden' %></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
     </article>
   <% }) %>
 </div>

@@ -26,10 +26,16 @@ async function getVisibleAsset(repos, userId, id) {
   return asset;
 }
 
-/** Standard-Kategorien (ohne owner_id) und die eigenen Kategorien des Nutzers. */
-async function visibleCategories(repos, userId, { kind, includeArchived = false } = {}) {
+/**
+ * Standard-Kategorien (ohne owner_id) und die eigenen Kategorien des Nutzers.
+ * Vom Nutzer ausgeblendete Standard-Kategorien (F-15) fehlen, außer mit includeHidden.
+ */
+async function visibleCategories(repos, userId, { kind, includeArchived = false, includeHidden = false } = {}) {
+  const user = await repos.users.findById(userId);
+  const hidden = new Set(includeHidden ? [] : user?.hidden_category_ids || []);
   return (await repos.categories.findAll())
     .filter((c) => c.owner_id === null || c.owner_id === userId)
+    .filter((c) => !hidden.has(c.id))
     .filter((c) => !kind || c.kind === kind)
     .filter((c) => includeArchived || !c.archived)
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));

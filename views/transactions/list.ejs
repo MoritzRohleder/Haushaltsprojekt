@@ -30,9 +30,17 @@
   </div>
   <div class="grid">
     <input type="search" name="q" placeholder="Suche in Beschreibung und Notiz" value="<%= filters.q %>">
+    <label class="compact">
+      <input type="checkbox" name="alle" value="1" <%= filters.alle ? 'checked' : '' %>>
+      Alle Monate
+    </label>
     <button type="submit" class="secondary">Filtern</button>
   </div>
 </form>
+<p class="actions">
+  <span class="muted"><%= rows.length %> Buchung<%= rows.length === 1 ? '' : 'en' %></span>
+  <a href="/buchungen/export.csv?<%= exportQuery %>" download>⤓ Als CSV exportieren</a>
+</p>
 
 <%- include('../partials/tx-table', { rows }) %>
 <%- include('../partials/foot') %>

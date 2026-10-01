@@ -89,11 +89,12 @@
   <div class="actions">
     <button type="submit">Speichern</button>
     <% if (!editing) { %><button type="submit" name="weitere" value="1" class="secondary">Speichern &amp; weitere erfassen</button><% } %>
-    <a href="javascript:history.back()" role="button" class="secondary outline">Abbrechen</a>
+    <a href="<%= editing ? `/konten/${editing.account_id}` : '/buchungen' %>" role="button" class="secondary outline">Abbrechen</a>
   </div>
 </form>
 
 <% if (editing) { %>
+  <p><a href="/buchungen/neu?vorlage=<%= editing.id %>">↻ Nochmal buchen</a> <span class="muted">– neue Buchung mit diesen Werten und heutigem Datum</span></p>
   <form method="post" action="/buchungen/<%= editing.id %>/loeschen" data-confirm="<%= editing.transfer_id ? 'Transfer wirklich löschen? Beide Seiten werden gelöscht.' : 'Buchung wirklich löschen?' %>">
     <%- include('../partials/csrf') %>
     <button type="submit" class="secondary outline">Löschen</button>

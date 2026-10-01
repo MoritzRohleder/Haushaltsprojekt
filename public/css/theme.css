@@ -25,7 +25,7 @@
   --pico-primary-inverse: #ffffff;
 }
 
-/* Dunkel – automatisch nach Systemeinstellung */
+/* Dunkel – automatisch nach Systemeinstellung (Nutzer hat „Automatisch“ gewählt) */
 @media only screen and (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     --hh-primary: #2dd4bf;
@@ -46,6 +46,27 @@
     --pico-primary-focus: rgba(45, 212, 191, 0.35);
     --pico-primary-inverse: #0b1220;
   }
+}
+
+/* Dunkel – vom Nutzer gewählt */
+[data-theme=dark] {
+  --hh-primary: #2dd4bf;
+  --hh-income: #4ade80;
+  --hh-expense: #f87171;
+  --hh-transfer: #94a3b8;
+  --hh-asset: #a78bfa;
+  --hh-warning: #fbbf24;
+
+  --pico-primary: var(--hh-primary);
+  --pico-primary-background: var(--hh-primary);
+  --pico-primary-border: var(--hh-primary);
+  --pico-primary-underline: rgba(45, 212, 191, 0.5);
+  --pico-primary-hover: #5eead4;
+  --pico-primary-hover-background: #5eead4;
+  --pico-primary-hover-border: #5eead4;
+  --pico-primary-hover-underline: var(--pico-primary-hover);
+  --pico-primary-focus: rgba(45, 212, 191, 0.35);
+  --pico-primary-inverse: #0b1220;
 }
 
 /* Beträge */
@@ -104,3 +125,50 @@ nav ul { flex-wrap: wrap; }
 }
 .inline-form { display: inline; }
 .inline-form button { margin: 0; }
+
+/* Hell/Dunkel-Umschalter: zeigt das Symbol des Modus, zu dem gewechselt wird */
+.theme-toggle { padding: 0.35rem 0.5rem; margin: 0; width: auto; background: transparent; border-color: var(--pico-muted-border-color); color: var(--hh-primary); line-height: 1; }
+.theme-toggle:hover, .theme-toggle:focus { background: transparent; color: var(--pico-primary-hover); border-color: var(--hh-primary); }
+.theme-toggle svg { display: block; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.theme-toggle .icon-light { display: none; }
+[data-theme=dark] .theme-toggle .icon-light { display: block; }
+[data-theme=dark] .theme-toggle .icon-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .theme-toggle .icon-light { display: block; }
+  :root:not([data-theme]) .theme-toggle .icon-dark { display: none; }
+}
+
+/* Schmale Login-/Registrierungs-Karte */
+.narrow { max-width: 28rem; margin: 2rem auto; }
+.compact { margin: 0; }
+button.small, [role=button].small { padding: 0.1rem 0.5rem; font-size: 0.85em; width: auto; margin: 0; }
+.warning-badge { color: var(--hh-warning); border-color: var(--hh-warning); }
+
+/* Diagramme (Spec 10.7): eine Reihe je Diagramm, Farbe aus der Palette, Text in Textfarbe */
+.chart { margin: 0 0 var(--pico-spacing); overflow-x: auto; }
+.chart-svg { width: 100%; min-width: 520px; height: auto; display: block; --series: var(--hh-primary); }
+.chart-svg.income { --series: var(--hh-income); }
+.chart-svg.expense { --series: var(--hh-expense); }
+.chart-svg.asset { --series: var(--hh-asset); }
+.chart-svg.transfer { --series: var(--hh-transfer); }
+.chart-svg .grid { stroke: var(--pico-muted-border-color); stroke-width: 1; }
+.chart-svg .baseline { stroke: var(--pico-muted-color); stroke-width: 1; }
+.chart-svg .axis { fill: var(--pico-muted-color); font-size: 12px; font-variant-numeric: tabular-nums; }
+.chart-svg .line { fill: none; stroke: var(--series); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart-svg .area { fill: var(--series); opacity: 0.1; }
+.chart-svg .dot { fill: var(--series); stroke: var(--pico-background-color); stroke-width: 2; }
+.chart-svg .bar { fill: var(--series); }
+.chart-svg .hit-area { fill: transparent; }
+.chart-svg .hover-dot { fill: var(--series); stroke: var(--pico-background-color); stroke-width: 2; opacity: 0; }
+.chart-svg .hit:hover .hover-dot { opacity: 1; }
+.chart-svg .hit:hover .bar { opacity: 0.8; }
+.chart-svg .hit:hover .hit-area { fill: var(--pico-muted-border-color); opacity: 0.35; }
+
+.bar-table { margin: 0; }
+.bar-table td { padding-top: 0.35rem; padding-bottom: 0.35rem; }
+.bar-table .bar-cell { width: 45%; }
+.bar-svg { width: 100%; height: 12px; display: block; --series: var(--hh-primary); }
+.bar-table.expense .bar-svg { --series: var(--hh-expense); }
+.bar-table.income .bar-svg { --series: var(--hh-income); }
+.bar-svg .bar { fill: var(--series); }
+.compact-table td { padding-top: 0.3rem; padding-bottom: 0.3rem; }

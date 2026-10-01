@@ -18,21 +18,11 @@
 <div class="grid">
   <article>
     <header><strong>Einnahmen nach Kategorie</strong></header>
-    <% if (!summary.incomeByCategory.length) { %><p class="muted">Keine Einnahmen.</p><% } %>
-    <table><tbody>
-      <% summary.incomeByCategory.forEach((c) => { %>
-        <tr><td><%= c.name %></td><td class="amount income"><%= euro(c.sum) %></td></tr>
-      <% }) %>
-    </tbody></table>
+    <%- include('partials/chart-bars', { bars: incomeBars, cssClass: 'income', empty: 'Keine Einnahmen.' }) %>
   </article>
   <article>
     <header><strong>Ausgaben nach Kategorie</strong></header>
-    <% if (!summary.expenseByCategory.length) { %><p class="muted">Keine Ausgaben.</p><% } %>
-    <table><tbody>
-      <% summary.expenseByCategory.forEach((c) => { %>
-        <tr><td><%= c.name %></td><td class="amount expense"><%= euro(c.sum) %></td></tr>
-      <% }) %>
-    </tbody></table>
+    <%- include('partials/chart-bars', { bars: expenseBars, cssClass: 'expense', empty: 'Keine Ausgaben.' }) %>
   </article>
 </div>
 

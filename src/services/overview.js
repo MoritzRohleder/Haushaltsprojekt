@@ -2,14 +2,14 @@
 
 const { visibleAccounts, visibleAssets } = require('./visibility');
 const { accountBalance, byDateThenCreated } = require('./balances');
-const { assetSummary } = require('./assets');
-const { monthRange } = require('../utils/dates');
+const { assetSummary, assetHistory } = require('./assets');
+const { monthRange, addMonths, parts, toIso, today: todayIso } = require('../utils/dates');
 
 /**
  * Lädt alles, was für die Sicht eines Nutzers gebraucht wird (Spec Kapitel 4 und 6),
  * und stellt Hilfsfunktionen zur Einordnung und Beschriftung von Buchungen bereit.
  */
-async function loadContext(repos, userId) {
+async function loadContext(repos, userId, { assetStaleMonths = 6, today = todayIso() } = {}) {
   const [accounts, assets, allAccounts, allAssets, categories, transactions, values] = await Promise.all([
     visibleAccounts(repos, userId),
     visibleAssets(repos, userId),
@@ -67,10 +67,11 @@ async function loadContext(repos, userId) {
     return kind === 'transfer' && t.counter_asset_id ? 'asset' : kind;
   }
 
-  const assetSummaries = new Map(assets.map((a) => [a.id, assetSummary(a, values, transactions)]));
+  const staleBefore = addMonths(today, -assetStaleMonths);
+  const assetSummaries = new Map(assets.map((a) => [a.id, assetSummary(a, values, transactions, null, { staleBefore })]));
 
   return {
-    userId, accounts, assets, rows, values, transactions,
+    userId, accounts, assets, rows, values, transactions, assetStaleMonths,
     accountIds, assetIds, accountsById, assetsById, categoriesById,
     classify, kindClass, label, categoryName, counterName,
     balance: (account, asOf = null) => accountBalance(account, rows, asOf),
@@ -143,4 +144,39 @@ function monthlySummary(ctx, year, month) {
   };
 }
 
-module.exports = { loadContext, totals, monthlySummary };
+/**
+ * Gesamtvermögen zu einem Stichtag (für den Verlauf): alle sichtbaren Konten,
+ * die zu diesem Tag schon geführt wurden, plus Wert der sichtbaren Anlagen.
+ */
+function netWorthAt(ctx, date) {
+  const accounts = ctx.accounts
+    .filter((a) => a.opening_date <= date)
+    .reduce((sum, a) => sum + ctx.balance(a, date), 0);
+  const assets = ctx.assets.reduce((sum, a) => {
+    const history = assetHistory(a, ctx.values, ctx.transactions, date);
+    return sum + (history.length ? history[history.length - 1].value_cents : 0);
+  }, 0);
+  return { accounts, assets, total: accounts + assets };
+}
+
+/** Monatsvergleich (F-56): die letzten `count` Monate bis einschließlich des aktuellen. */
+function monthlySeries(ctx, count, today = todayIso()) {
+  const current = parts(today);
+  const first = addMonths(toIso(current.year, current.month, 1), -(count - 1));
+  return Array.from({ length: count }, (_, i) => {
+    const { year, month } = parts(addMonths(first, i));
+    const summary = monthlySummary(ctx, year, month);
+    const end = summary.to < today ? summary.to : today;
+    return {
+      year, month,
+      income: summary.income,
+      expense: summary.expense,
+      saldo: summary.saldo,
+      savedInAssets: summary.savedInAssets,
+      netWorth: netWorthAt(ctx, end),
+      end,
+    };
+  });
+}
+
+module.exports = { loadContext, totals, monthlySummary, netWorthAt, monthlySeries };
