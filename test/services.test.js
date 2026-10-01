@@ -210,3 +210,46 @@ test('Ungültige Rhythmus-Angaben speichern nichts', async (t) => {
   assert.equal((await h.repos.transactions.findAll()).length, 0);
   assert.equal((await h.repos.recurring.findAll()).length, 0);
 });
+
+test('Regelmäßig am 20. des Monats bzw. jährlich am 01.10.', async (t) => {
+  const h = await household(t);
+  const { recurring: monthly } = await recurring.createFromForm(h.repos, h.a.id, {
+    type: 'expense', date: '2026-09-01', amount: '50', description: 'Verein', account_id: h.giroA.id,
+    recurring: '1', interval_count: '1', interval_unit: 'month', day_of_month: '20',
+  }, '2026-10-25');
+  assert.equal(recurring.describeInterval(monthly), 'jeden Monat am 20.');
+  assert.deepEqual((await h.repos.transactions.findAll({ recurring_id: monthly.id })).map((r) => r.date).sort(),
+    ['2026-09-20', '2026-10-20']);
+
+  const { recurring: yearly } = await recurring.createFromForm(h.repos, h.a.id, {
+    type: 'expense', date: '2026-01-01', amount: '120', description: 'Kfz-Versicherung', account_id: h.giroA.id,
+    recurring: '1', interval_count: '1', interval_unit: 'year', day_of_month: '1', month_of_year: '10',
+  }, '2026-10-25');
+  assert.equal(recurring.describeInterval(yearly), 'jedes Jahr am 01.10.');
+  assert.deepEqual((await h.repos.transactions.findAll({ recurring_id: yearly.id })).map((r) => r.date), ['2026-10-01']);
+});
+
+test('Ungültiger Tag/Monat wird abgelehnt', async (t) => {
+  const h = await household(t);
+  const base = {
+    type: 'expense', date: '2026-01-01', amount: '1', description: 'X', account_id: h.giroA.id,
+    recurring: '1', interval_count: '1',
+  };
+  await assert.rejects(recurring.createFromForm(h.repos, h.a.id, { ...base, interval_unit: 'year', day_of_month: '31', month_of_year: '4' }), /31\.04\./);
+  await assert.rejects(recurring.createFromForm(h.repos, h.a.id, { ...base, interval_unit: 'month', day_of_month: '32' }), /Tag/);
+  await recurring.createFromForm(h.repos, h.a.id, { ...base, interval_unit: 'year', day_of_month: '29', month_of_year: '2' }, '2026-01-02');
+});
+
+test('Rhythmus ändern gilt ab dem nächsten Termin – keine doppelte Buchung im Monat', async (t) => {
+  const h = await household(t);
+  const { recurring: rec } = await recurring.createFromForm(h.repos, h.a.id, {
+    type: 'expense', date: '2026-10-05', amount: '30', description: 'Handy', account_id: h.giroA.id,
+    recurring: '1', interval_count: '1', interval_unit: 'month', day_of_month: '5',
+  }, '2026-10-10');
+  await recurring.updateRecurring(h.repos, h.a.id, rec.id, {
+    amount: '30', description: 'Handy', interval_count: '1', interval_unit: 'month', day_of_month: '20',
+  });
+  await recurring.generateDue(h.repos, '2026-11-25');
+  const dates = (await h.repos.transactions.findAll({ recurring_id: rec.id })).map((r) => r.date).sort();
+  assert.deepEqual(dates, ['2026-10-05', '2026-11-20']);
+});

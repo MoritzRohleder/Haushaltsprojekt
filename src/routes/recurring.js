@@ -5,18 +5,12 @@ const recurring = require('../services/recurring');
 const { loadContext } = require('../services/overview');
 const { flash } = require('../middleware');
 const { centsToInput } = require('../utils/money');
-const { nthOccurrence, today } = require('../utils/dates');
+const { nextOccurrenceAfter, today, MONTH_NAMES } = require('../utils/dates');
 const { handleForm } = require('./helpers');
 
 /** Nächster noch nicht gebuchter Termin einer Vorlage. */
 function nextDate(rec) {
-  if (!rec.active) return null;
-  for (let n = 0; n < 100000; n++) {
-    const date = nthOccurrence(rec.start_date, rec.interval_unit, rec.interval_count, n);
-    if (rec.end_date && date > rec.end_date) return null;
-    if (!rec.last_generated_date || date > rec.last_generated_date) return date;
-  }
-  return null;
+  return rec.active ? nextOccurrenceAfter(rec, rec.last_generated_date) : null;
 }
 
 module.exports = (repos) => {
@@ -31,7 +25,7 @@ module.exports = (repos) => {
       ...rec,
       route: rec.type === 'transfer' ? `${from} → ${target}` : from,
       category: ctx.categoriesById.get(rec.category_id)?.name ?? '',
-      rhythm: recurring.describeInterval(rec.interval_count, rec.interval_unit),
+      rhythm: recurring.describeInterval(rec),
       next: nextDate(rec),
     };
   }
@@ -45,14 +39,19 @@ module.exports = (repos) => {
   async function renderForm(req, res, { rec, values, errors = [] }) {
     const ctx = await loadContext(repos, req.session.user.id);
     res.render('recurring/form', {
-      title: 'Regelmäßige Buchung bearbeiten', rec: describe(ctx, rec), values, errors, unitLabels: recurring.UNIT_LABELS,
+      title: 'Regelmäßige Buchung bearbeiten', rec: describe(ctx, rec), values, errors,
+      unitLabels: recurring.UNIT_LABELS, monthNames: MONTH_NAMES,
     });
   }
 
   router.get('/wiederkehrend/:id/bearbeiten', async (req, res) => {
     const rec = await recurring.getForUser(repos, req.session.user.id, req.params.id);
     await renderForm(req, res, {
-      rec, values: { ...rec, amount: centsToInput(rec.amount_cents), end_date: rec.end_date || '' },
+      rec,
+      values: {
+        ...rec, amount: centsToInput(rec.amount_cents), end_date: rec.end_date || '',
+        day_of_month: rec.day_of_month ?? '', month_of_year: rec.month_of_year ?? '',
+      },
     });
   });
 

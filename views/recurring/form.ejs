@@ -1,6 +1,6 @@
 <%- include('../partials/head') %>
 <h1><%= title %></h1>
-<p class="muted"><%= rec.route %><% if (rec.category) { %> · <%= rec.category %><% } %> · erster Termin <%= date(rec.start_date) %>. Änderungen gelten nur für künftige Termine.</p>
+<p class="muted"><%= rec.route %><% if (rec.category) { %> · <%= rec.category %><% } %> · gültig ab <%= date(rec.start_date) %>. Änderungen gelten ab dem nächsten Termin.</p>
 <%- include('../partials/errors') %>
 <form method="post" action="/wiederkehrend/<%= rec.id %>/bearbeiten">
   <%- include('../partials/csrf') %>

@@ -7,7 +7,7 @@ const tx = require('../services/transactions');
 const recurring = require('../services/recurring');
 const { flash } = require('../middleware');
 const { centsToInput } = require('../utils/money');
-const { today, parts, monthRange } = require('../utils/dates');
+const { today, parts, monthRange, MONTH_NAMES } = require('../utils/dates');
 const { NotFoundError } = require('../utils/errors');
 const { handleForm, sortByName } = require('./helpers');
 
@@ -25,6 +25,7 @@ module.exports = (repos) => {
       assets: sortByName(ctx.assets.filter((a) => !a.archived)),
       categories: type === 'transfer' ? [] : await visibleCategories(repos, userId, { kind: type }),
       unitLabels: recurring.UNIT_LABELS,
+      monthNames: MONTH_NAMES,
     };
   }
 
@@ -90,7 +91,7 @@ module.exports = (repos) => {
       const accountId = type === 'transfer' ? tx.parseEndpoint(input.from)?.id : input.account_id;
       req.session.lastAccountId = accountId;
       flash(req, result.recurring
-        ? `Regelmäßige Buchung „${result.recurring.description}“ angelegt (${recurring.describeInterval(result.recurring.interval_count, result.recurring.interval_unit)}).`
+        ? `Regelmäßige Buchung „${result.recurring.description}“ angelegt (${recurring.describeInterval(result.recurring)}).`
         : 'Buchung gespeichert.');
       if (req.body.weitere) {
         const typ = Object.keys(TYPES).find((k) => TYPES[k] === type);

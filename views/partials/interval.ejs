@@ -1,3 +1,4 @@
+<%# Rhythmus einer regelmäßigen Buchung: Anzahl + Einheit, bei Monat/Jahr mit festem Tag %>
 <div class="grid">
   <label>
     Alle
@@ -5,9 +6,25 @@
   </label>
   <label>
     Einheit
-    <select name="interval_unit">
+    <select name="interval_unit" data-interval-unit>
       <% Object.entries(unitLabels).forEach(([key, [one, many]]) => { %>
         <option value="<%= key %>" <%= (values.interval_unit || 'month') === key ? 'selected' : '' %>><%= many %></option>
+      <% }) %>
+    </select>
+  </label>
+</div>
+<div class="grid">
+  <label data-units="month year">
+    Am Tag
+    <input type="number" name="day_of_month" min="1" max="31" placeholder="z. B. 20" value="<%= values.day_of_month ?? '' %>">
+    <small>Leer = Tag des Startdatums. Gibt es den Tag im Monat nicht (z. B. 31.), wird der Monatsletzte genommen.</small>
+  </label>
+  <label data-units="year">
+    Im Monat
+    <select name="month_of_year">
+      <option value="">wie Startdatum</option>
+      <% monthNames.forEach((name, i) => { %>
+        <option value="<%= i + 1 %>" <%= String(values.month_of_year ?? '') === String(i + 1) ? 'selected' : '' %>><%= name %></option>
       <% }) %>
     </select>
   </label>

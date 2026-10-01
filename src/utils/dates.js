@@ -57,6 +57,54 @@ function nthOccurrence(startDate, unit, count, n) {
   }
 }
 
+/** Datum mit Tag, der auf den Monatsletzten begrenzt wird (31. → 28./29./30.). */
+function clampedDate(year, month, day) {
+  return toIso(year, month, Math.min(day, daysInMonth(year, month)));
+}
+
+/**
+ * Termine einer regelmäßigen Buchung (Spec 5.2, „Wiederkehrende Buchung“).
+ *
+ * rule: { start_date, interval_unit, interval_count, day_of_month?, month_of_year? }
+ * - Monat: Termin am `day_of_month` (fehlt er, gilt der Tag des Startdatums).
+ * - Jahr: Termin am `day_of_month`.`month_of_year` (fehlen sie, gilt das Startdatum).
+ * - Tag/Woche: ab dem Startdatum.
+ * Der erste Termin ist das früheste passende Datum ≥ start_date. Der n-te Termin wird
+ * immer vom ersten aus berechnet, damit sich nichts verschiebt.
+ */
+function occurrence(rule, n) {
+  const start = parts(rule.start_date);
+  const count = rule.interval_count;
+
+  if (rule.interval_unit === 'month') {
+    const day = rule.day_of_month || start.day;
+    let index = start.year * 12 + (start.month - 1);
+    if (clampedDate(start.year, start.month, day) < rule.start_date) index += 1;
+    index += n * count;
+    return clampedDate(Math.floor(index / 12), (index % 12) + 1, day);
+  }
+
+  if (rule.interval_unit === 'year') {
+    const day = rule.day_of_month || start.day;
+    const month = rule.month_of_year || start.month;
+    let year = start.year;
+    if (clampedDate(year, month, day) < rule.start_date) year += 1;
+    return clampedDate(year + n * count, month, day);
+  }
+
+  return nthOccurrence(rule.start_date, rule.interval_unit, count, n);
+}
+
+/** Erster Termin einer Regel, der nach `afterDate` liegt (oder null, wenn die Regel endet). */
+function nextOccurrenceAfter(rule, afterDate, maxIterations = 100000) {
+  for (let n = 0; n < maxIterations; n++) {
+    const date = occurrence(rule, n);
+    if (rule.end_date && date > rule.end_date) return null;
+    if (!afterDate || date > afterDate) return date;
+  }
+  return null;
+}
+
 function monthRange(year, month) {
   return { from: toIso(year, month, 1), to: toIso(year, month, daysInMonth(year, month)) };
 }
@@ -76,5 +124,6 @@ function formatMonth(year, month) {
 
 module.exports = {
   isValidDate, parts, toIso, daysInMonth, today, addDays, addMonths,
-  INTERVAL_UNITS, nthOccurrence, monthRange, formatDate, formatMonth,
+  INTERVAL_UNITS, nthOccurrence, clampedDate, occurrence, nextOccurrenceAfter, monthRange, formatDate, formatMonth,
+  MONTH_NAMES,
 };

@@ -1,7 +1,7 @@
 # Haushalt-Spec
 
 > Spezifikation für die Webanwendung **Haushaltsprojekt** zur Verwaltung der monatlichen Finanzen.
-> Status: **v0.5** – abgestimmte Grundlage für die Entwicklung; ein erster Prototyp ist umgesetzt.
+> Status: **v0.6** – abgestimmte Grundlage für die Entwicklung; ein erster Prototyp ist umgesetzt.
 > Getroffene Entscheidungen stehen in [Kapitel 13.1](#131-entscheidungen), offene Punkte in [Kapitel 13.2](#132-offene-fragen) (im Text mit `❓` markiert).
 
 ---
@@ -240,13 +240,22 @@ Entsteht, wenn beim Erfassen einer Buchung „regelmäßig“ angehakt wird. Sie
 | `category_id`, `description`, `note` | | | wie bei der Buchung |
 | `interval_unit` | Enum | ja | Einheit des Rhythmus: `day`, `week`, `month`, `year` |
 | `interval_count` | Integer ≥ 1 | ja | Anzahl der Einheiten zwischen zwei Terminen, z. B. `20` + `day` = alle 20 Tage, `3` + `month` = vierteljährlich, `4` + `year` = alle 4 Jahre |
-| `start_date` | Datum | ja | Erste Ausführung. Bestimmt auch den Tag im Rhythmus (z. B. „jeden 15.“) |
+| `day_of_month` | Integer 1–31 | bei `month`/`year` | Fester Tag des Termins, z. B. `20` = „am 20.“. Leer = Tag des `start_date` |
+| `month_of_year` | Integer 1–12 | bei `year` | Fester Monat des Termins, z. B. `10` mit Tag `1` = „am 01.10.“. Leer = Monat des `start_date` |
+| `start_date` | Datum | ja | Startdatum („gültig ab“). Der erste Termin ist der erste passende Tag ab diesem Datum |
 | `end_date` | Datum | nein | Letzte mögliche Ausführung |
 | `active` | Boolean | ja | Pausieren ohne Löschen |
 | `last_generated_date` | Datum | nein | Bis wohin bereits Buchungen erzeugt wurden |
 | `created_by` | UUID → users | ja | |
 
-Der n-te Termin wird immer vom `start_date` aus berechnet (`start_date + n × interval_count × interval_unit`), damit sich bei Monaten nichts verschiebt. Fällt der Tag auf einen Tag, den der Monat nicht hat (z. B. 31.), wird für diesen Termin der letzte Tag des Monats verwendet.
+Berechnung der Termine:
+
+- **Tag / Woche:** ab `start_date` alle `interval_count` Tage bzw. Wochen.
+- **Monat:** am `day_of_month` jedes `interval_count`-ten Monats. Erster Termin ist der erste solche Tag ≥ `start_date`. Beispiel: Start 25.10., „jeden Monat am 20.“ → 20.11., 20.12., …
+- **Jahr:** am `day_of_month`.`month_of_year` jedes `interval_count`-ten Jahres. Beispiel: Start 25.10.2026, „jedes Jahr am 01.10.“ → 01.10.2027, 01.10.2028, …
+- Der n-te Termin wird immer vom ersten Termin aus berechnet, damit sich nichts verschiebt.
+- Gibt es den Tag im Monat nicht (z. B. 31. im April oder 29.02. außerhalb von Schaltjahren), wird für diesen Termin der letzte Tag des Monats verwendet. Ungültige Kombinationen wie 31.04. werden abgelehnt.
+- **Rhythmus ändern:** Der neue Rhythmus gilt ab dem nächsten Termin nach altem Rhythmus (`start_date` wird entsprechend versetzt). So entsteht im laufenden Monat keine zweite Buchung.
 
 #### Anlage (`assets`)
 
@@ -394,7 +403,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 
 | ID | Anforderung | Prio |
 |----|-------------|------|
-| F-30 | Beim Erfassen einer Einnahme, Ausgabe oder eines Transfers (auch in eine Anlage) die Option **„regelmäßig“** mit Rhythmus aus **Anzahl + Einheit** (z. B. alle 1 Monat, alle 20 Tage, alle 3 Monate, alle 4 Jahre) und optionalem Enddatum | M |
+| F-30 | Beim Erfassen einer Einnahme, Ausgabe oder eines Transfers (auch in eine Anlage) die Option **„regelmäßig“** mit Rhythmus aus **Anzahl + Einheit** (z. B. alle 1 Monat, alle 20 Tage, alle 3 Monate, alle 4 Jahre), bei Monat/Jahr mit **festem Tag** bzw. **Tag und Monat** (z. B. „am 20.“, „am 01.10.“), und optionalem Enddatum | M |
 | F-31 | Nach dem Anlegen werden alle fälligen Termine **automatisch gebucht** – ohne Bestätigung (siehe 8.4) | M |
 | F-32 | Übersicht aller wiederkehrenden Buchungen auf den eigenen Konten; bearbeiten, pausieren, beenden | M |
 | F-33 | Eine automatisch erzeugte Buchung kann einzeln geändert oder gelöscht werden, ohne die Vorlage zu ändern | M |
@@ -684,7 +693,7 @@ Haushaltsprojekt/
 | E-04 | Transfer-Ziel | Als Quelle und Ziel eines Transfers sind nur selbst sichtbare Konten/Anlagen wählbar. Alles andere ist eine Buchung (Ausgabe). |
 | E-05 | Berechtigungen | Alle Inhaber eines Kontos/einer Anlage dürfen alles anlegen, ändern und löschen. |
 | E-06 | Kategorien | Es gibt eine Standard-Liste für alle; zusätzlich kann jeder Nutzer eigene Kategorien anlegen. |
-| E-07 | Wiederkehrende Buchungen | Beim Anlegen einer Buchung als „regelmäßig“ markierbar. Rhythmus = Anzahl + Einheit (Tag, Woche, Monat, Jahr). Nach dem Anlegen wird automatisch gebucht, ohne Bestätigung. |
+| E-07 | Wiederkehrende Buchungen | Beim Anlegen einer Buchung als „regelmäßig“ markierbar. Rhythmus = Anzahl + Einheit (Tag, Woche, Monat, Jahr), bei Monat/Jahr mit festem Tag bzw. Tag und Monat. Nach dem Anlegen wird automatisch gebucht, ohne Bestätigung. |
 | E-08 | Anlagen | Fonds, Bausparverträge usw. werden als Anlagen ohne eigene Buchungen geführt. Einzahlungen (z. B. Sparrate) werden automatisch auf den letzten Stand aufaddiert; der Gesamtwert kann jederzeit manuell überschrieben werden. |
 | E-09 | Gemeinschaftskonten | Alle Inhaber sehen das Konto vollständig; der volle Kontostand zählt zur Gesamtübersicht jedes Inhabers. |
 | E-10 | Datenhaltung | Lokal als JSON-Dateien, keine Datenbank. Zugriff nur über eine austauschbare Speicherschicht. |
@@ -724,7 +733,7 @@ Einschränkungen im Prototyp:
 
 - Bei einem bestehenden Transfer sind nur Datum, Betrag, Beschreibung und Notiz änderbar. Für andere Konten oder Anlagen wird er gelöscht und neu angelegt.
 - Regelmäßige Transfers sind nur von einem Konto aus möglich (auf ein Konto oder in eine Anlage), nicht als regelmäßige Auszahlung aus einer Anlage.
-- An einer regelmäßigen Buchung sind nachträglich Betrag, Beschreibung, Notiz, Rhythmus und Enddatum änderbar, nicht aber Konten, Kategorie oder erster Termin.
+- An einer regelmäßigen Buchung sind nachträglich Betrag, Beschreibung, Notiz, Rhythmus (inkl. Tag/Monat) und Enddatum änderbar, nicht aber Konten oder Kategorie.
 | M8 | **Ausbau** | Diagramme, Import, Budgets nach Bedarf. |
 
 ## 15. Lizenz
@@ -742,3 +751,4 @@ In der `package.json` wird entsprechend `"license": "GPL-3.0-or-later"` eingetra
 | v0.4 | Standard-Kategorien werden beim ersten Start als Startdaten erzeugt und danach in der JSON-Datei gepflegt (mit Vorschlag für die Liste); Kreditkarten gestrichen, neuer Kontotyp `prepaid`; Pico.css als Stylesheet mit festgelegter Farbpalette (neues Kap. 10.7); Registrierung dauerhaft offen (F-05 und `REGISTRATION_OPEN` entfallen); Farbpalette bestätigt. |
 | v0.5 | Diagramm in 5.1 neu (Verweise klar erkennbar) plus Verweistabelle; Anzeige immer in Euro, Cent nur intern; Rhythmus als Anzahl + Einheit (`interval_count`, `interval_unit`); manuelle Anlagen-Stände in Übersicht und Verlauf mit Datum und Korrektur sichtbar (F-46); kein Anzeigename mehr; Startliste der Kategorien bestätigt; keine offenen Fragen. |
 | v0.5.1 | Korrektur-Definition präzisiert (Ein-/Auszahlungen desselben Tages); `SESSION_SECRET`-Fallback und `COOKIE_SECURE` ergänzt; Stand und Einschränkungen des Prototyps in Kap. 14. |
+| v0.6 | Regelmäßige Buchungen: fester Tag (Monat) bzw. Tag und Monat (Jahr) über `day_of_month`/`month_of_year`; `start_date` ist das „gültig ab“-Datum; Rhythmusänderung gilt ab dem nächsten Termin. |
