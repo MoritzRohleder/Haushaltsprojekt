@@ -63,7 +63,11 @@ module.exports = (repos) => {
     const account = await getVisibleAccount(repos, req.session.user.id, req.params.id);
     await renderForm(req, res, {
       account,
-      values: { ...account, opening_balance: centsToInput(account.opening_balance_cents) },
+      values: {
+        ...account,
+        opening_balance: centsToInput(Math.abs(account.opening_balance_cents)),
+        opening_balance_sign: account.opening_balance_cents < 0 ? 'minus' : 'plus',
+      },
     });
   });
 

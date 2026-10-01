@@ -130,6 +130,38 @@ test('Einzahlung am selben Tag wie ein manueller Stand ist darin enthalten', asy
   assert.equal(ctx.assetSummary(fund).last_manual_correction_cents, 500);
 });
 
+test('Einzahlung am selben Tag, aber nach dem Stand erfasst, wird aufaddiert (neue Anlage, heute)', async (t) => {
+  const h = await household(t);
+  const fund = await assets.createAsset(h.repos, h.a.id, {
+    name: 'Bauspar', type: 'building_savings', owner_ids: [h.a.id],
+    start_value: '5.000,00', start_value_sign: 'minus', start_date: '2026-10-01',
+  });
+  let ctx = await loadContext(h.repos, h.a.id);
+  assert.equal(ctx.assetSummary(fund).value_cents, -500000);
+  const before = totals(ctx);
+
+  await tx.createTransfer(h.repos, { userId: h.a.id }, {
+    date: '2026-10-01', amount: '200', description: 'Rate', from: `account:${h.giroA.id}`, to: `asset:${fund.id}`,
+  });
+  ctx = await loadContext(h.repos, h.a.id);
+  const after = totals(ctx);
+  assert.equal(ctx.assetSummary(fund).value_cents, -480000);
+  assert.equal(after.accountsTotal, before.accountsTotal - 20000);
+  assert.equal(after.assetsTotal, before.assetsTotal + 20000);
+  assert.equal(after.netWorth, before.netWorth);
+});
+
+test('Negative Werte über Vorzeichen-Auswahl oder Minus', async (t) => {
+  const h = await household(t);
+  const fund = await assets.createAsset(h.repos, h.a.id, {
+    name: 'Darlehen', type: 'building_savings', owner_ids: [h.a.id], start_value: '-1.000', start_date: '2026-01-01',
+  });
+  await assets.addValue(h.repos, h.a.id, fund.id, { date: '2026-02-01', value: '900', value_sign: 'minus' });
+  const ctx = await loadContext(h.repos, h.a.id);
+  assert.equal(ctx.assetSummary(fund).value_cents, -90000);
+  assert.equal(ctx.assetSummary(fund).last_manual_correction_cents, 10000);
+});
+
 test('Kontrollrechnung Spec 6.5: Veränderung Konten = Saldo − In Anlagen gespart', async (t) => {
   const h = await household(t);
   const fund = await assets.createAsset(h.repos, h.a.id, {

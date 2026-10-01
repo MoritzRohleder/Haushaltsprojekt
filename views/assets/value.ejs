@@ -6,7 +6,10 @@
   <%- include('../partials/csrf') %>
   <div class="grid">
     <label>Datum <input type="date" name="date" required value="<%= values.date || '' %>"></label>
-    <label>Gesamtwert in € <input name="value" inputmode="decimal" required autofocus value="<%= values.value || '' %>"></label>
+    <label>Gesamtwert in €
+      <input name="value" inputmode="decimal" required autofocus value="<%= values.value || '' %>">
+      <%- include('../partials/sign', { field: 'value', plusLabel: 'Guthaben', minusLabel: 'Schulden (negativ)' }) %>
+    </label>
   </div>
   <label>Notiz (optional) <input name="note" maxlength="200" placeholder="z. B. laut Depotauszug" value="<%= values.note || '' %>"></label>
   <small class="muted">Der neue Stand ersetzt den berechneten Wert. Spätere Ein- und Auszahlungen werden darauf aufaddiert.</small>

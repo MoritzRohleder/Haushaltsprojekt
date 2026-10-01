@@ -16,7 +16,8 @@
   <div class="grid">
     <label>Anfangssaldo in €
       <input name="opening_balance" inputmode="decimal" value="<%= values.opening_balance || '0,00' %>">
-      <small>Kontostand laut Bank zum Stichtag (darf negativ sein).</small>
+      <%- include('../partials/sign', { field: 'opening_balance', plusLabel: 'Guthaben', minusLabel: 'im Minus' }) %>
+      <small>Kontostand laut Bank zum Stichtag.</small>
     </label>
     <label>Stichtag
       <input type="date" name="opening_date" required value="<%= values.opening_date || '' %>">

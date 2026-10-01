@@ -16,7 +16,10 @@
   <label>Anbieter (optional) <input name="provider" maxlength="80" value="<%= values.provider || '' %>"></label>
   <% if (!asset) { %>
     <div class="grid">
-      <label>Startwert in € <input name="start_value" inputmode="decimal" required value="<%= values.start_value || '' %>"></label>
+      <label>Startwert in €
+        <input name="start_value" inputmode="decimal" required value="<%= values.start_value || '' %>">
+        <%- include('../partials/sign', { field: 'start_value', plusLabel: 'Guthaben', minusLabel: 'Schulden (negativ), z. B. Bauspardarlehen' }) %>
+      </label>
       <label>Stand vom <input type="date" name="start_date" required value="<%= values.start_date || '' %>"></label>
     </div>
   <% } %>

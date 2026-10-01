@@ -25,6 +25,17 @@ function amount(value, label, errors) {
   return cents;
 }
 
+/**
+ * Betrag mit Vorzeichen-Auswahl (Guthaben/Schulden). Auf Handy-Zahlentastaturen
+ * fehlt oft das Minus; daher kann das Vorzeichen auch über `<feld>_sign=minus`
+ * gewählt werden. Ein eingetipptes Minus gilt ebenfalls.
+ */
+function signedAmount(value, sign, label, errors) {
+  const cents = amount(value, label, errors);
+  if (cents === null) return null;
+  return sign === 'minus' ? -Math.abs(cents) : cents;
+}
+
 function date(value, label, errors, { required = true } = {}) {
   const result = String(value ?? '').trim();
   if (!result && !required) return null;
@@ -43,4 +54,4 @@ function list(value) {
   return Array.isArray(value) ? value : [value];
 }
 
-module.exports = { text, positiveAmount, amount, date, oneOf, list };
+module.exports = { text, positiveAmount, amount, signedAmount, date, oneOf, list };

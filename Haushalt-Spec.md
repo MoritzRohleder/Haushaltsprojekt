@@ -326,8 +326,9 @@ Wert(Anlage, Stichtag) = S.value
                        − Σ Auszahlungen aus der Anlage  mit S.date < Datum ≤ Stichtag
 ```
 
-- Eine Ein-/Auszahlung **am selben Tag** wie ein manueller Stand gilt als darin bereits enthalten.
-- **Manuelle Korrektur**: Für jeden manuellen Stand wird angezeigt, um wie viel er vom bis dahin berechneten Wert abweicht (`Korrektur = manueller Stand − berechneter Wert unmittelbar davor`, inklusive Ein-/Auszahlungen desselben Tages). Im Beispiel unten beträgt die Korrektur am 20.10. −50 €.
+- **Am selben Tag** wie ein manueller Stand entscheidet die Reihenfolge der Erfassung: Eine Ein-/Auszahlung, die **nach** dem Stand erfasst wurde, wird aufaddiert (z. B. Anlage heute angelegt, danach heutige Sparrate gebucht). Eine **vorher** erfasste gilt als im Stand enthalten.
+- Stände und Werte einer Anlage dürfen **negativ** sein (z. B. Bauspardarlehen). Einzahlungen verringern dann die Schulden.
+- **Manuelle Korrektur**: Für jeden manuellen Stand wird angezeigt, um wie viel er vom bis dahin berechneten Wert abweicht (`Korrektur = manueller Stand − berechneter Wert unmittelbar davor`, inklusive vorher erfasster Ein-/Auszahlungen desselben Tages). Im Beispiel unten beträgt die Korrektur am 20.10. −50 €.
 - Beispiel: Stand 01.09. = 10.000 €; Sparrate 15.09. = 200 € → Wert 10.200 €; Sparrate 15.10. = 200 € → Wert 10.400 €; am 20.10. wird laut Depotauszug ein Stand von 10.350 € eingetragen → Wert 10.350 €; Sparrate 15.11. → 10.550 €.
 - Eine Ein-/Auszahlung zählt zum Anlagenwert, **auch wenn der jeweilige Nutzer das Konto nicht sieht**, von dem sie kam. Der Anlagenwert ist für alle Inhaber gleich.
 
@@ -361,7 +362,8 @@ Kontrollrechnung (für Tests):
 
 - Speicherung und Berechnung in Cent (`Integer`). Cent-Werte sind ein reines Implementierungsdetail und tauchen in der Oberfläche **nie** auf.
 - Anzeige immer in Euro mit zwei Nachkommastellen: `1.234,56 €`.
-- Eingabe akzeptiert `1234,56`, `1.234,56` und `1234.56`. Im Formular wird der Betrag immer **positiv** eingegeben, das Vorzeichen ergibt sich aus der Buchungsart.
+- Eingabe akzeptiert `1234,56`, `1.234,56`, `1.000` (Punkt als Tausendertrenner) und `1234.56`. Bei Buchungen wird der Betrag immer **positiv** eingegeben, das Vorzeichen ergibt sich aus der Buchungsart.
+- Werte, die negativ sein können (Anfangssaldo eines Kontos, Startwert und Stand einer Anlage), haben zusätzlich eine Auswahl **Guthaben / Schulden**, da Handy-Zahlentastaturen oft kein Minus haben. Ein eingetipptes Minus gilt ebenfalls.
 - Währung fest **EUR** (eine Währung pro Installation).
 - Datumsanzeige `TT.MM.JJJJ`, intern ISO `JJJJ-MM-TT`.
 
@@ -780,3 +782,4 @@ In der `package.json` wird entsprechend `"license": "GPL-3.0-or-later"` eingetra
 | v0.5.1 | Korrektur-Definition präzisiert (Ein-/Auszahlungen desselben Tages); `SESSION_SECRET`-Fallback und `COOKIE_SECURE` ergänzt; Stand und Einschränkungen des Prototyps in Kap. 14. |
 | v0.6 | Regelmäßige Buchungen: fester Tag (Monat) bzw. Tag und Monat (Jahr) über `day_of_month`/`month_of_year`; `start_date` ist das „gültig ab“-Datum; Rhythmusänderung gilt ab dem nächsten Termin. |
 | v1.0 | Hell/Dunkel-Umschalter pro Nutzer (F-06, `users.theme`); ausgeblendete Standard-Kategorien (`users.hidden_category_ids`); Auswertungsseite mit Diagrammen; CSV-Export; Nochmal buchen; veraltete Anlagenstände; Login-Bremse, Sicherheits-Header, `TRUST_PROXY`, `ASSET_STALE_MONTHS`, `TZ`; Betrieb mit Docker (10.8); Meilensteine aktualisiert. |
+| v1.0.1 | Ein-/Auszahlungen am selben Tag wie ein manueller Stand: Reihenfolge der Erfassung entscheidet (vorher: immer „enthalten“); negative Anlagenwerte ausdrücklich erlaubt, Vorzeichen-Auswahl Guthaben/Schulden; `1.000` wird als Tausender gelesen; angemeldete Seiten mit `Cache-Control: no-store`. |

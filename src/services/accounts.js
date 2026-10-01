@@ -33,7 +33,7 @@ async function readForm(repos, input, errors) {
 async function createAccount(repos, userId, input) {
   const errors = [];
   const fields = await readForm(repos, input, errors);
-  const opening_balance_cents = v.amount(input.opening_balance || '0', 'Anfangssaldo', errors);
+  const opening_balance_cents = v.signedAmount(input.opening_balance || '0', input.opening_balance_sign, 'Anfangssaldo', errors);
   const opening_date = v.date(input.opening_date, 'Stichtag', errors);
   if (!fields.owner_ids.includes(userId)) errors.push('Du musst selbst Inhaber des neuen Kontos sein.');
   if (errors.length) throw new ValidationError(errors);
@@ -44,7 +44,7 @@ async function updateAccount(repos, userId, id, input) {
   const account = await getVisibleAccount(repos, userId, id);
   const errors = [];
   const fields = await readForm(repos, input, errors);
-  const opening_balance_cents = v.amount(input.opening_balance || '0', 'Anfangssaldo', errors);
+  const opening_balance_cents = v.signedAmount(input.opening_balance || '0', input.opening_balance_sign, 'Anfangssaldo', errors);
   const opening_date = v.date(input.opening_date, 'Stichtag', errors);
   if (!errors.length) {
     const earliest = (await repos.transactions.findAll({ account_id: account.id }))

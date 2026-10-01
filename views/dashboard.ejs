@@ -10,7 +10,7 @@
   <article><span class="label">Gesamtvermögen</span><span class="value"><%= euro(totals.netWorth) %></span></article>
 </section>
 
-<div class="grid">
+<div class="grid cards">
   <article>
     <header class="page-head"><strong>Konten</strong><a href="/konten/neu">+ Konto</a></header>
     <% if (!accounts.length) { %>
@@ -42,9 +42,9 @@
               <a href="/anlagen/<%= a.id %>"><%= a.name %></a><br>
               <small class="muted"><% if (s.last_manual_correction_cents === null) { %>Startwert vom <%= date(s.last_manual_date) %><% } else { %>manuell am <%= date(s.last_manual_date) %>, Korrektur <%= euro(s.last_manual_correction_cents, { sign: true }) %><% } %></small>
               <% if (s.stale) { %><br><span class="badge warning-badge">⚠ Stand veraltet</span><% } %>
+              <br><a href="/anlagen/<%= a.id %>/stand" class="muted">Stand aktualisieren</a>
             </td>
             <td class="amount strong asset"><%= euro(s.value_cents) %></td>
-            <td><a href="/anlagen/<%= a.id %>/stand" title="Stand aktualisieren">Stand</a></td>
           </tr>
         <% }) %>
         </tbody>

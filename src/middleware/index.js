@@ -65,10 +65,15 @@ function securityHeaders({ hsts = false } = {}) {
   };
 }
 
-/** Alle Seiten außer Login/Registrierung nur angemeldet (F-03). */
+/**
+ * Alle Seiten außer Login/Registrierung nur angemeldet (F-03).
+ * Angemeldete Seiten werden nicht zwischengespeichert: Finanzdaten bleiben nicht
+ * im Browser-Cache, und „Zurück“ zeigt nie einen veralteten Stand.
+ */
 function requireLogin(req, res, next) {
-  if (req.session.user) return next();
-  res.redirect('/login');
+  if (!req.session.user) return res.redirect('/login');
+  res.set('Cache-Control', 'no-store');
+  next();
 }
 
 /** CSRF-Schutz für alle Formulare angemeldeter Nutzer (Formularfeld oder Header). */

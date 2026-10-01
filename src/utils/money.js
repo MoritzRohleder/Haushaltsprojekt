@@ -31,8 +31,9 @@ function parseEuro(input) {
     intPart = parts[0].replace(/\./g, '');
     fracPart = parts[1];
   } else if (hasDot) {
-    // Nur Punkte: "1.234.567" sind Tausender, "1234.56" ist ein Dezimalpunkt.
-    if (/^\d{1,3}(\.\d{3}){2,}$/.test(text)) {
+    // Nur Punkte: "1.000" und "1.234.567" sind Tausender (deutsche Schreibweise),
+    // "1234.56" oder "12.5" ist ein Dezimalpunkt.
+    if (/^\d{1,3}(\.\d{3})+$/.test(text)) {
       intPart = text.replace(/\./g, '');
     } else {
       const parts = text.split('.');

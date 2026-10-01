@@ -116,9 +116,15 @@ nav .brand { color: var(--hh-primary); }
 nav ul { flex-wrap: wrap; }
 
 /* Schmale Bildschirme */
-@media (max-width: 640px) {
+/* Mittlere Breiten: Navigation unter den Namen der App, statt ungleichmäßig umzubrechen */
+@media (max-width: 1024px) {
   nav { flex-direction: column; align-items: flex-start; }
   nav ul:last-child { margin-left: 0; }
+  .grid.cards { grid-template-columns: 1fr; }
+}
+.cards td { padding-left: 0.5rem; padding-right: 0.5rem; }
+
+@media (max-width: 640px) {
   .stats { grid-template-columns: 1fr 1fr; }
   .stats .value { font-size: 1.1em; }
   .hide-mobile { display: none; }
@@ -172,3 +178,7 @@ button.small, [role=button].small { padding: 0.1rem 0.5rem; font-size: 0.85em; w
 .bar-table.income .bar-svg { --series: var(--hh-income); }
 .bar-svg .bar { fill: var(--series); }
 .compact-table td { padding-top: 0.3rem; padding-bottom: 0.3rem; }
+
+/* Vorzeichen-Auswahl (Guthaben / Schulden) direkt unter einem Betragsfeld */
+.sign-choice { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; margin: -0.5rem 0 0.75rem; border: 0; padding: 0; }
+.sign-choice label { margin: 0; font-size: 0.9em; }

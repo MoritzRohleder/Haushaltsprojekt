@@ -101,7 +101,12 @@ module.exports = (repos) => {
     const asset = await getVisibleAsset(repos, req.session.user.id, req.params.id);
     const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     await renderValueForm(req, res, {
-      asset, values: { date: today(), value: centsToInput(ctx.assetSummary(asset).value_cents) },
+      asset,
+      values: {
+        date: today(),
+        value: centsToInput(Math.abs(ctx.assetSummary(asset).value_cents)),
+        value_sign: ctx.assetSummary(asset).value_cents < 0 ? 'minus' : 'plus',
+      },
     });
   });
 

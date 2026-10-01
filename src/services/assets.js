@@ -19,18 +19,20 @@ const byDateThenCreated = (a, b) => a.date.localeCompare(b.date) || a.created_at
 
 /**
  * Verlauf einer Anlage: manuelle Stände und Ein-/Auszahlungen mit dem jeweils
- * resultierenden Wert. Ein-/Auszahlungen am selben Tag wie ein manueller Stand
- * gelten als darin enthalten (sie werden vor dem Stand verrechnet).
+ * resultierenden Wert, sortiert nach Datum. Am selben Tag entscheidet die
+ * Reihenfolge der Erfassung: Eine Einzahlung, die nach einem manuellen Stand
+ * erfasst wurde, wird aufaddiert; eine vorher erfasste gilt als im Stand enthalten.
  * Für manuelle Stände wird die Korrektur gegenüber dem berechneten Wert angegeben.
  */
 function assetHistory(asset, values, transactions, asOf = null) {
   const events = [
-    ...values.filter((s) => s.asset_id === asset.id).map((s) => ({ kind: 'manual', order: 1, row: s, date: s.date })),
+    ...values.filter((s) => s.asset_id === asset.id).map((s) => ({ kind: 'manual', row: s, date: s.date })),
     ...transactions.filter((t) => t.counter_asset_id === asset.id)
-      .map((t) => ({ kind: t.amount_cents < 0 ? 'deposit' : 'withdrawal', order: 0, row: t, date: t.date })),
+      .map((t) => ({ kind: t.amount_cents < 0 ? 'deposit' : 'withdrawal', row: t, date: t.date })),
   ]
     .filter((e) => asOf === null || e.date <= asOf)
-    .sort((a, b) => a.date.localeCompare(b.date) || a.order - b.order || byDateThenCreated(a.row, b.row));
+    // Bei exakt gleichem Erfassungszeitpunkt zuerst die Buchung (gilt dann als im Stand enthalten).
+    .sort((a, b) => byDateThenCreated(a.row, b.row) || (a.kind === 'manual') - (b.kind === 'manual'));
 
   let value = 0;
   let hasManual = false;
@@ -75,7 +77,7 @@ async function readForm(repos, input, errors) {
 async function createAsset(repos, userId, input) {
   const errors = [];
   const fields = await readForm(repos, input, errors);
-  const start = v.amount(input.start_value, 'Startwert', errors);
+  const start = v.signedAmount(input.start_value, input.start_value_sign, 'Startwert', errors);
   const date = v.date(input.start_date, 'Datum des Startwerts', errors);
   if (!fields.owner_ids.includes(userId)) errors.push('Du musst selbst Inhaber der neuen Anlage sein.');
   if (errors.length) throw new ValidationError(errors);
@@ -105,7 +107,7 @@ async function addValue(repos, userId, id, input) {
   const asset = await getVisibleAsset(repos, userId, id);
   const errors = [];
   const date = v.date(input.date, 'Datum', errors);
-  const value = v.amount(input.value, 'Wert', errors);
+  const value = v.signedAmount(input.value, input.value_sign, 'Wert', errors);
   const note = v.text(input.note, { label: 'Notiz', max: 200 }, errors);
   if (errors.length) throw new ValidationError(errors);
   return repos.assetValues.insert({ asset_id: asset.id, date, value_cents: value, note, created_by: userId });

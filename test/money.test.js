@@ -12,6 +12,9 @@ test('parseEuro akzeptiert die Formate aus Spec 6.6', () => {
   assert.equal(parseEuro('12,5'), 1250);
   assert.equal(parseEuro(' 7,05 € '), 705);
   assert.equal(parseEuro('1.234.567'), 123456700);
+  assert.equal(parseEuro('1.000'), 100000);
+  assert.equal(parseEuro('-1.500'), -150000);
+  assert.equal(parseEuro('12.5'), 1250);
   assert.equal(parseEuro('-3,10'), -310);
   assert.equal(parseEuro('0,1'), 10);
 });
