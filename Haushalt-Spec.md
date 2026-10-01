@@ -1,7 +1,7 @@
 # Haushalt-Spec
 
 > Spezifikation für die Webanwendung **Haushaltsprojekt** zur Verwaltung der monatlichen Finanzen.
-> Status: **Entwurf v0.3** – Grundlage für die Planung, noch keine Implementierung.
+> Status: **Entwurf v0.4** – Grundlage für die Planung, noch keine Implementierung.
 > Getroffene Entscheidungen stehen in [Kapitel 13.1](#131-entscheidungen), offene Punkte in [Kapitel 13.2](#132-offene-fragen) (im Text mit `❓` markiert).
 
 ---
@@ -43,7 +43,7 @@ Kernfragen, die die Anwendung beantworten soll:
 
 | # | Prinzip | Bedeutung |
 |---|---------|-----------|
-| P1 | **Generisch statt maßgeschneidert** | Die Software kennt keine konkreten Personen, Konten oder Kategorien. Die eigene Situation wird ausschließlich über das Anlegen von Daten (Nutzer, Konten, Anlagen, Kategorien, …) abgebildet. Auch die Standard-Kategorien stehen in einer Datei, nicht im Code. |
+| P1 | **Generisch statt maßgeschneidert** | Die Software kennt keine konkreten Personen, Konten oder Kategorien. Die eigene Situation wird ausschließlich über das Anlegen von Daten (Nutzer, Konten, Anlagen, Kategorien, …) abgebildet. Die Standard-Kategorien werden beim ersten Start einmalig als Startdaten erzeugt und danach nur noch in der JSON-Datei gepflegt. |
 | P2 | **Einfach bleiben** | Kleine, server-gerenderte Webanwendung. Kein SPA-Framework, kein Build-Schritt fürs Frontend. |
 | P3 | **Nachvollziehbarkeit** | Kontostände und Anlagenwerte werden aus den gespeicherten Daten berechnet, nicht separat gespeichert. Jede Zahl in einer Übersicht lässt sich auf einzelne Buchungen bzw. Stände zurückführen. |
 | P4 | **Korrekte Beträge** | Geldbeträge werden als ganze Zahlen in Cent gespeichert, nie als Gleitkommazahl. |
@@ -55,7 +55,7 @@ Kernfragen, die die Anwendung beantworten soll:
 | Begriff | Definition |
 |---------|------------|
 | **Nutzer** | Eine Person mit eigenem Login (Nutzername + Passwort). Nutzer registrieren sich selbst. |
-| **Konto** | Ein Ort, an dem Geld liegt und gebucht wird: Girokonto, Sparkonto, Tagesgeld, Bargeld, Kreditkarte, … |
+| **Konto** | Ein Ort, an dem Geld liegt und gebucht wird: Girokonto, Sparkonto, Tagesgeld, Bargeld, Prepaid-Karte, … |
 | **Kontoinhaber** | Zuordnung Konto ↔ Nutzer. Ein Konto hat **einen oder mehrere** Inhaber. Inhaber sehen das Konto vollständig und dürfen alles daran ändern. |
 | **Gemeinschaftskonto** | Ein Konto mit mehreren Inhabern. Jeder Inhaber sieht es vollständig, und der **volle** Kontostand zählt zu seiner Gesamtübersicht. |
 | **Buchung** | Eine einzelne Geldbewegung auf **genau einem Konto**. Arten: **Einnahme**, **Ausgabe**, **Transfer**. Eine Buchung gehört zu einem Konto, nicht zu einem Nutzer. |
@@ -152,7 +152,7 @@ IDs sind zufällige UUIDs (`crypto.randomUUID()`), damit sie unabhängig von der
 |------|-----|---------|--------------|
 | `id` | UUID | ja | |
 | `name` | Text | ja | z. B. „Girokonto Gemeinsam“ |
-| `type` | Enum | ja | `giro`, `savings`, `cash`, `credit_card`, `other` |
+| `type` | Enum | ja | `giro`, `savings`, `cash`, `prepaid`, `other` |
 | `owner_ids` | Liste von UUIDs | ja | Inhaber, mindestens einer |
 | `iban` | Text | nein | Nur zur Information, keine Bankanbindung |
 | `opening_balance_cents` | Integer | ja | Anfangssaldo zum Stichtag (Default 0) |
@@ -170,7 +170,19 @@ IDs sind zufällige UUIDs (`crypto.randomUUID()`), damit sie unabhängig von der
 | `owner_id` | UUID → users | nein | Leer = **Standard-Kategorie** (für alle sichtbar); gesetzt = eigene Kategorie dieses Nutzers |
 | `archived` | Boolean | ja | |
 
-Die **Standard-Liste** wird aus der Datei `config/default-categories.json` geladen (beim ersten Start in den Speicher übernommen, neue Einträge bei späteren Starts ergänzt). So bleibt sie anpassbar, ohne den Code zu ändern. ❓ Q-01
+**Standard-Kategorien (Startdaten):**
+
+- Beim **ersten Start** (es gibt noch keine `categories.json`) erzeugt der Code die Standard-Liste und schreibt sie als Kategorien ohne `owner_id` in `data/categories.json`.
+- Das passiert **nur einmal** (vermerkt in `meta.json`). Danach wird die Liste ausschließlich in der JSON-Datei gepflegt: umbenennen, ergänzen, entfernen. Gelöschte Standard-Kategorien werden nicht neu erzeugt.
+- **Wichtig:** Weil die Anwendung alle Daten beim Start lädt und beim Speichern zurückschreibt, wird die Datei nur bei **gestopptem Server** bearbeitet; die Änderungen gelten nach dem nächsten Start.
+- In der Oberfläche sind Standard-Kategorien nur lesbar.
+
+Vorschlag für die erzeugte Liste:
+
+| Art | Kategorien |
+|-----|------------|
+| Einnahmen | Gehalt, Nebeneinkünfte, Erstattungen, Geschenke, Sonstige Einnahmen |
+| Ausgaben | Wohnen, Energie, Lebensmittel, Haushalt, Mobilität, Versicherungen, Internet & Telefon, Abos & Mitgliedschaften, Gesundheit, Kleidung, Freizeit, Urlaub, Geschenke, Bildung, Sonstige Ausgaben |
 
 #### Buchung (`transactions`)
 
@@ -336,7 +348,6 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-02 | Anmelden mit Nutzername und Passwort; Abmelden | M |
 | F-03 | Alle Seiten außer Login/Registrierung nur angemeldet erreichbar | M |
 | F-04 | Eigenes Passwort und Anzeigenamen ändern | S |
-| F-05 | Registrierung per Konfiguration abschaltbar (z. B. nachdem alle Haushaltsmitglieder angelegt sind) | S |
 
 ### 7.2 Stammdaten
 
@@ -344,7 +355,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 |----|-------------|------|
 | F-10 | Konten anlegen, bearbeiten, archivieren, löschen (Name, Typ, Anfangssaldo, Stichtag) | M |
 | F-11 | Inhaber eines Kontos verwalten: registrierte Nutzer hinzufügen und entfernen (S-03, S-04) | M |
-| F-12 | Standard-Kategorien aus `config/default-categories.json` beim Start übernehmen | M |
+| F-12 | Standard-Kategorien beim ersten Start als Startdaten erzeugen (siehe 5.2, Kategorie) | M |
 | F-13 | Eigene Kategorien für Einnahmen und Ausgaben anlegen, bearbeiten, archivieren | M |
 | F-14 | Löschen von Konten, Anlagen und Kategorien nur, wenn nichts mehr daran hängt (keine Buchungen/Stände) – sonst nur Archivieren | M |
 | F-15 | Standard-Kategorien für sich selbst ausblenden | K |
@@ -488,7 +499,7 @@ Aufbauend auf dem Stack aus dem früheren Projekt (`WebTechExam`): **Node.js + E
 | Sitzungen | **express-session** | Merkt sich nach dem Login, wer angemeldet ist (Cookie) |
 | Passwort-Hashing | **`crypto.scrypt`** aus Node.js | Sicheres Hashen ohne zusätzliches Paket |
 | Datenhaltung | **JSON-Dateien** hinter einer Speicherschicht | Siehe 10.3 |
-| CSS | Eigenes, schlankes CSS oder klassenloses Framework (Pico.css) ❓ Q-03 | Responsive Oberfläche ohne Build-Schritt |
+| CSS | **Pico.css** (fertiges Stylesheet, über npm installiert) + eigene `theme.css` mit den Farben aus 10.7 | Ordentliche, responsive Oberfläche ohne Build-Schritt; später anpassbar |
 | Client-JS | Nur wo nötig, Vanilla JS (z. B. Rhythmus-Felder ein-/ausblenden) | |
 | Entwicklung | `node --watch` (in Node eingebaut) | Server bei Codeänderungen neu starten |
 | Tests | `node:test` (in Node eingebaut) | Tests für Berechnungsregeln und Speicherschicht |
@@ -557,13 +568,12 @@ Regel: Nur `storage/` weiß, wie und wo Daten gespeichert sind. Routes und Servi
 Haushaltsprojekt/
 ├── package.json
 ├── Haushalt-Spec.md          ← dieses Dokument
-├── config/
-│   └── default-categories.json  ← Standard-Kategorien
 ├── src/
 │   ├── app.js                ← Express-Setup, Middleware, Start
 │   ├── config.js             ← Umgebungsvariablen
 │   ├── storage/
 │   │   ├── index.js          ← wählt den Adapter
+│   │   ├── seed.js           ← Startdaten (Standard-Kategorien) beim ersten Start
 │   │   └── json/             ← JSON-Adapter
 │   ├── repositories/         ← users, accounts, transactions, recurring, assets, …
 │   ├── services/             ← balances, assets, monthly, transfers, visibility, recurring, auth
@@ -580,7 +590,7 @@ Haushaltsprojekt/
 │   ├── assets/
 │   └── recurring/
 ├── public/
-│   ├── css/
+│   ├── css/                  ← theme.css (Farben), eigene Ergänzungen
 │   └── js/
 ├── data/                     ← JSON-Daten (nicht im Git!)
 └── test/
@@ -596,7 +606,25 @@ Haushaltsprojekt/
 | `DATA_DIR` | `./data` | Ordner der JSON-Dateien |
 | `STORAGE` | `json` | Gewählter Speicher-Adapter |
 | `SESSION_SECRET` | – | Pflicht; Schlüssel zum Signieren des Session-Cookies |
-| `REGISTRATION_OPEN` | `true` | Registrierung erlaubt (F-05) |
+
+### 10.7 Gestaltung und Farben
+
+- Grundlage ist **Pico.css** (klassenloses Stylesheet): Formulare, Tabellen und Navigation sehen ohne eigene CSS-Klassen ordentlich aus und sind responsive.
+- Pico wird über npm installiert und von Express aus `node_modules` ausgeliefert (**kein CDN**, die Seite funktioniert auch ohne Internet).
+- Alle Farben stehen als CSS-Variablen in **einer** Datei `public/css/theme.css`, die nach Pico geladen wird. Spätere Anpassungen passieren nur dort.
+- Hell- und Dunkelmodus folgen automatisch der Systemeinstellung (Pico-Standard); für beide ist jede Farbe festgelegt.
+- Farbe ist nie das einzige Merkmal: Beträge haben immer ein Vorzeichen (`+` / `−`), Buchungsarten zusätzlich ein Symbol oder Text.
+
+**Farbvorschlag** ❓ Q-01
+
+| Rolle | Variable | Hell | Dunkel | Verwendung |
+|-------|----------|------|--------|------------|
+| Primärfarbe | `--hh-primary` | `#0f766e` (Petrol) | `#2dd4bf` | Navigation, Buttons, Links (überschreibt `--pico-primary`) |
+| Einnahme | `--hh-income` | `#15803d` (Grün) | `#4ade80` | Positive Beträge, Einnahmen |
+| Ausgabe | `--hh-expense` | `#b91c1c` (Rot) | `#f87171` | Negative Beträge, Ausgaben |
+| Transfer | `--hh-transfer` | `#475569` (Schiefergrau) | `#94a3b8` | Transfers zwischen eigenen Konten |
+| Anlage | `--hh-asset` | `#6d28d9` (Violett) | `#a78bfa` | Anlagen, Sparraten, „In Anlagen gespart“ |
+| Hinweis | `--hh-warning` | `#b45309` (Bernstein) | `#fbbf24` | Hinweise, z. B. veralteter Anlagenstand |
 
 ## 11. Nicht-funktionale Anforderungen
 
@@ -606,7 +634,7 @@ Haushaltsprojekt/
 | N-02 | **Responsive**: auf dem Smartphone nutzbar, vor allem das Erfassen von Buchungen und Anlage-Ständen. |
 | N-03 | **Sicherheit**: Ausgaben in EJS escaped (`<%= %>`, nie `<%- %>` für Nutzereingaben); serverseitige Validierung aller Formulare; Sichtbarkeit (Kapitel 4) wird bei **jedem** Zugriff im Server geprüft, nicht nur in der Oberfläche. |
 | N-04 | **Datenkonsistenz**: Transfer-Paare und andere zusammengehörige Änderungen nur über `transaction()` der Speicherschicht; Verweise (z. B. `account_id`) werden vor dem Speichern geprüft. |
-| N-05 | **Betrieb**: Start mit `npm start`; läuft lokal oder auf einem kleinen Server im Heimnetz (z. B. Raspberry Pi / NAS). Bei Erreichbarkeit aus dem Internet nur über HTTPS (z. B. per Reverse Proxy). |
+| N-05 | **Betrieb**: Start mit `npm start`; läuft lokal oder auf einem kleinen Server im Heimnetz (z. B. Raspberry Pi / NAS). Bei Erreichbarkeit aus dem Internet nur über HTTPS (z. B. per Reverse Proxy). Da die Registrierung dauerhaft offen ist, kann sich dann jeder ein Konto anlegen; er sieht aber nur seine eigenen Daten, die Standard-Kategorien und beim Hinzufügen von Inhabern die Liste der Nutzernamen. |
 | N-06 | **Datensicherung**: Der Ordner `data/` ist das Einzige, was gesichert werden muss. |
 | N-07 | **Performance**: Für Haushaltsgröße (einige tausend Buchungen pro Jahr) ausgelegt; Seitenaufbau < 500 ms. Dafür reicht es, alle Daten im Arbeitsspeicher zu halten. |
 | N-08 | **Testbarkeit**: Berechnungsregeln (Kapitel 6), Sichtbarkeitsregeln (Kapitel 4), wiederkehrende Buchungen und der JSON-Adapter sind durch automatisierte Tests abgedeckt. |
@@ -616,6 +644,7 @@ Haushaltsprojekt/
 - Keine direkte Bankanbindung (FinTS/HBCI, PSD2-APIs), keine automatischen Kurse für Fonds.
 - Keine Budgets/Sparziele (Kandidat für später).
 - Keine Mehrwährungsfähigkeit.
+- Keine Kreditkarten mit Abrechnung/Monatsausgleich. Prepaid-Karten werden als normales Konto (Typ `prepaid`) geführt.
 - Keine Aufteilung einer Buchung auf mehrere Kategorien (Split-Buchungen).
 - Keine nutzerübergreifende Haushalts-Gesamtsicht.
 - Keine Rollen (Admin o. ä.) – alle Nutzer sind gleichberechtigt.
@@ -641,28 +670,30 @@ Haushaltsprojekt/
 | E-11 | Versionen | Jeweils die aktuellen Versionen von Node.js (LTS), Express und EJS. |
 | E-12 | Login | Einfacher Login mit Nutzername und Passwort; Nutzer registrieren sich selbst. |
 | E-13 | Lizenz | GNU GPL v3. |
+| E-14 | Standard-Kategorien | Werden beim ersten Start vom Code als Startdaten erzeugt und danach direkt in der JSON-Datei gepflegt. |
+| E-15 | Kreditkarten | Vorerst nicht unterstützt; Prepaid-Karten sind normale Konten. |
+| E-16 | Styling | Fertiges Stylesheet (Pico.css), später anpassbar; Grundfarben werden von Anfang an festgelegt (10.7). |
+| E-17 | Registrierung | Dauerhaft offen. |
 
 ### 13.2 Offene Fragen
 
 | # | Frage | Vorschlag |
 |---|-------|-----------|
-| Q-01 | Wer pflegt die **Standard-Kategorien**? | Sie stehen in `config/default-categories.json` und werden dort gepflegt; in der Oberfläche sind sie nur lesbar. Jeder Nutzer kann sie später für sich ausblenden (F-15). |
-| Q-02 | **Kreditkarten**: als eigenes Konto mit negativem Saldo und Monatsausgleich per Transfer? | Ja – passt ohne Sonderlogik ins Modell. |
-| Q-03 | **Styling**: eigenes CSS oder klassenloses Framework (Pico.css)? | Pico.css – sieht ohne Aufwand ordentlich aus, kein Build-Schritt. |
-| Q-04 | **Registrierung**: dauerhaft offen lassen? | Offen für die Einrichtung, danach per `REGISTRATION_OPEN=false` schließen – besonders, wenn die Seite aus dem Internet erreichbar ist. |
+| Q-01 | **Farben**: Passt der Farbvorschlag aus 10.7 (Petrol als Primärfarbe; Grün/Rot für Einnahmen/Ausgaben; Grau für Transfers; Violett für Anlagen)? | Ja; einzelne Werte lassen sich später in `theme.css` ändern. |
+| Q-02 | **Standard-Kategorien**: Passt die vorgeschlagene Startliste (5.2, Kategorie)? | Ja; Feinschliff danach direkt in der JSON-Datei. |
 
 ## 14. Meilensteine
 
 | # | Meilenstein | Inhalt |
 |---|-------------|--------|
 | M0 | **Spezifikation** | Dieses Dokument abstimmen, offene Fragen klären. |
-| M1 | **Grundgerüst** | `package.json`, Express + EJS, Layout/Navigation, Konfiguration, Speicherschicht mit JSON-Adapter inkl. Tests, `npm start`. |
+| M1 | **Grundgerüst** | `package.json`, Express + EJS, Pico.css + `theme.css`, Layout/Navigation, Konfiguration, Speicherschicht mit JSON-Adapter und Startdaten inkl. Tests, `npm start`. |
 | M2 | **Login** | F-01 bis F-03: Registrieren, Anmelden, Abmelden, Seitenschutz. |
 | M3 | **Stammdaten** | F-10 bis F-14: Konten mit Inhabern, Standard- und eigene Kategorien. Sichtbarkeitsregeln inkl. Tests. |
 | M4 | **Buchungen** | F-20 bis F-24: Einnahmen, Ausgaben, Transfer-Paare erfassen, bearbeiten, listen. |
 | M5 | **Übersichten** | F-50 bis F-55, F-61: Dashboard, Monatsbilanz, Kontoübersicht, Transfers. Tests der Berechnungsregeln. |
 | M6 | **Wiederkehrend & Anlagen** | F-30 bis F-34, F-40 bis F-43: regelmäßige Buchungen, Anlagen mit Ständen und Sparraten. → **MVP fertig** |
-| M7 | **Komfort & Sicherheit** | F-04, F-05, F-25, F-56, F-60, CSRF-Schutz, Login-Bremse. |
+| M7 | **Komfort & Sicherheit** | F-04, F-25, F-56, F-60, CSRF-Schutz, Login-Bremse. |
 | M8 | **Ausbau** | Diagramme, Import, Budgets nach Bedarf. |
 
 ## 15. Lizenz
@@ -677,3 +708,4 @@ In der `package.json` wird entsprechend `"license": "GPL-3.0-or-later"` eingetra
 | v0.1 | Erster Entwurf. |
 | v0.2 | Buchungen gehören zu Konten, nicht zu Nutzern; Transfer = zwei verknüpfte Buchungen; Sichtbarkeit pro Nutzer und interne/externe Transfers (Kap. 4, 6.3); Login mit Registrierung; JSON-Speicher hinter austauschbarer Speicherschicht; Express 5; Gemeinschaftskonten zählen voll; „regelmäßig“-Option mit Rhythmus beim Erfassen; neue Entität **Anlagen** mit manuell gepflegtem Stand; offene Fragen aktualisiert. |
 | v0.3 | Nur eine Transfer-Hälfte sichtbar → für den Nutzer eine normale Einnahme/Ausgabe; Transfers nur zwischen selbst sichtbaren Konten/Anlagen; alle Inhaber dürfen alles; Standard-Kategorien plus eigene Kategorien je Nutzer; wiederkehrende Buchungen werden automatisch gebucht; Ein-/Auszahlungen in Anlagen (Sparraten) werden auf den letzten manuellen Stand aufaddiert (Kap. 6.3); wiederkehrende Buchungen und Anlagen sind jetzt Teil des MVP. |
+| v0.4 | Standard-Kategorien werden beim ersten Start als Startdaten erzeugt und danach in der JSON-Datei gepflegt (mit Vorschlag für die Liste); Kreditkarten gestrichen, neuer Kontotyp `prepaid`; Pico.css als Stylesheet mit festgelegter Farbpalette (neues Kap. 10.7); Registrierung dauerhaft offen (F-05 und `REGISTRATION_OPEN` entfallen). |
