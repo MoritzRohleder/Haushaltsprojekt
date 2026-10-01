@@ -615,7 +615,7 @@ Haushaltsprojekt/
 - Hell- und Dunkelmodus folgen automatisch der Systemeinstellung (Pico-Standard); für beide ist jede Farbe festgelegt.
 - Farbe ist nie das einzige Merkmal: Beträge haben immer ein Vorzeichen (`+` / `−`), Buchungsarten zusätzlich ein Symbol oder Text.
 
-**Farbvorschlag** ❓ Q-01
+**Farbpalette**
 
 | Rolle | Variable | Hell | Dunkel | Verwendung |
 |-------|----------|------|--------|------------|
@@ -674,13 +674,13 @@ Haushaltsprojekt/
 | E-15 | Kreditkarten | Vorerst nicht unterstützt; Prepaid-Karten sind normale Konten. |
 | E-16 | Styling | Fertiges Stylesheet (Pico.css), später anpassbar; Grundfarben werden von Anfang an festgelegt (10.7). |
 | E-17 | Registrierung | Dauerhaft offen. |
+| E-18 | Farben | Die Farbpalette aus 10.7 ist bestätigt. |
 
 ### 13.2 Offene Fragen
 
 | # | Frage | Vorschlag |
 |---|-------|-----------|
-| Q-01 | **Farben**: Passt der Farbvorschlag aus 10.7 (Petrol als Primärfarbe; Grün/Rot für Einnahmen/Ausgaben; Grau für Transfers; Violett für Anlagen)? | Ja; einzelne Werte lassen sich später in `theme.css` ändern. |
-| Q-02 | **Standard-Kategorien**: Passt die vorgeschlagene Startliste (5.2, Kategorie)? | Ja; Feinschliff danach direkt in der JSON-Datei. |
+| Q-01 | **Standard-Kategorien**: Passt die vorgeschlagene Startliste (5.2, Kategorie)? | Ja; Feinschliff danach direkt in der JSON-Datei. |
 
 ## 14. Meilensteine
 
@@ -708,4 +708,4 @@ In der `package.json` wird entsprechend `"license": "GPL-3.0-or-later"` eingetra
 | v0.1 | Erster Entwurf. |
 | v0.2 | Buchungen gehören zu Konten, nicht zu Nutzern; Transfer = zwei verknüpfte Buchungen; Sichtbarkeit pro Nutzer und interne/externe Transfers (Kap. 4, 6.3); Login mit Registrierung; JSON-Speicher hinter austauschbarer Speicherschicht; Express 5; Gemeinschaftskonten zählen voll; „regelmäßig“-Option mit Rhythmus beim Erfassen; neue Entität **Anlagen** mit manuell gepflegtem Stand; offene Fragen aktualisiert. |
 | v0.3 | Nur eine Transfer-Hälfte sichtbar → für den Nutzer eine normale Einnahme/Ausgabe; Transfers nur zwischen selbst sichtbaren Konten/Anlagen; alle Inhaber dürfen alles; Standard-Kategorien plus eigene Kategorien je Nutzer; wiederkehrende Buchungen werden automatisch gebucht; Ein-/Auszahlungen in Anlagen (Sparraten) werden auf den letzten manuellen Stand aufaddiert (Kap. 6.3); wiederkehrende Buchungen und Anlagen sind jetzt Teil des MVP. |
-| v0.4 | Standard-Kategorien werden beim ersten Start als Startdaten erzeugt und danach in der JSON-Datei gepflegt (mit Vorschlag für die Liste); Kreditkarten gestrichen, neuer Kontotyp `prepaid`; Pico.css als Stylesheet mit festgelegter Farbpalette (neues Kap. 10.7); Registrierung dauerhaft offen (F-05 und `REGISTRATION_OPEN` entfallen). |
+| v0.4 | Standard-Kategorien werden beim ersten Start als Startdaten erzeugt und danach in der JSON-Datei gepflegt (mit Vorschlag für die Liste); Kreditkarten gestrichen, neuer Kontotyp `prepaid`; Pico.css als Stylesheet mit festgelegter Farbpalette (neues Kap. 10.7); Registrierung dauerhaft offen (F-05 und `REGISTRATION_OPEN` entfallen); Farbpalette bestätigt. |
