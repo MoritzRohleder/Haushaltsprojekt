@@ -4,4 +4,4 @@ Willkommen im Wiki von **Haushalt** – einer Webanwendung, um die monatlichen F
 
 - **[[Handbuch]]** – Bedienung der Anwendung Schritt für Schritt
 - [README](https://github.com/MoritzRohleder/Haushaltsprojekt#readme) – Installation und Betrieb mit Docker
-- [Haushalt-Spec](https://github.com/MoritzRohleder/Haushaltsprojekt/blob/main/Haushalt-Spec.md) – fachliche Spezifikation
+- [Haushalt-Spec](https://github.com/MoritzRohleder/Haushaltsprojekt/blob/master/Haushalt-Spec.md) – fachliche Spezifikation
