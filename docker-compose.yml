@@ -1,15 +1,24 @@
-# Haushalt mit Docker Compose
+# Haushalt mit Docker Compose – fertiges Image aus der GitHub Container Registry
 #
-#   docker compose up -d --build     starten (baut das Image beim ersten Mal)
-#   docker compose logs -f           Logs ansehen
-#   docker compose down              stoppen (Daten bleiben im Volume erhalten)
+#   docker compose up -d        starten bzw. aktualisieren: zieht immer das neueste
+#                               Image (pull_policy: always) und startet den Container
+#                               nur neu, wenn sich das Image geändert hat
+#   docker compose logs -f      Logs ansehen
+#   docker compose down         stoppen (Daten bleiben im Volume erhalten)
+#
+# Hinweis: `docker restart haushalt` zieht KEIN neues Image – dafür immer
+# `docker compose up -d` verwenden.
 #
 # Einstellungen stehen in .env (Vorlage: .env.example).
 
+# Fester Projektname: Das Daten-Volume heißt immer „haushaltsprojekt_haushalt-data“,
+# egal in welchem Ordner diese Datei liegt.
+name: haushaltsprojekt
+
 services:
   haushalt:
-    build: .
-    image: haushalt:latest
+    image: ghcr.io/moritzrohleder/haushaltsprojekt:${HAUSHALT_VERSION:-latest}
+    pull_policy: always
     container_name: haushalt
     restart: unless-stopped
     init: true

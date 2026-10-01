@@ -682,11 +682,21 @@ Haushaltsprojekt/
 - `Dockerfile`: Basis `node:24-alpine`, nur Produktionsabhängigkeiten (`npm ci --omit=dev`), läuft als unprivilegierter Nutzer `node` (UID 1000), `NODE_ENV=production`.
 - Daten liegen im Volume `/app/data` (JSON-Dateien, Sicherungen, Sitzungen, Session-Schlüssel).
 - Health-Check über `GET /health`.
-- `docker-compose.yml` mit benanntem Volume, `restart: unless-stopped`, Einstellungen aus `.env` (Vorlage `.env.example`).
+- `docker-compose.yml` zieht das fertige Image `ghcr.io/moritzrohleder/haushaltsprojekt` (`pull_policy: always`, Version über `HAUSHALT_VERSION`), fester Projektname `haushaltsprojekt` für ein stabiles Volume, `restart: unless-stopped`, Einstellungen aus `.env` (Vorlage `.env.example`).
 - Beim Stoppen (`SIGTERM`) nimmt der Server keine neuen Anfragen an, schließt laufende Schreibzugriffe ab und sichert die Sitzungen.
 - HTTPS übernimmt ein vorgeschalteter Reverse Proxy (z. B. Caddy); dann `COOKIE_SECURE=true` und `TRUST_PROXY=1` setzen. Anleitung im README.
 
-### 10.9 Handbuch
+### 10.9 CI/CD
+
+| Workflow | Auslöser | Inhalt |
+|----------|----------|--------|
+| `ci.yml` | jeder Push, Pull Requests auf `master` | `npm test` mit Node 22 und 24; Docker-Image bauen, Container starten, `/health` und `/handbuch` prüfen |
+| `release.yml` | Release veröffentlicht | Tag `vX.Y.Z` muss zu `package.json` passen; Tests; Image für `linux/amd64` und `linux/arm64` bauen und nach ghcr.io laden mit Tags `X.Y.Z`, `X.Y`, `X` und `latest` (Vorabversionen ohne `latest`) |
+
+- `master` wird per Ruleset geschützt: Änderungen nur per Pull Request, die CI-Checks müssen grün sein.
+- Der Server aktualisiert sich über `docker compose up -d` (z. B. per Cron nachts und nach dem Neustart).
+
+### 10.10 Handbuch
 
 - Quelle ist `docs/wiki/` im Repository: eine Markdown-Datei pro Kapitel, `Handbuch.md` als Inhaltsseite, `_Sidebar.md` (Reihenfolge und Titel der Kapitel) und `_Footer.md` (Handbuch-Stand und passende App-Version).
 - Die Anwendung liest diese Dateien direkt (Bibliothek `marked`), schreibt Wiki-Links (`Konten`, `Anlagen#abschnitt`) auf `/handbuch/…` um und erzeugt Anker wie GitHub. Die Navigationszeile am Seitenende der Wiki-Seiten ersetzt sie durch eigene Vor/Zurück-Knöpfe.
@@ -795,4 +805,5 @@ In der `package.json` wird entsprechend `"license": "GPL-3.0-or-later"` eingetra
 | v1.0 | Hell/Dunkel-Umschalter pro Nutzer (F-06, `users.theme`); ausgeblendete Standard-Kategorien (`users.hidden_category_ids`); Auswertungsseite mit Diagrammen; CSV-Export; Nochmal buchen; veraltete Anlagenstände; Login-Bremse, Sicherheits-Header, `TRUST_PROXY`, `ASSET_STALE_MONTHS`, `TZ`; Betrieb mit Docker (10.8); Meilensteine aktualisiert. |
 | v1.0.1 | Ein-/Auszahlungen am selben Tag wie ein manueller Stand: Reihenfolge der Erfassung entscheidet (vorher: immer „enthalten“); negative Anlagenwerte ausdrücklich erlaubt, Vorzeichen-Auswahl Guthaben/Schulden; `1.000` wird als Tausender gelesen; angemeldete Seiten mit `Cache-Control: no-store`. |
 | v1.0.2 | Manueller Stand hat immer Vorrang und gilt für den Zeitpunkt der Eingabe: kein Datumsfeld mehr bei „Stand aktualisieren“ und beim Startwert; nachgetragene Ein-/Auszahlungen mit Datum vor dem Stand gelten als enthalten; Uhrzeit der Eingabe im Verlauf. |
-| v1.1 | Handbuch in der Anwendung (F-07, Kap. 10.9): Quelle `docs/wiki`, Kapitel-Navigation, Suche, „?“-Knopf mit passendem Kapitel, Stand-Vermerk über `_Footer.md`. |
+| v1.1 | Handbuch in der Anwendung (F-07, Kap. 10.10): Quelle `docs/wiki`, Kapitel-Navigation, Suche, „?“-Knopf mit passendem Kapitel, Stand-Vermerk über `_Footer.md`. |
+| v1.1.1 | CI/CD (Kap. 10.9): Tests und Docker-Build bei jedem Push/PR, Release-Workflow veröffentlicht das Image nach ghcr.io; `docker-compose.yml` nutzt das fertige Image mit `pull_policy: always` und festem Projektnamen. |

@@ -1,6 +1,6 @@
 # Haushalt – Produktions-Image
-# Bauen:  docker build -t haushalt .
-# Start:  docker compose up -d   (siehe docker-compose.yml und README)
+# Fertige Images: ghcr.io/moritzrohleder/haushaltsprojekt (entstehen automatisch bei jedem Release)
+# Selbst bauen:   docker build -t haushalt .
 
 FROM node:24-alpine AS deps
 WORKDIR /app
@@ -8,6 +8,9 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 FROM node:24-alpine
+LABEL org.opencontainers.image.source="https://github.com/MoritzRohleder/Haushaltsprojekt" \
+      org.opencontainers.image.description="Haushalt – Verwaltung der monatlichen Finanzen" \
+      org.opencontainers.image.licenses="GPL-3.0-or-later"
 ENV NODE_ENV=production \
     PORT=3000 \
     DATA_DIR=/app/data

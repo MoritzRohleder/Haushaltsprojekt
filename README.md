@@ -13,23 +13,49 @@ Planung und Anforderungen stehen in der [Haushalt-Spec](Haushalt-Spec.md).
 
 ## Auf einem Server mit Docker betreiben
 
-Voraussetzung: Docker mit Docker Compose auf dem Server.
+Voraussetzung: Docker mit Docker Compose auf dem Server. Das Repository wird dort **nicht** gebraucht – zu jedem
+[Release](https://github.com/MoritzRohleder/Haushaltsprojekt/releases) entsteht automatisch ein fertiges Image
+`ghcr.io/moritzrohleder/haushaltsprojekt` (für amd64 und arm64, also auch Raspberry Pi).
 
 ```bash
-git clone https://github.com/MoritzRohleder/Haushaltsprojekt.git
-cd Haushaltsprojekt
-cp .env.example .env        # Einstellungen anpassen (siehe unten)
-docker compose up -d --build
+mkdir haushalt && cd haushalt
+curl -fsSLO https://raw.githubusercontent.com/MoritzRohleder/Haushaltsprojekt/master/docker-compose.yml
+curl -fsSL -o .env https://raw.githubusercontent.com/MoritzRohleder/Haushaltsprojekt/master/.env.example
+# .env anpassen (siehe Konfiguration), dann:
+docker compose up -d
 ```
 
 Die App läuft dann auf `http://<server>:3000`. Beim ersten Aufruf über „Registrieren“ einen Nutzer anlegen.
 
 | Befehl | Zweck |
 |--------|-------|
+| `docker compose up -d` | Starten **und aktualisieren**: zieht immer das neueste Image und startet nur neu, wenn es sich geändert hat |
 | `docker compose logs -f` | Logs ansehen |
 | `docker compose ps` | Status inkl. Health-Check |
 | `docker compose down` | Stoppen (Daten bleiben im Volume erhalten) |
-| `git pull && docker compose up -d --build` | Auf neue Version aktualisieren |
+
+### Automatisch aktualisieren
+
+Die `docker-compose.yml` nutzt `pull_policy: always`: Jedes `docker compose up -d` holt das neueste Image.
+`docker restart` oder ein Neustart des Servers zieht dagegen **kein** neues Image.
+
+Am einfachsten läuft das Update regelmäßig per Cron, z. B. jede Nacht um 4 Uhr und nach jedem Neustart des Servers
+(`crontab -e`, Pfad anpassen):
+
+```
+0 4 * * *  cd /opt/haushalt && docker compose up -d --quiet-pull >/dev/null 2>&1
+@reboot    sleep 60 && cd /opt/haushalt && docker compose up -d --quiet-pull >/dev/null 2>&1
+```
+
+Welche Versionen gezogen werden, steuert `HAUSHALT_VERSION` in `.env`:
+
+| Wert | Bedeutung |
+|------|-----------|
+| `latest` | immer die neueste veröffentlichte Version (Standard) |
+| `1` | neueste Version 1.x – keine Sprünge auf 2.0 |
+| `1.1.0` | genau diese Version (kein automatisches Update) |
+
+Vor einem größeren Update lohnt sich eine [Sicherung](#daten-sicherung-und-wiederherstellung).
 
 ### HTTPS mit einem Reverse Proxy
 
@@ -61,6 +87,34 @@ TRUST_PROXY=1
 
 `TRUST_PROXY=1` sorgt dafür, dass die App die echte IP-Adresse der Besucher sieht (wichtig für die Login-Bremse).
 
+## Neue Version veröffentlichen
+
+1. Version in `package.json` erhöhen, z. B. `npm version minor --no-git-tag-version` (1.1.0 → 1.2.0), und in
+   `docs/wiki/_Footer.md` Handbuch-Stand und Version anpassen.
+2. Änderungen per Pull Request nach `master` bringen (die Tests müssen grün sein).
+3. Auf GitHub unter **Releases → Draft a new release** einen Tag `v1.2.0` auf `master` anlegen und veröffentlichen.
+   Der Tag muss zur Version in `package.json` passen, sonst bricht der Release-Workflow ab.
+4. Der Workflow **Release** testet, baut das Image und lädt es als `1.2.0`, `1.2`, `1` und `latest` hoch.
+   Ein als *pre-release* markiertes Release bekommt nur seinen eigenen Tag, nicht `latest`.
+
+Beim allerersten Release ist das Paket auf ghcr.io eventuell noch **privat**. Dann einmalig auf GitHub unter
+**Packages → haushaltsprojekt → Package settings → Change visibility** auf **Public** stellen, damit der Server
+es ohne Anmeldung ziehen kann.
+
+## Tests und CI
+
+Der Workflow **CI** (`.github/workflows/ci.yml`) läuft bei jedem Push und bei jedem Pull Request auf `master`:
+
+- **Tests (Node 22)** und **Tests (Node 24)**: `npm test`
+- **Docker-Image**: baut das Image und prüft, ob der Container startet und gesund wird
+
+Damit nichts ungetestet in `master` landet, unter **Settings → Rules → Rulesets → New branch ruleset**:
+
+- *Target branches*: `master` (Default branch)
+- **Require a pull request before merging**
+- **Require status checks to pass** → die drei Checks oben hinzufügen (sie erscheinen in der Auswahl, sobald die CI einmal gelaufen ist)
+- **Block force pushes**
+
 ## Lokal starten (Entwicklung)
 
 Voraussetzung: Node.js 22 oder neuer (empfohlen: aktuelle LTS-Version).
@@ -79,6 +133,7 @@ Umgebungsvariablen (lokal direkt, bei Docker über `.env`):
 | Variable | Standard | Bedeutung |
 |----------|----------|-----------|
 | `PORT` | `3000` | HTTP-Port im Container bzw. lokal |
+| `HAUSHALT_VERSION` | `latest` | Nur Docker Compose: welche Image-Version gezogen wird |
 | `HOST_PORT` | `3000` | Nur Docker Compose: Port auf dem Server |
 | `DATA_DIR` | `./data` (Docker: `/app/data`) | Ordner für die Daten |
 | `SESSION_SECRET` | zufällig, in `data/.session-secret` | Schlüssel für das Login-Cookie |
@@ -108,7 +163,11 @@ docker run --rm -v haushaltsprojekt_haushalt-data:/data -v "$PWD":/backup alpine
 docker compose up -d
 ```
 
-Den genauen Volume-Namen zeigt `docker volume ls` (Compose stellt den Ordnernamen voran).
+Das Volume heißt immer `haushaltsprojekt_haushalt-data` (fester Projektname in der `docker-compose.yml`).
+
+> **Umstieg von einer älteren Installation** (mit `git clone` und `--build` in einem Ordner mit anderem Namen als
+> `Haushaltsprojekt`): Prüfe mit `docker volume ls`, wie dein bisheriges Volume heißt, und kopiere die Daten
+> mit den Befehlen oben (Sicherung aus dem alten, Wiederherstellung ins neue Volume).
 
 Die Standard-Kategorien werden beim ersten Start in `categories.json` erzeugt und können danach dort angepasst werden.
 Bearbeite die Dateien nur bei **gestopptem** Server, sonst überschreibt die laufende Anwendung deine Änderungen.
@@ -145,6 +204,7 @@ views/                EJS-Templates
 public/               CSS (Farben in theme.css) und JavaScript
 test/                 Tests (node:test)
 Dockerfile, docker-compose.yml, .env.example
+.github/workflows/    CI (Tests, Docker-Build) und Release (Image nach ghcr.io)
 ```
 
 ## Lizenz
