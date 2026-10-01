@@ -1,0 +1,106 @@
+/*
+ * Farben und kleine Ergänzungen zu Pico.css (Spec 10.7).
+ * Alle Farben werden nur hier festgelegt.
+ */
+
+/* Hell */
+:root:not([data-theme=dark]),
+[data-theme=light] {
+  --hh-primary: #0f766e;
+  --hh-income: #15803d;
+  --hh-expense: #b91c1c;
+  --hh-transfer: #475569;
+  --hh-asset: #6d28d9;
+  --hh-warning: #b45309;
+
+  --pico-primary: var(--hh-primary);
+  --pico-primary-background: var(--hh-primary);
+  --pico-primary-border: var(--hh-primary);
+  --pico-primary-underline: rgba(15, 118, 110, 0.5);
+  --pico-primary-hover: #115e59;
+  --pico-primary-hover-background: #115e59;
+  --pico-primary-hover-border: #115e59;
+  --pico-primary-hover-underline: var(--pico-primary-hover);
+  --pico-primary-focus: rgba(15, 118, 110, 0.35);
+  --pico-primary-inverse: #ffffff;
+}
+
+/* Dunkel – automatisch nach Systemeinstellung */
+@media only screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --hh-primary: #2dd4bf;
+    --hh-income: #4ade80;
+    --hh-expense: #f87171;
+    --hh-transfer: #94a3b8;
+    --hh-asset: #a78bfa;
+    --hh-warning: #fbbf24;
+
+    --pico-primary: var(--hh-primary);
+    --pico-primary-background: var(--hh-primary);
+    --pico-primary-border: var(--hh-primary);
+    --pico-primary-underline: rgba(45, 212, 191, 0.5);
+    --pico-primary-hover: #5eead4;
+    --pico-primary-hover-background: #5eead4;
+    --pico-primary-hover-border: #5eead4;
+    --pico-primary-hover-underline: var(--pico-primary-hover);
+    --pico-primary-focus: rgba(45, 212, 191, 0.35);
+    --pico-primary-inverse: #0b1220;
+  }
+}
+
+/* Beträge */
+.amount { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.income { color: var(--hh-income); }
+.expense { color: var(--hh-expense); }
+.transfer { color: var(--hh-transfer); }
+.asset { color: var(--hh-asset); }
+.warning { color: var(--hh-warning); }
+.strong { font-weight: 700; }
+.muted { color: var(--pico-muted-color); font-size: 0.875em; }
+
+/* Farbige Markierung am Zeilenanfang (überlagert die Zebrastreifen nicht) */
+tr.row-income > td:first-child { box-shadow: inset 4px 0 0 var(--hh-income); }
+tr.row-expense > td:first-child { box-shadow: inset 4px 0 0 var(--hh-expense); }
+tr.row-transfer > td:first-child { box-shadow: inset 4px 0 0 var(--hh-transfer); }
+tr.row-asset > td:first-child { box-shadow: inset 4px 0 0 var(--hh-asset); }
+
+/* Kennzahlen */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--pico-spacing); margin-bottom: var(--pico-spacing); }
+.stats article { margin: 0; padding: calc(var(--pico-spacing) * 0.75) var(--pico-spacing); }
+.stats .label { display: block; color: var(--pico-muted-color); font-size: 0.85em; }
+.stats .value { display: block; font-size: 1.35em; font-weight: 700; white-space: nowrap; }
+
+/* Kopfzeile einer Seite mit Aktionen */
+.page-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: var(--pico-spacing); }
+.page-head h1, .page-head h2 { margin: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.actions > * { margin: 0; }
+.actions form { margin: 0; }
+.actions [role=button], .actions button { padding: 0.4rem 0.8rem; font-size: 0.9em; width: auto; }
+
+/* Badges */
+.badge { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px; font-size: 0.75em; border: 1px solid currentColor; white-space: nowrap; }
+
+/* Tabellen auf schmalen Bildschirmen scrollbar */
+.table-wrap { overflow-x: auto; }
+table td, table th { vertical-align: middle; }
+
+/* Meldungen */
+.flash { padding: 0.75rem 1rem; border-radius: var(--pico-border-radius); margin-bottom: var(--pico-spacing); border-left: 4px solid var(--hh-income); background: var(--pico-card-background-color); }
+.flash.error { border-left-color: var(--hh-expense); }
+.errors { border-left: 4px solid var(--hh-expense); padding: 0.75rem 1rem; background: var(--pico-card-background-color); border-radius: var(--pico-border-radius); margin-bottom: var(--pico-spacing); }
+.errors ul { margin: 0; }
+
+nav .brand { color: var(--hh-primary); }
+nav ul { flex-wrap: wrap; }
+
+/* Schmale Bildschirme */
+@media (max-width: 640px) {
+  nav { flex-direction: column; align-items: flex-start; }
+  nav ul:last-child { margin-left: 0; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stats .value { font-size: 1.1em; }
+  .hide-mobile { display: none; }
+}
+.inline-form { display: inline; }
+.inline-form button { margin: 0; }

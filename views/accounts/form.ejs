@@ -1,0 +1,33 @@
+<%- include('../partials/head') %>
+<h1><%= title %></h1>
+<%- include('../partials/errors') %>
+<form method="post" action="<%= account ? `/konten/${account.id}/bearbeiten` : '/konten' %>">
+  <%- include('../partials/csrf') %>
+  <div class="grid">
+    <label>Name <input name="name" required maxlength="80" value="<%= values.name || '' %>"></label>
+    <label>Typ
+      <select name="type">
+        <% Object.entries(types).forEach(([key, label]) => { %>
+          <option value="<%= key %>" <%= values.type === key ? 'selected' : '' %>><%= label %></option>
+        <% }) %>
+      </select>
+    </label>
+  </div>
+  <div class="grid">
+    <label>Anfangssaldo in €
+      <input name="opening_balance" inputmode="decimal" value="<%= values.opening_balance || '0,00' %>">
+      <small>Kontostand laut Bank zum Stichtag (darf negativ sein).</small>
+    </label>
+    <label>Stichtag
+      <input type="date" name="opening_date" required value="<%= values.opening_date || '' %>">
+      <small>Ab diesem Tag wird gerechnet.</small>
+    </label>
+  </div>
+  <label>IBAN (optional) <input name="iban" maxlength="40" value="<%= values.iban || '' %>"></label>
+  <%- include('../partials/owners') %>
+  <div class="actions">
+    <button type="submit">Speichern</button>
+    <a href="<%= account ? `/konten/${account.id}` : '/konten' %>" role="button" class="secondary outline">Abbrechen</a>
+  </div>
+</form>
+<%- include('../partials/foot') %>

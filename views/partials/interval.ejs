@@ -1,0 +1,18 @@
+<div class="grid">
+  <label>
+    Alle
+    <input type="number" name="interval_count" min="1" max="999" value="<%= values.interval_count || 1 %>">
+  </label>
+  <label>
+    Einheit
+    <select name="interval_unit">
+      <% Object.entries(unitLabels).forEach(([key, [one, many]]) => { %>
+        <option value="<%= key %>" <%= (values.interval_unit || 'month') === key ? 'selected' : '' %>><%= many %></option>
+      <% }) %>
+    </select>
+  </label>
+  <label>
+    Enddatum (optional)
+    <input type="date" name="end_date" value="<%= values.end_date || '' %>">
+  </label>
+</div>

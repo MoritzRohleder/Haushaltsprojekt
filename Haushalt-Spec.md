@@ -316,7 +316,7 @@ Wert(Anlage, Stichtag) = S.value
 ```
 
 - Eine Ein-/Auszahlung **am selben Tag** wie ein manueller Stand gilt als darin bereits enthalten.
-- **Manuelle Korrektur**: Für jeden manuellen Stand wird angezeigt, um wie viel er vom bis dahin berechneten Wert abweicht (`Korrektur = manueller Stand − berechneter Wert am Vortag`). Im Beispiel unten beträgt die Korrektur am 20.10. −50 €.
+- **Manuelle Korrektur**: Für jeden manuellen Stand wird angezeigt, um wie viel er vom bis dahin berechneten Wert abweicht (`Korrektur = manueller Stand − berechneter Wert unmittelbar davor`, inklusive Ein-/Auszahlungen desselben Tages). Im Beispiel unten beträgt die Korrektur am 20.10. −50 €.
 - Beispiel: Stand 01.09. = 10.000 €; Sparrate 15.09. = 200 € → Wert 10.200 €; Sparrate 15.10. = 200 € → Wert 10.400 €; am 20.10. wird laut Depotauszug ein Stand von 10.350 € eingetragen → Wert 10.350 €; Sparrate 15.11. → 10.550 €.
 - Eine Ein-/Auszahlung zählt zum Anlagenwert, **auch wenn der jeweilige Nutzer das Konto nicht sieht**, von dem sie kam. Der Anlagenwert ist für alle Inhaber gleich.
 
@@ -625,7 +625,8 @@ Haushaltsprojekt/
 | `PORT` | `3000` | HTTP-Port |
 | `DATA_DIR` | `./data` | Ordner der JSON-Dateien |
 | `STORAGE` | `json` | Gewählter Speicher-Adapter |
-| `SESSION_SECRET` | – | Pflicht; Schlüssel zum Signieren des Session-Cookies |
+| `SESSION_SECRET` | zufällig, in `data/.session-secret` | Schlüssel zum Signieren des Session-Cookies. Ist er nicht gesetzt, wird beim ersten Start ein zufälliger Schlüssel im Datenordner abgelegt |
+| `COOKIE_SECURE` | `false` | Auf `true` setzen, sobald die Seite über HTTPS läuft |
 
 ### 10.7 Gestaltung und Farben
 
@@ -716,6 +717,14 @@ Aktuell keine.
 | M5 | **Übersichten** | F-50 bis F-55, F-61: Dashboard, Monatsbilanz, Kontoübersicht, Transfers. Tests der Berechnungsregeln. |
 | M6 | **Wiederkehrend & Anlagen** | F-30 bis F-34, F-40 bis F-43, F-46: regelmäßige Buchungen, Anlagen mit Ständen und Sparraten. → **MVP fertig** |
 | M7 | **Komfort & Sicherheit** | F-04, F-25, F-56, F-60, CSRF-Schutz, Login-Bremse. |
+
+**Stand Prototyp (v0.1.0):** M1 bis M6 sind umgesetzt, dazu aus M7 bereits F-04 (Passwort ändern), „Speichern & weitere erfassen“ aus F-25 und der CSRF-Schutz. Offen sind F-15, F-26, F-44, F-45, F-56, F-57, F-60, F-62 und die Login-Bremse.
+
+Einschränkungen im Prototyp:
+
+- Bei einem bestehenden Transfer sind nur Datum, Betrag, Beschreibung und Notiz änderbar. Für andere Konten oder Anlagen wird er gelöscht und neu angelegt.
+- Regelmäßige Transfers sind nur von einem Konto aus möglich (auf ein Konto oder in eine Anlage), nicht als regelmäßige Auszahlung aus einer Anlage.
+- An einer regelmäßigen Buchung sind nachträglich Betrag, Beschreibung, Notiz, Rhythmus und Enddatum änderbar, nicht aber Konten, Kategorie oder erster Termin.
 | M8 | **Ausbau** | Diagramme, Import, Budgets nach Bedarf. |
 
 ## 15. Lizenz
@@ -732,3 +741,4 @@ In der `package.json` wird entsprechend `"license": "GPL-3.0-or-later"` eingetra
 | v0.3 | Nur eine Transfer-Hälfte sichtbar → für den Nutzer eine normale Einnahme/Ausgabe; Transfers nur zwischen selbst sichtbaren Konten/Anlagen; alle Inhaber dürfen alles; Standard-Kategorien plus eigene Kategorien je Nutzer; wiederkehrende Buchungen werden automatisch gebucht; Ein-/Auszahlungen in Anlagen (Sparraten) werden auf den letzten manuellen Stand aufaddiert (Kap. 6.3); wiederkehrende Buchungen und Anlagen sind jetzt Teil des MVP. |
 | v0.4 | Standard-Kategorien werden beim ersten Start als Startdaten erzeugt und danach in der JSON-Datei gepflegt (mit Vorschlag für die Liste); Kreditkarten gestrichen, neuer Kontotyp `prepaid`; Pico.css als Stylesheet mit festgelegter Farbpalette (neues Kap. 10.7); Registrierung dauerhaft offen (F-05 und `REGISTRATION_OPEN` entfallen); Farbpalette bestätigt. |
 | v0.5 | Diagramm in 5.1 neu (Verweise klar erkennbar) plus Verweistabelle; Anzeige immer in Euro, Cent nur intern; Rhythmus als Anzahl + Einheit (`interval_count`, `interval_unit`); manuelle Anlagen-Stände in Übersicht und Verlauf mit Datum und Korrektur sichtbar (F-46); kein Anzeigename mehr; Startliste der Kategorien bestätigt; keine offenen Fragen. |
+| v0.5.1 | Korrektur-Definition präzisiert (Ein-/Auszahlungen desselben Tages); `SESSION_SECRET`-Fallback und `COOKIE_SECURE` ergänzt; Stand und Einschränkungen des Prototyps in Kap. 14. |

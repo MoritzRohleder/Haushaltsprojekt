@@ -1,0 +1,84 @@
+<%- include('partials/head') %>
+<div class="page-head">
+  <h1><%= monthName(summary.year, summary.month) %></h1>
+  <div class="actions">
+    <a href="<%= prevUrl %>" role="button" class="secondary outline">← Vormonat</a>
+    <a href="<%= nextUrl %>" role="button" class="secondary outline">Folgemonat →</a>
+  </div>
+</div>
+
+<section class="stats">
+  <article><span class="label">Einnahmen</span><span class="value income"><%= euro(summary.income, { sign: true }) %></span></article>
+  <article><span class="label">Ausgaben</span><span class="value expense"><%= euro(summary.expense) %></span></article>
+  <article><span class="label">Saldo</span><span class="value <%= summary.saldo < 0 ? 'expense' : 'income' %>"><%= euro(summary.saldo, { sign: true }) %></span></article>
+  <article><span class="label">In Anlagen gespart</span><span class="value asset"><%= euro(summary.savedInAssets) %></span></article>
+</section>
+<p class="muted">Transfers zwischen deinen eigenen Konten und Anlagen zählen nicht zur Bilanz. Siehst du nur eine Seite eines Transfers, zählt sie als Einnahme bzw. Ausgabe („Überträge“).</p>
+
+<div class="grid">
+  <article>
+    <header><strong>Einnahmen nach Kategorie</strong></header>
+    <% if (!summary.incomeByCategory.length) { %><p class="muted">Keine Einnahmen.</p><% } %>
+    <table><tbody>
+      <% summary.incomeByCategory.forEach((c) => { %>
+        <tr><td><%= c.name %></td><td class="amount income"><%= euro(c.sum) %></td></tr>
+      <% }) %>
+    </tbody></table>
+  </article>
+  <article>
+    <header><strong>Ausgaben nach Kategorie</strong></header>
+    <% if (!summary.expenseByCategory.length) { %><p class="muted">Keine Ausgaben.</p><% } %>
+    <table><tbody>
+      <% summary.expenseByCategory.forEach((c) => { %>
+        <tr><td><%= c.name %></td><td class="amount expense"><%= euro(c.sum) %></td></tr>
+      <% }) %>
+    </tbody></table>
+  </article>
+</div>
+
+<article>
+  <header><strong>Nach Konto</strong></header>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Konto</th><th class="amount">Einnahmen</th><th class="amount">Ausgaben</th><th class="amount">Transfers</th><th class="amount">Veränderung</th></tr></thead>
+    <tbody>
+    <% summary.byAccount.forEach((x) => { %>
+      <tr>
+        <td><a href="/konten/<%= x.account.id %>"><%= x.account.name %></a></td>
+        <td class="amount income"><%= euro(x.income) %></td>
+        <td class="amount expense"><%= euro(x.expense) %></td>
+        <td class="amount transfer"><%= euro(x.transfers, { sign: true }) %></td>
+        <td class="amount strong"><%= euro(x.change, { sign: true }) %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+  </div>
+</article>
+
+<article>
+  <header><strong>Transfers</strong></header>
+  <% if (!summary.transfers.length) { %>
+    <p class="muted">Keine Transfers in diesem Monat.</p>
+  <% } else { %>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Datum</th><th>Von → Nach</th><th>Beschreibung</th><th class="amount">Betrag</th></tr></thead>
+      <tbody>
+      <% summary.transfers.forEach((t) => { %>
+        <tr>
+          <td><%= date(t.date) %></td>
+          <td><%= t.from %> → <%= t.to %></td>
+          <td><%= t.description %></td>
+          <td class="amount <%= t.asset ? 'asset' : 'transfer' %>"><%= euro(t.amount_cents) %></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+    </div>
+  <% } %>
+</article>
+
+<h2>Alle Buchungen im <%= monthName(summary.year, summary.month) %></h2>
+<%- include('partials/tx-table', { rows: [...summary.rows].reverse() }) %>
+<%- include('partials/foot') %>

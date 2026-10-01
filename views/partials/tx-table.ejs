@@ -1,0 +1,37 @@
+<%# Erwartet: rows, ctx; optional: showAccount (Standard true), showBalance %>
+<% const withAccount = typeof showAccount === 'undefined' ? true : showAccount; %>
+<% const withBalance = typeof showBalance !== 'undefined' && showBalance; %>
+<% if (!rows.length) { %>
+  <p class="muted">Keine Buchungen.</p>
+<% } else { %>
+<div class="table-wrap">
+<table class="striped">
+  <thead>
+    <tr>
+      <th>Datum</th><th>Beschreibung</th>
+      <% if (withAccount) { %><th class="hide-mobile">Konto</th><% } %>
+      <th>Kategorie / Gegenseite</th><th class="amount">Betrag</th>
+      <% if (withBalance) { %><th class="amount">Saldo</th><% } %>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  <% rows.forEach((t) => { const k = ctx.kindClass(t); %>
+    <tr class="row-<%= k %>">
+      <td><%= date(t.date) %></td>
+      <td>
+        <%= t.description %>
+        <% if (t.recurring_id) { %> <span class="badge muted" title="aus regelmäßiger Buchung">↻</span><% } %>
+        <% if (t.note) { %><br><small class="muted"><%= t.note %></small><% } %>
+      </td>
+      <% if (withAccount) { %><td class="hide-mobile"><%= ctx.accountsById.get(t.account_id)?.name %></td><% } %>
+      <td><%= ctx.label(t) %></td>
+      <td class="amount strong <%= k %>"><%= euro(t.amount_cents, { sign: true }) %></td>
+      <% if (withBalance) { %><td class="amount"><%= euro(t.balance_cents) %></td><% } %>
+      <td><a href="/buchungen/<%= t.id %>/bearbeiten" aria-label="Bearbeiten">✎</a></td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+</div>
+<% } %>

@@ -1,0 +1,18 @@
+<%- include('../partials/head') %>
+<h1>Stand aktualisieren</h1>
+<p><strong><%= asset.name %></strong> · aktuell berechneter Wert: <span class="asset strong"><%= euro(summary.value_cents) %></span></p>
+<%- include('../partials/errors') %>
+<form method="post" action="/anlagen/<%= asset.id %>/stand">
+  <%- include('../partials/csrf') %>
+  <div class="grid">
+    <label>Datum <input type="date" name="date" required value="<%= values.date || '' %>"></label>
+    <label>Gesamtwert in € <input name="value" inputmode="decimal" required autofocus value="<%= values.value || '' %>"></label>
+  </div>
+  <label>Notiz (optional) <input name="note" maxlength="200" placeholder="z. B. laut Depotauszug" value="<%= values.note || '' %>"></label>
+  <small class="muted">Der neue Stand ersetzt den berechneten Wert. Spätere Ein- und Auszahlungen werden darauf aufaddiert.</small>
+  <div class="actions">
+    <button type="submit">Speichern</button>
+    <a href="/anlagen/<%= asset.id %>" role="button" class="secondary outline">Abbrechen</a>
+  </div>
+</form>
+<%- include('../partials/foot') %>

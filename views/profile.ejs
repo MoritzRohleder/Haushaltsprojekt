@@ -1,0 +1,23 @@
+<%- include('partials/head') %>
+<h1>Profil</h1>
+<p>Angemeldet als <strong><%= currentUser.username %></strong>.</p>
+<article>
+  <h2>Passwort ändern</h2>
+  <%- include('partials/errors') %>
+  <form method="post" action="/profil">
+    <%- include('partials/csrf') %>
+    <label>Aktuelles Passwort
+      <input type="password" name="currentPassword" autocomplete="current-password" required>
+    </label>
+    <div class="grid">
+      <label>Neues Passwort
+        <input type="password" name="password" autocomplete="new-password" required minlength="8">
+      </label>
+      <label>Neues Passwort wiederholen
+        <input type="password" name="passwordRepeat" autocomplete="new-password" required minlength="8">
+      </label>
+    </div>
+    <button type="submit">Passwort ändern</button>
+  </form>
+</article>
+<%- include('partials/foot') %>

@@ -1,0 +1,38 @@
+<%- include('../partials/head') %>
+<h1>Regelmäßige Buchungen</h1>
+<p class="muted">Neue regelmäßige Buchungen legst du beim Erfassen einer Einnahme, Ausgabe oder eines Transfers über den Schalter „Regelmäßig“ an.</p>
+<% if (!list.length) { %>
+  <p>Noch keine regelmäßigen Buchungen.</p>
+<% } else { %>
+<div class="table-wrap">
+<table class="striped">
+  <thead><tr><th>Beschreibung</th><th>Konto</th><th>Rhythmus</th><th>Nächster Termin</th><th class="amount">Betrag</th><th></th></tr></thead>
+  <tbody>
+  <% list.forEach((r) => { const cls = r.type === 'transfer' ? (r.to_asset_id ? 'asset' : 'transfer') : r.type; %>
+    <tr>
+      <td><%= r.description %><% if (r.category) { %><br><small class="muted"><%= r.category %></small><% } %></td>
+      <td><%= r.route %></td>
+      <td><%= r.rhythm %><% if (r.end_date) { %><br><small class="muted">bis <%= date(r.end_date) %></small><% } %></td>
+      <td>
+        <% if (!r.active) { %><span class="badge warning">pausiert</span>
+        <% } else if (r.next) { %><%= date(r.next) %>
+        <% } else { %><span class="badge muted">beendet</span><% } %>
+      </td>
+      <td class="amount strong <%= cls %>"><%= euro(r.type === 'expense' ? -r.amount_cents : r.amount_cents, { sign: r.type !== 'transfer' }) %></td>
+      <td>
+        <div class="actions">
+          <a href="/wiederkehrend/<%= r.id %>/bearbeiten" aria-label="Bearbeiten">✎</a>
+          <form method="post" action="/wiederkehrend/<%= r.id %>/aktiv">
+            <%- include('../partials/csrf') %>
+            <input type="hidden" name="active" value="<%= r.active ? 'false' : 'true' %>">
+            <button type="submit" class="secondary outline"><%= r.active ? 'Pausieren' : 'Fortsetzen' %></button>
+          </form>
+        </div>
+      </td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+</div>
+<% } %>
+<%- include('../partials/foot') %>

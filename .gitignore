@@ -141,3 +141,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Haushalt: lokale Daten (JSON, Sitzungen, Sicherungen)
+data/

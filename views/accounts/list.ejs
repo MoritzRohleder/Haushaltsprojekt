@@ -1,0 +1,30 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <h1>Konten</h1>
+  <a href="/konten/neu" role="button">+ Neues Konto</a>
+</div>
+<% const table = (list) => { %>
+  <div class="table-wrap">
+  <table class="striped">
+    <thead><tr><th>Name</th><th>Typ</th><th>Inhaber</th><th class="amount">Kontostand</th></tr></thead>
+    <tbody>
+    <% list.forEach((a) => { const b = ctx.balance(a); %>
+      <tr>
+        <td><a href="/konten/<%= a.id %>"><%= a.name %></a></td>
+        <td><%= types[a.type] %></td>
+        <td><%= a.owner_ids.map((id) => usersById.get(id)).join(', ') %></td>
+        <td class="amount strong <%= b < 0 ? 'expense' : '' %>"><%= euro(b) %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+  </div>
+<% } %>
+<% if (!active.length) { %><p>Noch keine Konten. <a href="/konten/neu">Lege dein erstes Konto an.</a></p><% } else { table(active); } %>
+<% if (archived.length) { %>
+  <details>
+    <summary>Archivierte Konten (<%= archived.length %>)</summary>
+    <% table(archived); %>
+  </details>
+<% } %>
+<%- include('../partials/foot') %>

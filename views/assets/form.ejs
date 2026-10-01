@@ -1,0 +1,30 @@
+<%- include('../partials/head') %>
+<h1><%= title %></h1>
+<%- include('../partials/errors') %>
+<form method="post" action="<%= asset ? `/anlagen/${asset.id}/bearbeiten` : '/anlagen' %>">
+  <%- include('../partials/csrf') %>
+  <div class="grid">
+    <label>Name <input name="name" required maxlength="80" value="<%= values.name || '' %>"></label>
+    <label>Art
+      <select name="type">
+        <% Object.entries(types).forEach(([key, label]) => { %>
+          <option value="<%= key %>" <%= values.type === key ? 'selected' : '' %>><%= label %></option>
+        <% }) %>
+      </select>
+    </label>
+  </div>
+  <label>Anbieter (optional) <input name="provider" maxlength="80" value="<%= values.provider || '' %>"></label>
+  <% if (!asset) { %>
+    <div class="grid">
+      <label>Startwert in € <input name="start_value" inputmode="decimal" required value="<%= values.start_value || '' %>"></label>
+      <label>Stand vom <input type="date" name="start_date" required value="<%= values.start_date || '' %>"></label>
+    </div>
+  <% } %>
+  <label>Notiz (optional) <textarea name="note" rows="2" maxlength="500"><%= values.note || '' %></textarea></label>
+  <%- include('../partials/owners') %>
+  <div class="actions">
+    <button type="submit">Speichern</button>
+    <a href="<%= asset ? `/anlagen/${asset.id}` : '/anlagen' %>" role="button" class="secondary outline">Abbrechen</a>
+  </div>
+</form>
+<%- include('../partials/foot') %>

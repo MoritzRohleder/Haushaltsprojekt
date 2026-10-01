@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %> · Haushalt</title>
+  <link rel="stylesheet" href="/vendor/pico/pico.min.css">
+  <link rel="stylesheet" href="/css/theme.css">
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><a href="/" class="brand"><strong>Haushalt</strong></a></li></ul>
+      <% if (currentUser) { %>
+      <ul>
+        <li><a href="/" <%= path === '/' ? 'aria-current=page' : '' %>>Übersicht</a></li>
+        <li><a href="/monat" <%= path.startsWith('/monat') ? 'aria-current=page' : '' %>>Monat</a></li>
+        <li><a href="/buchungen" <%= path.startsWith('/buchungen') ? 'aria-current=page' : '' %>>Buchungen</a></li>
+        <li><a href="/konten" <%= path.startsWith('/konten') ? 'aria-current=page' : '' %>>Konten</a></li>
+        <li><a href="/anlagen" <%= path.startsWith('/anlagen') ? 'aria-current=page' : '' %>>Anlagen</a></li>
+        <li>
+          <details class="dropdown">
+            <summary><%= currentUser.username %></summary>
+            <ul dir="rtl">
+              <li><a href="/wiederkehrend">Regelmäßige Buchungen</a></li>
+              <li><a href="/kategorien">Kategorien</a></li>
+              <li><a href="/profil">Profil</a></li>
+              <li>
+                <form method="post" action="/logout" class="inline-form">
+                  <%- include('csrf') %>
+                  <button type="submit" class="secondary outline">Abmelden</button>
+                </form>
+              </li>
+            </ul>
+          </details>
+        </li>
+      </ul>
+      <% } %>
+    </nav>
+  </header>
+  <main class="container">
+    <% if (flash) { %>
+      <div class="flash <%= flash.type %>" role="status"><%= flash.text %></div>
+    <% } %>

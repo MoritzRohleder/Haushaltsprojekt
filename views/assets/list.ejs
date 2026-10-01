@@ -1,0 +1,38 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <h1>Anlagen</h1>
+  <a href="/anlagen/neu" role="button">+ Neue Anlage</a>
+</div>
+<% const table = (list) => { %>
+  <div class="table-wrap">
+  <table class="striped">
+    <thead><tr><th>Name</th><th>Art</th><th>Letzte manuelle Aktualisierung</th><th class="amount">Wert</th><th></th></tr></thead>
+    <tbody>
+    <% list.forEach((a) => { const s = ctx.assetSummary(a); %>
+      <tr>
+        <td><a href="/anlagen/<%= a.id %>"><%= a.name %></a><% if (a.provider) { %><br><small class="muted"><%= a.provider %></small><% } %></td>
+        <td><%= types[a.type] %></td>
+        <td>
+          <%= date(s.last_manual_date) %>
+          <% if (s.last_manual_correction_cents !== null) { %>
+            <span class="badge <%= s.last_manual_correction_cents < 0 ? 'expense' : 'income' %>">Korrektur <%= euro(s.last_manual_correction_cents, { sign: true }) %></span>
+          <% } else { %>
+            <span class="badge muted">Startwert</span>
+          <% } %>
+        </td>
+        <td class="amount strong asset"><%= euro(s.value_cents) %></td>
+        <td><a href="/anlagen/<%= a.id %>/stand">Stand aktualisieren</a></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+  </div>
+<% } %>
+<% if (!active.length) { %><p>Noch keine Anlagen. Fonds, Depots oder Bausparverträge legst du hier an.</p><% } else { table(active); } %>
+<% if (archived.length) { %>
+  <details>
+    <summary>Archivierte Anlagen (<%= archived.length %>)</summary>
+    <% table(archived); %>
+  </details>
+<% } %>
+<%- include('../partials/foot') %>

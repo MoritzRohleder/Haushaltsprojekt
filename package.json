@@ -1,0 +1,27 @@
+{
+  "name": "haushaltsprojekt",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Webanwendung zur Verwaltung der monatlichen Haushaltsfinanzen",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MoritzRohleder/Haushaltsprojekt.git"
+  },
+  "author": "Moritz Rohleder",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "@picocss/pico": "^2.1.1",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0"
+  }
+}

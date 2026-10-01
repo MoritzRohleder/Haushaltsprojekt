@@ -1,0 +1,71 @@
+<%- include('partials/head') %>
+<h1>Kategorien</h1>
+<%- include('partials/errors') %>
+
+<article>
+  <header><strong>Eigene Kategorie anlegen</strong></header>
+  <form method="post" action="/kategorien">
+    <%- include('partials/csrf') %>
+    <div class="grid">
+      <input name="name" required maxlength="60" placeholder="Name" value="<%= values.name || '' %>" aria-label="Name">
+      <select name="kind" aria-label="Art">
+        <% Object.entries(kinds).forEach(([key, label]) => { %>
+          <option value="<%= key %>" <%= values.kind === key ? 'selected' : '' %>><%= label %></option>
+        <% }) %>
+      </select>
+      <button type="submit">Anlegen</button>
+    </div>
+  </form>
+</article>
+
+<h2>Eigene Kategorien</h2>
+<% if (!own.length) { %>
+  <p class="muted">Noch keine eigenen Kategorien. Sie sind nur für dich sichtbar.</p>
+<% } else { %>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Name</th><th>Art</th><th></th></tr></thead>
+  <tbody>
+  <% own.forEach((c) => { %>
+    <tr>
+      <td>
+        <form method="post" action="/kategorien/<%= c.id %>/umbenennen" class="actions">
+          <%- include('partials/csrf') %>
+          <input name="name" required maxlength="60" value="<%= c.name %>" aria-label="Name" style="margin: 0;">
+          <button type="submit" class="secondary outline">Umbenennen</button>
+        </form>
+      </td>
+      <td><%= kinds[c.kind] %><% if (c.archived) { %> <span class="badge muted">archiviert</span><% } %></td>
+      <td>
+        <div class="actions">
+          <form method="post" action="/kategorien/<%= c.id %>/archivieren">
+            <%- include('partials/csrf') %>
+            <input type="hidden" name="archived" value="<%= c.archived ? 'false' : 'true' %>">
+            <button type="submit" class="secondary outline"><%= c.archived ? 'Wiederherstellen' : 'Archivieren' %></button>
+          </form>
+          <form method="post" action="/kategorien/<%= c.id %>/loeschen" data-confirm="Kategorie löschen?">
+            <%- include('partials/csrf') %>
+            <button type="submit" class="secondary outline">Löschen</button>
+          </form>
+        </div>
+      </td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+</div>
+<% } %>
+
+<h2>Standard-Kategorien</h2>
+<p class="muted">Für alle Nutzer. Sie werden in <code>data/categories.json</code> gepflegt (bei gestopptem Server).</p>
+<div class="grid">
+  <% Object.entries(kinds).forEach(([key, label]) => { %>
+    <article>
+      <header><strong><%= label %>n</strong></header>
+      <ul>
+        <% standard.filter((c) => c.kind === key).forEach((c) => { %><li><%= c.name %></li><% }) %>
+      </ul>
+    </article>
+  <% }) %>
+</div>
+<%- include('partials/foot') %>
