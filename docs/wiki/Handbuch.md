@@ -1,4 +1,6 @@
-Dieses Handbuch beschreibt die Bedienung von **Haushalt** (Version 1.0.2): wie du Konten, Buchungen, regelmäßige Buchungen und Anlagen erfasst und wie die Übersichten zu lesen sind.
+Dieses Handbuch beschreibt die Bedienung von **Haushalt**: wie du Konten, Buchungen, regelmäßige Buchungen und Anlagen erfasst und wie die Übersichten zu lesen sind.
+
+Du findest es auch direkt in der Anwendung: Der Knopf **?** in der Navigation öffnet das Kapitel, das zur aktuellen Seite passt.
 
 ## Kapitel
 

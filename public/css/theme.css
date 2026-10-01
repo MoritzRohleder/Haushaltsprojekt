@@ -182,3 +182,33 @@ button.small, [role=button].small { padding: 0.1rem 0.5rem; font-size: 0.85em; w
 /* Vorzeichen-Auswahl (Guthaben / Schulden) direkt unter einem Betragsfeld */
 .sign-choice { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; margin: -0.5rem 0 0.75rem; border: 0; padding: 0; }
 .sign-choice label { margin: 0; font-size: 0.9em; }
+
+/* Handbuch */
+.manual-layout { display: grid; grid-template-columns: 15rem 1fr; gap: calc(var(--pico-spacing) * 2); align-items: start; }
+.manual-nav { position: sticky; top: 1rem; }
+.manual-nav summary { margin-bottom: 0.5rem; }
+.manual-nav ul { list-style: none; padding: 0; margin: 0; }
+.manual-nav li { list-style: none; padding: 0.15rem 0; }
+.manual-nav a { text-decoration: none; display: block; padding: 0.2rem 0.5rem; border-radius: var(--pico-border-radius); }
+.manual-nav a[aria-current=page] { background: var(--pico-primary-focus); font-weight: 600; }
+.manual-search input { margin-bottom: 0.75rem; }
+.manual-content { margin: 0; }
+.manual-header h1 { margin-top: 0.25rem; }
+.manual-toc { display: block; border-left: 3px solid var(--hh-primary); padding: 0.25rem 0 0.25rem 1rem; margin-bottom: calc(var(--pico-spacing) * 1.5); }
+.manual-toc ul { display: block; margin: 0.25rem 0 0; padding-left: 1rem; }
+.manual-toc li { display: list-item; padding: 0.1rem 0; }
+.manual-toc a { margin: 0; padding: 0; }
+.manual-layout > * { min-width: 0; }
+.manual-body h2 { margin-top: calc(var(--pico-spacing) * 2); scroll-margin-top: 1rem; }
+.manual-body table { display: block; overflow-x: auto; }
+.manual-body blockquote { border-left-color: var(--hh-primary); }
+.manual-pager { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; margin-top: calc(var(--pico-spacing) * 2); }
+.manual-pager [role=button] { width: auto; }
+.manual-footer { margin-top: var(--pico-spacing); font-size: 0.85em; }
+.manual-result h2 { margin-bottom: 0.25rem; font-size: 1.15em; }
+.help-link { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); text-decoration: none; font-weight: 700; color: var(--hh-primary); }
+.help-link:hover { border-color: var(--hh-primary); }
+@media (max-width: 1024px) {
+  .manual-layout { grid-template-columns: 1fr; }
+  .manual-nav { position: static; }
+}

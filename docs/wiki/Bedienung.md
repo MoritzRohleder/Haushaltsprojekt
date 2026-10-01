@@ -8,8 +8,13 @@ Die Navigation oben enthält:
 | **Konten** | Alle deine Konten mit Kontostand |
 | **Anlagen** | Fonds, Bausparverträge usw. mit aktuellem Wert |
 | **Auswertung** | Saldo je Monat, Verlauf des Gesamtvermögens, Monatsvergleich |
+| ? | Öffnet das Handbuch beim Kapitel, das zur aktuellen Seite passt |
 | ☾ / ☀ | Zwischen hellem und dunklem Modus umschalten |
-| *dein Nutzername* | Regelmäßige Buchungen, Kategorien, Profil, Abmelden |
+| *dein Nutzername* | Regelmäßige Buchungen, Kategorien, Profil, Handbuch, Abmelden |
+
+## Handbuch in der Anwendung
+
+Das Handbuch ist in Haushalt eingebaut – auch ohne Anmeldung, z. B. über den Link auf der Login-Seite. Links siehst du alle Kapitel, darüber ein Suchfeld für das ganze Handbuch. Am Ende jeder Seite blätterst du mit **Weiter** zum nächsten Kapitel. Ganz unten steht, auf welchem Stand das Handbuch ist.
 
 ## Farben und Zeichen
 

@@ -28,11 +28,30 @@ function locals(repos) {
     res.locals.monthName = formatMonth;
     res.locals.today = today();
     res.locals.path = req.path;
+    res.locals.helpUrl = helpUrl(req.path);
     res.locals.flash = req.session.flash || null;
     delete req.session.flash;
     res.locals.csrfToken = req.session.csrfToken || '';
     next();
   };
+}
+
+/** Passendes Handbuch-Kapitel zur aktuellen Seite (für den „?“-Knopf). */
+const HELP_PAGES = [
+  ['/konten', 'Konten'],
+  ['/anlagen', 'Anlagen'],
+  ['/buchungen', 'Buchungen'],
+  ['/wiederkehrend', 'Regelmäßige-Buchungen'],
+  ['/kategorien', 'Kategorien'],
+  ['/profil', 'Profil-und-Darstellung'],
+  ['/monat', 'Übersicht-und-Auswertung'],
+  ['/auswertung', 'Übersicht-und-Auswertung'],
+];
+
+function helpUrl(path) {
+  if (path === '/') return `/handbuch/${encodeURIComponent('Übersicht-und-Auswertung')}`;
+  const match = HELP_PAGES.find(([prefix]) => path === prefix || path.startsWith(`${prefix}/`));
+  return match ? `/handbuch/${encodeURIComponent(match[1])}` : '/handbuch';
 }
 
 /**

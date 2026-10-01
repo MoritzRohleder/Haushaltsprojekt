@@ -1,7 +1,7 @@
 # Haushalt-Spec
 
 > Spezifikation für die Webanwendung **Haushaltsprojekt** zur Verwaltung der monatlichen Finanzen.
-> Status: **v1.0** – umgesetzt in Version 1.0.0 der Anwendung (inkl. Betrieb mit Docker).
+> Status: **v1.1** – umgesetzt in Version 1.1.0 der Anwendung (inkl. Betrieb mit Docker und eingebautem Handbuch).
 > Getroffene Entscheidungen stehen in [Kapitel 13.1](#131-entscheidungen), offene Punkte in [Kapitel 13.2](#132-offene-fragen) (im Text mit `❓` markiert).
 
 ---
@@ -380,6 +380,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-02 | Anmelden mit Nutzername und Passwort; Abmelden | M |
 | F-03 | Alle Seiten außer Login/Registrierung nur angemeldet erreichbar | M |
 | F-04 | Eigenes Passwort ändern | S |
+| F-07 | **Handbuch in der Anwendung**: Seiten aus `docs/wiki` mit Kapitel-Navigation, Vor/Zurück, Suche und Stand-Vermerk; „?“-Knopf öffnet das passende Kapitel; ohne Anmeldung lesbar | S |
 | F-06 | **Hell/Dunkel-Umschalter** in der Navigation; die Wahl (Automatisch, Hell, Dunkel) wird pro Nutzer gespeichert und gilt auf allen Geräten | M |
 
 ### 7.2 Stammdaten
@@ -520,6 +521,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | Nochmal buchen | `GET /buchungen/neu?vorlage=:id` | Formular mit Werten einer bestehenden Buchung (F-26) |
 | Profil | `GET/POST /profil` | Darstellungsmodus, Passwort ändern |
 | Darstellung | `POST /einstellungen/darstellung` | Theme speichern (vom Umschalter per `fetch`, ohne JS als Formular) |
+| Handbuch | `GET /handbuch`, `/handbuch/:seite`, `/handbuch?suche=…` | Handbuch aus `docs/wiki` (F-07), auch ohne Anmeldung |
 | Health-Check | `GET /health` | `{"status":"ok"}` – für Docker/Monitoring, ohne Login |
 
 Da HTML-Formulare nur `GET` und `POST` kennen, werden Änderungen und Löschungen über `POST` umgesetzt (Muster *Post/Redirect/Get*).
@@ -684,6 +686,13 @@ Haushaltsprojekt/
 - Beim Stoppen (`SIGTERM`) nimmt der Server keine neuen Anfragen an, schließt laufende Schreibzugriffe ab und sichert die Sitzungen.
 - HTTPS übernimmt ein vorgeschalteter Reverse Proxy (z. B. Caddy); dann `COOKIE_SECURE=true` und `TRUST_PROXY=1` setzen. Anleitung im README.
 
+### 10.9 Handbuch
+
+- Quelle ist `docs/wiki/` im Repository: eine Markdown-Datei pro Kapitel, `Handbuch.md` als Inhaltsseite, `_Sidebar.md` (Reihenfolge und Titel der Kapitel) und `_Footer.md` (Handbuch-Stand und passende App-Version).
+- Die Anwendung liest diese Dateien direkt (Bibliothek `marked`), schreibt Wiki-Links (`Konten`, `Anlagen#abschnitt`) auf `/handbuch/…` um und erzeugt Anker wie GitHub. Die Navigationszeile am Seitenende der Wiki-Seiten ersetzt sie durch eigene Vor/Zurück-Knöpfe.
+- Das GitHub-Wiki wird manuell aus `docs/wiki/` befüllt (Copy & Paste oder per Git). Abweichungen sind über den Handbuch-Stand im Fußtext erkennbar.
+- Ein Test prüft, dass alle Kapitel existieren und alle internen Links auf vorhandene Seiten und Abschnitte zeigen.
+
 ## 11. Nicht-funktionale Anforderungen
 
 | ID | Anforderung |
@@ -755,9 +764,10 @@ Aktuell keine.
 | M6 | **Wiederkehrend & Anlagen** | F-30 bis F-34, F-40 bis F-43, F-46: regelmäßige Buchungen, Anlagen mit Ständen und Sparraten. → **MVP fertig** |
 | M7 | **Komfort & Sicherheit** | F-04, F-06, F-15, F-25, F-26, F-44, F-56, F-60, CSRF-Schutz, Login-Bremse, Sicherheits-Header. |
 | M8 | **Betrieb & Auswertung** | Docker (10.8), Diagramme F-45/F-57, Health-Check. → **Version 1.0** |
+| M8.1 | **Handbuch** | F-07: Handbuch aus `docs/wiki` in der Anwendung. → **Version 1.1** |
 | M9 | **Ausbau** | CSV-Import (F-62), Budgets, weitere Auswertungen nach Bedarf. |
 
-**Stand Version 1.0.0:** M0 bis M8 sind umgesetzt. Offen ist nur F-62 (CSV-Import, Priorität K).
+**Stand Version 1.1.0:** M0 bis M8.1 sind umgesetzt. Offen ist nur F-62 (CSV-Import, Priorität K).
 
 Bekannte Einschränkungen:
 
@@ -785,3 +795,4 @@ In der `package.json` wird entsprechend `"license": "GPL-3.0-or-later"` eingetra
 | v1.0 | Hell/Dunkel-Umschalter pro Nutzer (F-06, `users.theme`); ausgeblendete Standard-Kategorien (`users.hidden_category_ids`); Auswertungsseite mit Diagrammen; CSV-Export; Nochmal buchen; veraltete Anlagenstände; Login-Bremse, Sicherheits-Header, `TRUST_PROXY`, `ASSET_STALE_MONTHS`, `TZ`; Betrieb mit Docker (10.8); Meilensteine aktualisiert. |
 | v1.0.1 | Ein-/Auszahlungen am selben Tag wie ein manueller Stand: Reihenfolge der Erfassung entscheidet (vorher: immer „enthalten“); negative Anlagenwerte ausdrücklich erlaubt, Vorzeichen-Auswahl Guthaben/Schulden; `1.000` wird als Tausender gelesen; angemeldete Seiten mit `Cache-Control: no-store`. |
 | v1.0.2 | Manueller Stand hat immer Vorrang und gilt für den Zeitpunkt der Eingabe: kein Datumsfeld mehr bei „Stand aktualisieren“ und beim Startwert; nachgetragene Ein-/Auszahlungen mit Datum vor dem Stand gelten als enthalten; Uhrzeit der Eingabe im Verlauf. |
+| v1.1 | Handbuch in der Anwendung (F-07, Kap. 10.9): Quelle `docs/wiki`, Kapitel-Navigation, Suche, „?“-Knopf mit passendem Kapitel, Stand-Vermerk über `_Footer.md`. |

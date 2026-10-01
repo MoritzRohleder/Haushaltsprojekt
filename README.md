@@ -113,6 +113,23 @@ Den genauen Volume-Namen zeigt `docker volume ls` (Compose stellt den Ordnername
 Die Standard-Kategorien werden beim ersten Start in `categories.json` erzeugt und können danach dort angepasst werden.
 Bearbeite die Dateien nur bei **gestopptem** Server, sonst überschreibt die laufende Anwendung deine Änderungen.
 
+## Handbuch
+
+Das Nutzerhandbuch liegt in [`docs/wiki/`](docs/wiki) – eine Datei pro Kapitel. Die Anwendung zeigt es unter `/handbuch` an (Knopf **?** in der Navigation); im GitHub-Wiki wird es manuell gepflegt.
+
+- Reihenfolge und Titel der Kapitel: `docs/wiki/_Sidebar.md`
+- Stand des Handbuchs: `docs/wiki/_Footer.md` – bei Änderungen Datum und Version anpassen
+- Links zwischen Seiten im Wiki-Format: `[Text](Konten)` oder `[Text](Anlagen#wie-der-wert-berechnet-wird)`
+- `npm test` prüft, dass alle Links im Handbuch auf vorhandene Seiten und Abschnitte zeigen
+
+Ins Wiki übertragen (einmalig im Wiki eine erste Seite anlegen, damit das Wiki-Repository existiert):
+
+```bash
+git clone https://github.com/MoritzRohleder/Haushaltsprojekt.wiki.git
+cp Haushaltsprojekt/docs/wiki/* Haushaltsprojekt.wiki/
+cd Haushaltsprojekt.wiki && git add . && git commit -m "Handbuch aktualisiert" && git push
+```
+
 ## Aufbau
 
 ```
@@ -123,6 +140,7 @@ src/
   repositories/       Zugriff auf die Daten je Entität
   storage/            austauschbarer Speicher (heute JSON-Dateien)
   utils/              Geld, Datum, Diagramme, CSV
+docs/wiki/            Nutzerhandbuch (in der App unter /handbuch, gespiegelt ins GitHub-Wiki)
 views/                EJS-Templates
 public/               CSS (Farben in theme.css) und JavaScript
 test/                 Tests (node:test)

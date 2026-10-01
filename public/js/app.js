@@ -53,3 +53,7 @@ document.querySelectorAll('form[data-theme-toggle]').forEach((form) => {
     }
   });
 });
+
+// Handbuch: Kapitelliste auf schmalen Bildschirmen eingeklappt starten.
+const manualNav = document.querySelector('.manual-nav-details');
+if (manualNav && window.matchMedia('(max-width: 1024px)').matches) manualNav.open = false;

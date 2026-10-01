@@ -1,0 +1,62 @@
+<%- include('partials/head') %>
+<div class="manual-layout">
+  <aside class="manual-nav">
+    <details open class="manual-nav-details">
+      <summary><strong>Handbuch</strong></summary>
+      <form method="get" action="/handbuch" role="search" class="manual-search">
+        <input type="search" name="suche" placeholder="Im Handbuch suchen" value="<%= query %>" aria-label="Im Handbuch suchen">
+      </form>
+      <nav aria-label="Kapitel">
+        <ul>
+          <li><a href="/handbuch" <%= page && page.name === 'Handbuch' ? 'aria-current=page' : '' %>>Übersicht</a></li>
+          <% chapters.forEach((c, i) => { %>
+            <li><a href="<%= c.url %>" <%= page && page.name === c.name ? 'aria-current=page' : '' %>><span class="muted"><%= i + 1 %>.</span> <%= c.title %></a></li>
+          <% }) %>
+        </ul>
+      </nav>
+    </details>
+  </aside>
+
+  <article class="manual-content">
+    <% if (results) { %>
+      <h1>Suche: „<%= query %>“</h1>
+      <% if (!results.length) { %>
+        <p>Keine Treffer. Versuche einen anderen Begriff oder sieh dir die <a href="/handbuch">Kapitelübersicht</a> an.</p>
+      <% } else { %>
+        <p class="muted"><%= results.length %> Seite<%= results.length === 1 ? '' : 'n' %> gefunden</p>
+        <% results.forEach((r) => { %>
+          <section class="manual-result">
+            <h2><a href="<%= r.url %>"><%= r.title %></a></h2>
+            <p><% r.snippet.forEach((part) => { %><% if (part.hit) { %><mark><%= part.text %></mark><% } else { %><%= part.text %><% } %><% }) %></p>
+          </section>
+        <% }) %>
+      <% } %>
+    <% } else { %>
+      <header class="manual-header">
+        <% if (page.chapter) { %><span class="muted">Kapitel <%= page.chapter %></span><% } %>
+        <h1><%= page.title %></h1>
+      </header>
+      <% if (page.toc.length > 2) { %>
+        <nav class="manual-toc" aria-label="Auf dieser Seite">
+          <strong>Auf dieser Seite</strong>
+          <ul>
+            <% page.toc.forEach((h) => { %><li><a href="#<%= h.id %>"><%= h.text %></a></li><% }) %>
+          </ul>
+        </nav>
+      <% } %>
+      <div class="manual-body">
+        <%# Inhalt stammt aus docs/wiki im Repository (vertrauenswürdig) %>
+        <%- page.html %>
+      </div>
+      <nav class="manual-pager" aria-label="Weiterblättern">
+        <% if (page.prev) { %><a href="<%= page.prev.url %>" role="button" class="secondary outline">← <%= page.prev.title %></a><% } else { %><span></span><% } %>
+        <% if (page.next) { %><a href="<%= page.next.url %>" role="button" class="outline">Weiter: <%= page.next.title %> →</a><% } %>
+      </nav>
+      <p class="manual-footer muted">
+        <% if (page.footer) { %><%- page.footer %> · <% } %>App-Version <%= page.appVersion %> ·
+        <a href="https://github.com/MoritzRohleder/Haushaltsprojekt/wiki/<%= encodeURIComponent(page.name) %>" target="_blank" rel="noopener noreferrer">Diese Seite im GitHub-Wiki</a>
+      </p>
+    <% } %>
+  </article>
+</div>
+<%- include('partials/foot') %>

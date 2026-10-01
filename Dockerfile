@@ -18,6 +18,7 @@ COPY package.json ./
 COPY src ./src
 COPY views ./views
 COPY public ./public
+COPY docs/wiki ./docs/wiki
 
 # Daten gehören dem unprivilegierten Nutzer "node" (UID 1000).
 RUN mkdir -p /app/data && chown node:node /app/data

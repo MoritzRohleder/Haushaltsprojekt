@@ -21,6 +21,7 @@
         <li><a href="/konten" <%= path.startsWith('/konten') ? 'aria-current=page' : '' %>>Konten</a></li>
         <li><a href="/anlagen" <%= path.startsWith('/anlagen') ? 'aria-current=page' : '' %>>Anlagen</a></li>
         <li><a href="/auswertung" <%= path.startsWith('/auswertung') ? 'aria-current=page' : '' %>>Auswertung</a></li>
+        <li><a href="<%= helpUrl %>" class="help-link" aria-label="Handbuch (Hilfe zu dieser Seite)" title="Handbuch – Hilfe zu dieser Seite">?</a></li>
         <li>
           <form method="post" action="/einstellungen/darstellung" class="inline-form" data-theme-toggle data-theme-current="<%= theme %>">
             <%- include('csrf') %>
@@ -39,6 +40,7 @@
               <li><a href="/wiederkehrend">Regelmäßige Buchungen</a></li>
               <li><a href="/kategorien">Kategorien</a></li>
               <li><a href="/profil">Profil</a></li>
+              <li><a href="/handbuch">Handbuch</a></li>
               <li>
                 <form method="post" action="/logout" class="inline-form">
                   <%- include('csrf') %>
@@ -49,6 +51,8 @@
           </details>
         </li>
       </ul>
+      <% } else { %>
+      <ul><li><a href="/handbuch" <%= path.startsWith('/handbuch') ? 'aria-current=page' : '' %>>Handbuch</a></li></ul>
       <% } %>
     </nav>
   </header>

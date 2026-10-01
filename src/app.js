@@ -5,12 +5,13 @@ const express = require('express');
 const session = require('express-session');
 const { JsonSessionStore } = require('./storage/sessionStore');
 const { LoginThrottle } = require('./services/loginThrottle');
+const { Manual } = require('./services/manual');
 const mw = require('./middleware');
 
 const ROOT = path.join(__dirname, '..');
 
 /** Baut die Express-App. Wird von server.js und den Tests verwendet. */
-function createApp({ config, repos, sessionStore, loginThrottle = new LoginThrottle() }) {
+function createApp({ config, repos, sessionStore, loginThrottle = new LoginThrottle(), manual = new Manual() }) {
   const app = express();
   app.set('view engine', 'ejs');
   app.set('views', path.join(ROOT, 'views'));
@@ -38,6 +39,7 @@ function createApp({ config, repos, sessionStore, loginThrottle = new LoginThrot
 
   // Öffentlich
   app.use(require('./routes/auth')(repos, loginThrottle));
+  app.use(require('./routes/manual')(manual));
 
   // Ab hier nur angemeldet
   app.use(mw.requireLogin, mw.csrf, mw.recurringDaily(repos));

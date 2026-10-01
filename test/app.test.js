@@ -152,6 +152,8 @@ test('Sicherheits-Header, Health-Check, Theme, Auswertung, Export, Nochmal buche
   assert.match(dup.html, /value="12,34"/);
   assert.match(dup.html, /Bäcker; Brot/);
 
+  assert.match((await c.request(`/konten/${accountId}`)).html, /class="help-link"[^>]*|href="\/handbuch\/Konten"/);
+  assert.match((await c.request('/anlagen')).html, /href="\/handbuch\/Anlagen" class="help-link"/);
   for (const page of ['/auswertung', '/auswertung?monate=24', '/monat/2026/2', `/konten/${accountId}`, '/kategorien']) {
     assert.equal((await c.request(page)).status, 200, page);
   }
