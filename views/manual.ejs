@@ -8,9 +8,9 @@
       </form>
       <nav aria-label="Kapitel">
         <ul>
-          <li><a href="/handbuch" <%= page && page.name === 'Handbuch' ? 'aria-current=page' : '' %>>Übersicht</a></li>
+          <li><a href="/handbuch" <%= page && page.name === 'Handbuch' ? 'aria-current=page' : '' %>><span class="chapter-no" aria-hidden="true"></span><span>Übersicht</span></a></li>
           <% chapters.forEach((c, i) => { %>
-            <li><a href="<%= c.url %>" <%= page && page.name === c.name ? 'aria-current=page' : '' %>><span class="muted"><%= i + 1 %>.</span> <%= c.title %></a></li>
+            <li><a href="<%= c.url %>" <%= page && page.name === c.name ? 'aria-current=page' : '' %>><span class="chapter-no"><%= i + 1 %>.</span><span><%= c.title %></span></a></li>
           <% }) %>
         </ul>
       </nav>
