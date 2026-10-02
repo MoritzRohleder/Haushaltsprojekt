@@ -30,7 +30,7 @@ Das **Datum** oben im Formular ist das **Startdatum**: Der erste Termin ist der 
 
 ## Übersicht
 
-Über deinen Nutzernamen → **Regelmäßige Buchungen** siehst du alle Vorlagen auf einen Blick – praktisch, um die **festen Kosten** im Blick zu behalten.
+Unter **Regelmäßig** in der Navigation siehst du alle Vorlagen auf einen Blick – praktisch, um die **festen Kosten** im Blick zu behalten.
 
 Oben stehen die Summen **pro Monat**:
 

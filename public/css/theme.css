@@ -125,9 +125,13 @@ nav ul { flex-wrap: wrap; }
 
 /* Schmale Bildschirme */
 /* Mittlere Breiten: Navigation unter den Namen der App, statt ungleichmäßig umzubrechen */
-@media (max-width: 1024px) {
+/* Bis 1279px ist Picos Inhaltsbreite nur 950px – dann passt die Navigation nicht in eine Zeile */
+@media (max-width: 1279.98px) {
   nav { flex-direction: column; align-items: flex-start; }
   nav ul:last-child { margin-left: 0; }
+  nav ul:last-child > li { padding-left: 0.4rem; padding-right: 0.4rem; }
+}
+@media (max-width: 1024px) {
   .grid.cards { grid-template-columns: 1fr; }
 }
 .cards td { padding-left: 0.5rem; padding-right: 0.5rem; }

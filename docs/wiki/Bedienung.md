@@ -5,12 +5,13 @@ Die Navigation oben enthält:
 | **Übersicht** | Kontostände, Anlagen, Gesamtvermögen, aktueller Monat, letzte Buchungen |
 | **Monat** | Monatsbilanz mit Aufteilung nach Kategorie und Konto, Transfers |
 | **Buchungen** | Liste aller Buchungen mit Filtern und CSV-Export |
+| **Regelmäßig** | Regelmäßige Buchungen mit Summen pro Monat, Filtern und Sortierung |
 | **Konten** | Alle deine Konten mit Kontostand |
 | **Anlagen** | Fonds, Bausparverträge usw. mit aktuellem Wert |
 | **Auswertung** | Saldo je Monat, Verlauf des Gesamtvermögens, Monatsvergleich |
 | ? | Öffnet das Handbuch beim Kapitel, das zur aktuellen Seite passt |
 | ☾ / ☀ | Zwischen hellem und dunklem Modus umschalten |
-| *dein Nutzername* | Regelmäßige Buchungen, Kategorien, Profil, Handbuch, Abmelden |
+| *dein Nutzername* | Kategorien, Profil, Handbuch, Abmelden |
 
 ## Handbuch in der Anwendung
 
