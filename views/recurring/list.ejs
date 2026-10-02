@@ -6,14 +6,14 @@
   const sortLink = (key) => {
     const dir = filters.sort === key && filters.dir === 'asc' ? 'desc' : 'asc';
     const q = new URLSearchParams();
-    ['konto', 'turnus', 'art', 'status'].forEach((k) => { if (filters[k]) q.set(k, filters[k]); });
+    ['konto', 'turnus', 'art', 'status'].forEach((k) => filters[k].forEach((v) => q.append(k, v)));
     q.set('sort', key);
     q.set('dir', dir);
     return '/wiederkehrend?' + q.toString();
   };
   const sortMark = (key) => (filters.sort === key ? (filters.dir === 'asc' ? ' ▲' : ' ▼') : '');
   const ariaSort = (key) => (filters.sort === key ? (filters.dir === 'asc' ? 'ascending' : 'descending') : 'none');
-  const filtered = filters.konto || filters.turnus || filters.art || filters.status;
+  const filtered = ['konto', 'turnus', 'art', 'status'].some((k) => filters[k].length);
 %>
 <h1>Regelmäßige Buchungen</h1>
 <p class="muted">Neue regelmäßige Buchungen legst du beim Erfassen einer Einnahme, Ausgabe oder eines Transfers über den Schalter „Regelmäßig“ an.</p>
@@ -33,42 +33,21 @@
   <input type="hidden" name="sort" value="<%= filters.sort %>">
   <input type="hidden" name="dir" value="<%= filters.dir %>">
   <div class="grid">
-    <label>Konto
-      <select name="konto">
-        <option value="">Alle</option>
-        <% if (options.accounts.length) { %><optgroup label="Konten">
-          <% options.accounts.forEach((a) => { %><option value="<%= a.id %>" <%= filters.konto === a.id ? 'selected' : '' %>><%= a.name %></option><% }) %>
-        </optgroup><% } %>
-        <% if (options.assets.length) { %><optgroup label="Anlagen">
-          <% options.assets.forEach((a) => { %><option value="<%= a.id %>" <%= filters.konto === a.id ? 'selected' : '' %>><%= a.name %></option><% }) %>
-        </optgroup><% } %>
-      </select>
-    </label>
-    <label>Turnus
-      <select name="turnus">
-        <option value="">Alle</option>
-        <% Object.entries({ day: 'Täglich', week: 'Wöchentlich', month: 'Monatlich', year: 'Jährlich' }).forEach(([unit, text]) => { %>
-          <option value="<%= unit %>" <%= filters.turnus === unit ? 'selected' : '' %>><%= text %> (auch alle n <%= unitLabels[unit][1] %>)</option>
-        <% }) %>
-      </select>
-    </label>
-    <label>Art
-      <select name="art">
-        <option value="">Alle</option>
-        <option value="income" <%= filters.art === 'income' ? 'selected' : '' %>>Einnahmen</option>
-        <option value="expense" <%= filters.art === 'expense' ? 'selected' : '' %>>Ausgaben</option>
-        <option value="transfer" <%= filters.art === 'transfer' ? 'selected' : '' %>>Transfers</option>
-        <option value="sparen" <%= filters.art === 'sparen' ? 'selected' : '' %>>Sparen</option>
-      </select>
-    </label>
-    <label>Status
-      <select name="status">
-        <option value="">Alle</option>
-        <option value="laufend" <%= filters.status === 'laufend' ? 'selected' : '' %>>Laufend</option>
-        <option value="pausiert" <%= filters.status === 'pausiert' ? 'selected' : '' %>>Pausiert</option>
-        <option value="beendet" <%= filters.status === 'beendet' ? 'selected' : '' %>>Beendet</option>
-      </select>
-    </label>
+    <%- include('../partials/multiselect', { name: 'konto', label: 'Konto', selected: filters.konto, options: [
+      ...options.accounts.map((a) => ({ value: a.id, label: a.name, group: 'Konten' })),
+      ...options.assets.map((a) => ({ value: a.id, label: a.name, group: 'Anlagen' })),
+    ] }) %>
+    <%- include('../partials/multiselect', { name: 'turnus', label: 'Turnus', selected: filters.turnus, options: [
+      { value: 'day', label: 'Täglich' }, { value: 'week', label: 'Wöchentlich' },
+      { value: 'month', label: 'Monatlich' }, { value: 'year', label: 'Jährlich' },
+    ] }) %>
+    <%- include('../partials/multiselect', { name: 'art', label: 'Art', selected: filters.art, options: [
+      { value: 'income', label: 'Einnahmen' }, { value: 'expense', label: 'Ausgaben' },
+      { value: 'transfer', label: 'Transfers' }, { value: 'sparen', label: 'Sparen' },
+    ] }) %>
+    <%- include('../partials/multiselect', { name: 'status', label: 'Status', selected: filters.status, options: [
+      { value: 'laufend', label: 'Laufend' }, { value: 'pausiert', label: 'Pausiert' }, { value: 'beendet', label: 'Beendet' },
+    ] }) %>
   </div>
   <p class="actions">
     <button type="submit" class="secondary">Filtern</button>

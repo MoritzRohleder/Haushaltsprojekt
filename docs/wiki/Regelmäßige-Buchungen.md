@@ -49,11 +49,13 @@ Pausierte und beendete Einträge werden angezeigt (blasser), zählen aber **nich
 
 **Filtern**
 
+Alle Filter sind Mehrfachauswahlen – z. B. Turnus „monatlich“ und „jährlich“ zusammen (siehe [Filtern](Bedienung#filtern)).
+
 | Filter | Zeigt |
 |--------|-------|
-| Konto | Einträge, die dieses Konto oder diese Anlage betreffen – egal ob als Quelle oder Ziel |
+| Konto | Einträge, die eines der gewählten Konten oder eine der gewählten Anlagen betreffen – egal ob als Quelle oder Ziel |
 | Turnus | Täglich, wöchentlich, monatlich oder jährlich (auch z. B. „alle 3 Monate“ unter „monatlich“) |
-| Art | Einnahmen, Ausgaben, Transfers oder nur Sparen (Sparkonten und Anlagen) |
+| Art | Einnahmen, Ausgaben, Transfers und/oder Sparen (Sparkonten und Anlagen) |
 | Status | Laufend, pausiert oder beendet |
 
 Die Summen oben beziehen sich immer auf die **gefilterte** Liste. So siehst du z. B., was das Gemeinsame Konto jeden Monat an festen Ausgaben trägt.

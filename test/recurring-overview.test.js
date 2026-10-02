@@ -52,8 +52,8 @@ test('Umrechnung auf einen Monat je Turnus', () => {
 });
 
 test('Filter aus der Adresszeile: Unbekanntes wird ignoriert', () => {
-  assert.deepEqual(readFilters({ turnus: 'quarter', art: 'x', sort: 'drop', dir: 'up', status: 'laufend' }),
-    { konto: '', turnus: '', art: '', status: 'laufend', sort: 'beschreibung', dir: 'asc' });
+  assert.deepEqual(readFilters({ turnus: ['quarter', 'year', 'year'], art: 'x', sort: 'drop', dir: 'up', status: 'laufend', konto: ['', 'a'] }),
+    { konto: ['a'], turnus: ['year'], art: [], status: ['laufend'], sort: 'beschreibung', dir: 'asc' });
 });
 
 test('Übersicht: Arten, Summen pro Monat und Status', async (t) => {
@@ -98,6 +98,11 @@ test('Übersicht filtern nach Konto, Turnus, Art und Status', async (t) => {
   assert.deepEqual(await names({ art: 'transfer' }), ['Haushaltsgeld', 'Sparrate']);
   assert.deepEqual(await names({ art: 'expense', status: 'laufend' }), ['Miete', 'Versicherung', 'Wochenmarkt']);
   assert.deepEqual(await names({ turnus: 'month', art: 'expense', konto: p.giro.id }), ['Streaming']);
+
+  // Mehrfachauswahl: innerhalb eines Filters „oder“, zwischen Filtern „und“
+  assert.deepEqual(await names({ turnus: ['week', 'year'] }), ['Versicherung', 'Wochenmarkt']);
+  assert.deepEqual(await names({ art: ['income', 'transfer'], konto: [p.joint.id, p.fund.id] }), ['Haushaltsgeld', 'Sparrate']);
+  assert.deepEqual(await names({ status: ['pausiert', 'beendet'] }), ['Streaming']);
 
   // Summen beziehen sich auf die gefilterte Liste
   const o = await p.overview(p.a.id, { art: 'expense' });

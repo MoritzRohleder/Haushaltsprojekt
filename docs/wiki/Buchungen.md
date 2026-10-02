@@ -56,16 +56,16 @@ Im Bearbeiten-Formular gibt es den Link **↻ Nochmal buchen**. Er öffnet ein n
 
 ## Buchungsliste und Filter
 
-Unter **Buchungen** in der Navigation findest du die Buchungen eines Monats. Filter:
+Unter **Buchungen** in der Navigation findest du die Buchungen eines Monats. Konto, Kategorie, Art und Geschäft sind Mehrfachauswahlen (siehe [Filtern](Bedienung#filtern)):
 
 | Filter | Wirkung |
 |--------|---------|
 | Monat | welcher Monat angezeigt wird |
 | Alle Monate | hebt die Monatsgrenze auf |
-| Konto | nur Buchungen eines Kontos |
-| Kategorie | nur Buchungen einer Kategorie |
-| Art | Einnahmen, Ausgaben oder Transfers |
-| Geschäft | nur Ausgaben bei einem bestimmten Geschäft |
+| Konto | nur Buchungen der gewählten Konten |
+| Kategorie | nur Buchungen der gewählten Kategorien |
+| Art | Einnahmen, Ausgaben und/oder Transfers |
+| Geschäft | nur Ausgaben bei den gewählten Geschäften |
 | Suche | sucht in Beschreibung, Notiz, Gegenseite, Geschäft und Artikeln |
 
 ## CSV-Export

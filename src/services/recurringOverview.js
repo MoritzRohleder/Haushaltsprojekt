@@ -2,6 +2,7 @@
 
 const { INTERVAL_UNITS, nextOccurrenceAfter } = require('../utils/dates');
 const { describeInterval } = require('./recurring');
+const { multi, allows } = require('../utils/filters');
 
 /**
  * Übersicht der regelmäßigen Buchungen (Spec F-35, Kap. 6.7): Einordnung aus Sicht
@@ -82,24 +83,26 @@ function describe(ctx, rec) {
   };
 }
 
-/** Filter aus der Adresszeile lesen; Unbekanntes wird ignoriert. */
+/** Filter aus der Adresszeile lesen (jeweils Mehrfachauswahl); Unbekanntes wird ignoriert. */
 function readFilters(query) {
-  const pick = (value, allowed) => (allowed.includes(value) ? value : '');
   return {
-    konto: typeof query.konto === 'string' ? query.konto : '',
-    turnus: pick(query.turnus, INTERVAL_UNITS),
-    art: pick(query.art, KINDS),
-    status: pick(query.status, STATUSES),
-    sort: pick(query.sort, SORT_KEYS) || 'beschreibung',
+    konto: multi(query.konto),
+    turnus: multi(query.turnus, INTERVAL_UNITS),
+    art: multi(query.art, KINDS),
+    status: multi(query.status, STATUSES),
+    sort: SORT_KEYS.includes(query.sort) ? query.sort : 'beschreibung',
     dir: query.dir === 'desc' ? 'desc' : 'asc',
   };
 }
 
+const FILTER_KEYS = ['konto', 'turnus', 'art', 'status'];
+
+/** Innerhalb eines Filters gilt „oder“, zwischen den Filtern „und“. */
 function matches(row, f) {
-  if (f.konto && ![row.account_id, row.to_account_id, row.to_asset_id].includes(f.konto)) return false;
-  if (f.turnus && row.interval_unit !== f.turnus) return false;
-  if (f.art === 'sparen' ? !row.saves_into : f.art && row.kind !== f.art) return false;
-  if (f.status && row.status !== f.status) return false;
+  if (f.konto.length && ![row.account_id, row.to_account_id, row.to_asset_id].some((id) => f.konto.includes(id))) return false;
+  if (!allows(f.turnus, row.interval_unit)) return false;
+  if (f.art.length && !f.art.includes(row.kind) && !(f.art.includes('sparen') && row.saves_into)) return false;
+  if (!allows(f.status, row.status)) return false;
   return true;
 }
 
@@ -167,4 +170,4 @@ function buildOverview(ctx, templates, query = {}) {
   };
 }
 
-module.exports = { buildOverview, describe, monthlyCents, kindFor, readFilters, sortRows, summarize, SORT_KEYS };
+module.exports = { FILTER_KEYS, buildOverview, describe, monthlyCents, kindFor, readFilters, sortRows, summarize, SORT_KEYS };

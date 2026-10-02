@@ -423,7 +423,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-21 | Ausgabe erfassen (analog) | M |
 | F-22 | Transfer zwischen zwei eigenen Konten erfassen (Datum, Betrag, Von, Nach, Beschreibung) – erzeugt beide Hälften | M |
 | F-23 | Buchung bearbeiten und löschen (mit Bestätigung); bei Transfers immer beide Hälften | M |
-| F-24 | Buchungsliste mit Filtern: Monat/Zeitraum, Konto, Kategorie, Art, Freitextsuche | M |
+| F-24 | Buchungsliste mit Filtern: Monat/Zeitraum, Konto, Kategorie, Art, Geschäft, Freitextsuche. Auswahlfilter sind **Mehrfachauswahlen** (siehe 9.1) | M |
 | F-25 | Schnelleingabe: Datum mit heute vorbelegt, zuletzt verwendetes Konto vorausgewählt; „Speichern & weitere erfassen“ | S |
 | F-26 | Buchung duplizieren („nochmal buchen“) | K |
 | F-27 | **Geschäft** bei Ausgaben; Pflicht bei Einkaufs-Kategorien (`merchant_required`), Vorschläge aus bisherigen Eingaben | S |
@@ -439,7 +439,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-32 | Übersicht aller wiederkehrenden Buchungen auf den eigenen Konten; bearbeiten, pausieren, beenden | M |
 | F-33 | Eine automatisch erzeugte Buchung kann einzeln geändert oder gelöscht werden, ohne die Vorlage zu ändern | M |
 | F-34 | Änderungen an der Vorlage gelten nur für künftige Termine | M |
-| F-35 | **Übersicht der regelmäßigen Buchungen**: Betrag umgerechnet auf einen Monat, Summen pro Monat (Einnahmen, Ausgaben, Saldo, Gespart nach Sparkonten und Anlagen) über alle laufenden Einträge der gefilterten Liste; **filtern** nach Konto/Anlage, Turnus (Einheit), Art (aus Sicht des Nutzers, 6.2, zusätzlich „Sparen“) und Status; **sortieren** nach Beschreibung, Konto, Turnus, nächstem Termin, Betrag und Betrag pro Monat (6.7) | S |
+| F-35 | **Übersicht der regelmäßigen Buchungen**: Betrag umgerechnet auf einen Monat, Summen pro Monat (Einnahmen, Ausgaben, Saldo, Gespart nach Sparkonten und Anlagen) über alle laufenden Einträge der gefilterten Liste; **filtern** (Mehrfachauswahl, 9.1) nach Konto/Anlage, Turnus (Einheit), Art (aus Sicht des Nutzers, 6.2, zusätzlich „Sparen“) und Status; **sortieren** nach Beschreibung, Konto, Turnus, nächstem Termin, Betrag und Betrag pro Monat (6.7) | S |
 
 ### 7.5 Anlagen
 
@@ -554,6 +554,14 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 
 Da HTML-Formulare nur `GET` und `POST` kennen, werden Änderungen und Löschungen über `POST` umgesetzt (Muster *Post/Redirect/Get*).
 Ruft ein Nutzer ein Konto, eine Anlage oder eine Buchung auf, die er nicht sehen darf, antwortet der Server mit **404** (nicht 403), damit nicht erkennbar ist, ob es den Datensatz gibt.
+
+### 9.1 Filter
+
+- Alle Auswahlfilter (Konto, Kategorie, Art, Geschäft, Turnus, Status) sind **Mehrfachauswahlen**: aufklappbare Liste mit Häkchen (`<details>` mit Checkboxen, funktioniert ohne JavaScript; JavaScript aktualisiert nur die Zusammenfassung und schließt die Liste bei Klick daneben oder Esc).
+- In der Adresse als wiederholte Parameter, z. B. `?konto=A&konto=B&art=expense`. Unbekannte Werte werden ignoriert.
+- Keine Auswahl = alle. Innerhalb eines Filters gilt **oder**, zwischen Filtern **und**.
+- Der CSV-Export übernimmt die Auswahl unverändert.
+- Monat, „Alle Monate“ und Freitextsuche bleiben Einzelwerte.
 
 ## 10. Technologie und Architektur
 
@@ -840,4 +848,4 @@ In der `package.json` wird entsprechend `"license": "GPL-3.0-or-later"` eingetra
 | v1.1 | Handbuch in der Anwendung (F-07, Kap. 10.10): Quelle `docs/wiki`, Kapitel-Navigation, Suche, „?“-Knopf mit passendem Kapitel, Stand-Vermerk über `_Footer.md`. |
 | v1.1.1 | CI/CD (Kap. 10.9): Tests und Docker-Build bei jedem Push/PR, Release-Workflow veröffentlicht das Image nach ghcr.io; `docker-compose.yml` nutzt das fertige Image mit `pull_policy: always` und festem Projektnamen. |
 | v1.2 | Geschäft bei Ausgaben (Pflicht bei Einkaufs-Kategorien, `categories.merchant_required`), Artikel und Kassenzettel (`transactions.merchant/items/receipt`, Dateien in `data/uploads`), Auswertungen nach Geschäft und Artikel; Migrationen für bestehende Daten. |
-| v1.3 | Artikelmengen nur noch ganzzahlig (Stückzahl); Übersicht der regelmäßigen Buchungen mit Umrechnung auf einen Monat, Summen, Filtern und Sortierung (F-35, 6.7). |
+| v1.3 | Artikelmengen nur noch ganzzahlig (Stückzahl); Übersicht der regelmäßigen Buchungen mit Umrechnung auf einen Monat, Summen, Filtern und Sortierung (F-35, 6.7); „Gespart pro Monat“ (Sparkonten und Anlagen) mindert den Saldo; eigener Navigationspunkt „Regelmäßig“; Mehrfachauswahl für alle Auswahlfilter (9.1). |

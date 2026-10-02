@@ -1,0 +1,22 @@
+<%#
+  Mehrfachauswahl als aufklappbare Liste mit Häkchen (funktioniert auch ohne JavaScript).
+  Erwartet: name, label, options ([{ value, label, group? }]), selected (Liste der Werte)
+%>
+<%
+  const chosen = options.filter((o) => selected.includes(o.value));
+  const summaryText = !chosen.length ? 'Alle' : chosen.length <= 2 ? chosen.map((o) => o.label).join(', ') : `${chosen.length} ausgewählt`;
+  let lastGroup = null;
+%>
+<div class="multiselect">
+  <span class="multiselect-label"><%= label %></span>
+  <details class="dropdown" data-multiselect>
+    <summary aria-label="<%= label %>: <%= summaryText %>" data-multiselect-summary><%= summaryText %></summary>
+    <ul>
+      <li><button type="button" class="secondary outline small" data-multiselect-clear <%= chosen.length ? '' : 'hidden' %>>Alle (Auswahl aufheben)</button></li>
+      <% options.forEach((o) => { %>
+        <% if (o.group && o.group !== lastGroup) { lastGroup = o.group; %><li class="multiselect-group"><%= o.group %></li><% } %>
+        <li><label><input type="checkbox" name="<%= name %>" value="<%= o.value %>" data-label="<%= o.label %>" <%= selected.includes(o.value) ? 'checked' : '' %>> <%= o.label %></label></li>
+      <% }) %>
+    </ul>
+  </details>
+</div>

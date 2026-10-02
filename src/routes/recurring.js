@@ -17,7 +17,7 @@ module.exports = (repos) => {
     const templates = await recurring.listForUser(repos, req.session.user.id);
     const overview = recurringOverview.buildOverview(ctx, templates, req.query);
     res.render('recurring/list', {
-      title: 'Regelmäßige Buchungen', ...overview, unitLabels: recurring.UNIT_LABELS,
+      title: 'Regelmäßige Buchungen', ...overview,
     });
   });
 

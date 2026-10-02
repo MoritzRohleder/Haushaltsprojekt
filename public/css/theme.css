@@ -248,3 +248,15 @@ details.purchase > summary { font-weight: 600; }
 .search-row { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: start; }
 .search-row button { width: auto; }
 .nowrap { white-space: nowrap; }
+
+/* Mehrfachauswahl in Filtern */
+.multiselect { margin-bottom: var(--pico-spacing); min-width: 0; }
+.multiselect-label { display: block; margin-bottom: calc(var(--pico-spacing) * 0.375); }
+.multiselect details.dropdown { margin-bottom: 0; }
+.multiselect details.dropdown > summary { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.multiselect details.dropdown > ul { max-height: 22rem; overflow-y: auto; min-width: 100%; width: max-content; max-width: min(24rem, calc(100vw - 2rem)); }
+.multiselect details.dropdown > ul li label { width: 100%; cursor: pointer; }
+.multiselect-group { font-size: 0.8em; font-weight: 600; color: var(--pico-muted-color); text-transform: uppercase; letter-spacing: 0.03em; }
+/* Picos Klickfläche über der ganzen Seite abschalten: sonst schließt der erste Klick auf „Filtern“
+   nur das Menü. Schließen bei Klick daneben übernimmt app.js. */
+.multiselect details.dropdown[open] > summary::before { display: none; }

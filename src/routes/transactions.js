@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const { multi, allows, toQuery } = require('../utils/filters');
 const { loadContext } = require('../services/overview');
 const { visibleCategories, getVisibleTransaction } = require('../services/visibility');
 const tx = require('../services/transactions');
@@ -76,10 +77,10 @@ module.exports = (repos) => {
     const filters = {
       monat: /^\d{4}-\d{2}$/.test(query.monat || '') ? query.monat : today().slice(0, 7),
       alle: query.alle === '1',
-      konto: String(query.konto || ''),
-      kategorie: String(query.kategorie || ''),
-      art: String(query.art || ''),
-      geschaeft: String(query.geschaeft || ''),
+      konto: multi(query.konto),
+      kategorie: multi(query.kategorie),
+      art: multi(query.art, ['income', 'expense', 'transfer']),
+      geschaeft: multi(query.geschaeft),
       q: String(query.q || '').trim(),
     };
     const [y, m] = filters.monat.split('-').map(Number);
@@ -87,10 +88,10 @@ module.exports = (repos) => {
     const q = filters.q.toLowerCase();
     const rows = ctx.rows
       .filter((t) => filters.alle || (t.date >= from && t.date <= to))
-      .filter((t) => !filters.konto || t.account_id === filters.konto)
-      .filter((t) => !filters.kategorie || t.category_id === filters.kategorie)
-      .filter((t) => !filters.art || ctx.classify(t) === filters.art)
-      .filter((t) => !filters.geschaeft || t.merchant === filters.geschaeft)
+      .filter((t) => allows(filters.konto, t.account_id))
+      .filter((t) => allows(filters.kategorie, t.category_id))
+      .filter((t) => allows(filters.art, ctx.classify(t)))
+      .filter((t) => allows(filters.geschaeft, t.merchant))
       .filter((t) => !q || searchText(ctx, t).includes(q))
       .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
     return { filters, rows };
@@ -107,7 +108,7 @@ module.exports = (repos) => {
     const { filters, rows } = filterRows(ctx, req.query);
     res.render('transactions/list', {
       title: 'Buchungen', ctx, rows, filters,
-      exportQuery: new URLSearchParams(Object.entries(req.query).filter(([k]) => ['monat', 'alle', 'konto', 'kategorie', 'art', 'geschaeft', 'q'].includes(k)).map(([k, v]) => [k, String(v)])).toString(),
+      exportQuery: toQuery(filters, ['monat', 'alle', 'konto', 'kategorie', 'art', 'geschaeft', 'q']),
       merchants: knownMerchants(ctx).sort((a, b) => a.localeCompare(b, 'de')),
       accounts: sortByName(ctx.accounts),
       categories: await visibleCategories(repos, req.session.user.id, { includeArchived: true, includeHidden: true }),

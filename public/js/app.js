@@ -143,3 +143,34 @@ document.querySelectorAll('[data-items]').forEach((box) => {
   amountInput.addEventListener('input', recalc);
   recalc();
 });
+
+// Mehrfachauswahl in Filtern: Text der Zusammenfassung aktualisieren, „Alle“ und Schließen bei Klick daneben
+document.querySelectorAll('[data-multiselect]').forEach((box) => {
+  const summary = box.querySelector('[data-multiselect-summary]');
+  const clear = box.querySelector('[data-multiselect-clear]');
+  const label = box.closest('.multiselect').querySelector('.multiselect-label').textContent.trim();
+  const update = () => {
+    const chosen = [...box.querySelectorAll('input[type=checkbox]:checked')].map((i) => i.dataset.label);
+    const text = !chosen.length ? 'Alle' : chosen.length <= 2 ? chosen.join(', ') : `${chosen.length} ausgewählt`;
+    summary.textContent = text;
+    summary.setAttribute('aria-label', `${label}: ${text}`);
+    clear.hidden = !chosen.length;
+  };
+  box.addEventListener('change', update);
+  clear.addEventListener('click', () => {
+    box.querySelectorAll('input[type=checkbox]').forEach((i) => { i.checked = false; });
+    update();
+  });
+});
+document.addEventListener('click', (event) => {
+  document.querySelectorAll('[data-multiselect][open]').forEach((box) => {
+    if (!box.contains(event.target)) box.removeAttribute('open');
+  });
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  document.querySelectorAll('[data-multiselect][open]').forEach((box) => {
+    box.removeAttribute('open');
+    box.querySelector('summary').focus();
+  });
+});
