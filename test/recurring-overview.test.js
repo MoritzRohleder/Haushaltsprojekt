@@ -72,7 +72,7 @@ test('Übersicht: Arten, Summen pro Monat und Status', async (t) => {
   assert.equal(o.summary.running, 6);
   assert.equal(o.summary.income, 300000);
   assert.equal(o.summary.expense, -120000 - 5000 - 13045);
-  assert.equal(o.summary.net, 300000 - 120000 - 5000 - 13045);
+  assert.equal(o.summary.net, 300000 - 120000 - 5000 - 13045 - 20000); // Sparrate in Anlage mindert den Saldo
   assert.equal(o.summary.transfer, 20000 + 16667);
   assert.equal(o.summary.toAssets, 20000);
   assert.deepEqual(o.options.accounts.map((a) => a.name), ['Gemeinsam', 'Giro']);

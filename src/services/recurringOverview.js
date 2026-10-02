@@ -111,13 +111,15 @@ function summarize(rows) {
   const income = sum(running.filter((r) => r.kind === 'income'));
   const expense = sum(running.filter((r) => r.kind === 'expense'));
   const transfers = running.filter((r) => r.kind === 'transfer');
+  const toAssets = sum(transfers.filter((r) => r.to_asset_id));
   return {
     running: running.length,
     income,
     expense,
-    net: income + expense,
+    // Geld, das in Anlagen fließt, ist nicht mehr frei verfügbar – es mindert den Saldo.
+    net: income + expense - toAssets,
     transfer: sum(transfers),
-    toAssets: sum(transfers.filter((r) => r.to_asset_id)),
+    toAssets,
   };
 }
 

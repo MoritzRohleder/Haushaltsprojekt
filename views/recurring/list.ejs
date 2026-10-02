@@ -23,7 +23,7 @@
 <div class="stats">
   <article><span class="label">Einnahmen pro Monat</span><span class="value income"><%= euro(summary.income, { sign: true }) %></span><small class="muted"><%= euro(summary.income * 12) %> im Jahr</small></article>
   <article><span class="label">Ausgaben pro Monat</span><span class="value expense"><%= euro(summary.expense, { sign: true }) %></span><small class="muted"><%= euro(-summary.expense * 12) %> im Jahr</small></article>
-  <article><span class="label">Saldo pro Monat</span><span class="value <%= summary.net < 0 ? 'expense' : 'income' %>"><%= euro(summary.net, { sign: true }) %></span><small class="muted">Einnahmen minus Ausgaben</small></article>
+  <article><span class="label">Saldo pro Monat</span><span class="value <%= summary.net < 0 ? 'expense' : 'income' %>"><%= euro(summary.net, { sign: true }) %></span><small class="muted">frei verfügbar nach Ausgaben und Sparraten</small></article>
   <article><span class="label">Transfers pro Monat</span><span class="value transfer"><%= euro(summary.transfer) %></span><small class="muted">davon in Anlagen <%= euro(summary.toAssets) %></small></article>
 </div>
 <p class="muted"><small>Umgerechnet auf einen Durchschnittsmonat, nur laufende Einträge<%= filtered ? ' der gefilterten Liste' : '' %> (<%= summary.running %>). Pausierte und beendete zählen nicht mit.</small></p>

@@ -38,7 +38,7 @@ Oben stehen die Summen **pro Monat**:
 |--------|-----------|
 | Einnahmen pro Monat | z. B. Gehalt, darunter der Wert fürs ganze Jahr |
 | Ausgaben pro Monat | z. B. Miete, Abos, Versicherungen |
-| Saldo pro Monat | Einnahmen minus Ausgaben – so viel bleibt nach den festen Posten übrig |
+| Saldo pro Monat | Einnahmen minus Ausgaben minus Sparraten in Anlagen – so viel Geld bleibt nach den festen Posten **frei verfügbar** |
 | Transfers pro Monat | Geld zwischen eigenen Konten, darunter der Teil, der in Anlagen fließt (Sparraten) |
 
 Beträge, die nicht monatlich gebucht werden, rechnet Haushalt auf einen **Durchschnittsmonat** um: Eine Versicherung über 480 € im Jahr zählt mit 40 € pro Monat, 45 € jede Woche mit etwa 195,67 €. In der Tabelle steht der umgerechnete Wert klein unter dem Betrag.

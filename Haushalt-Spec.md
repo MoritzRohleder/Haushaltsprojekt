@@ -385,7 +385,7 @@ Die Übersicht der regelmäßigen Buchungen (F-35) rechnet jeden Betrag auf eine
 
 - Die Art (Einnahme, Ausgabe, Transfer) gilt aus Sicht des Nutzers wie bei Buchungen (6.2): Ein Transfer, dessen Gegenseite der Nutzer nicht sieht, zählt für ihn als Einnahme bzw. Ausgabe.
 - Die Summen enthalten nur **laufende** Einträge (aktiv und mit künftigem Termin); pausierte und beendete werden angezeigt, zählen aber nicht mit. Sie beziehen sich auf die gefilterte Liste.
-- **Saldo pro Monat** = Einnahmen − Ausgaben; Transfers werden getrennt ausgewiesen, davon gesondert die Einzahlungen in Anlagen.
+- **Saldo pro Monat** = Einnahmen − Ausgaben − Einzahlungen in Anlagen: Angelegtes Geld ist nicht mehr frei verfügbar (liquide) und mindert deshalb den Saldo. Transfers zwischen eigenen Konten ändern ihn nicht; sie werden getrennt ausgewiesen, davon gesondert die Einzahlungen in Anlagen.
 - Sortieren nach Betrag nutzt den Betrag ohne Vorzeichen (größte Posten zuerst bei absteigender Reihenfolge); Einträge ohne nächsten Termin stehen beim Sortieren nach Termin immer am Ende.
 
 ## 7. Funktionale Anforderungen
