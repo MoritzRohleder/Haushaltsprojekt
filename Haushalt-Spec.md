@@ -1,7 +1,7 @@
 # Haushalt-Spec
 
 > Spezifikation für die Webanwendung **Haushaltsprojekt** zur Verwaltung der monatlichen Finanzen.
-> Status: **v1.3** – umgesetzt in Version 1.3.0 der Anwendung (inkl. Betrieb mit Docker, eingebautem Handbuch, Geschäft/Kassenzettel/Artikel bei Ausgaben, Übersicht der regelmäßigen Buchungen).
+> Status: **v1.3** der Spezifikation – umgesetzt in Version 0.1.0 der Anwendung (noch nicht veröffentlicht; inkl. Betrieb mit Docker, eingebautem Handbuch, Geschäft/Kassenzettel/Artikel bei Ausgaben, Übersicht der regelmäßigen Buchungen).
 > Getroffene Entscheidungen stehen in [Kapitel 13.1](#131-entscheidungen), offene Punkte in [Kapitel 13.2](#132-offene-fragen) (im Text mit `❓` markiert).
 
 ---
@@ -802,13 +802,13 @@ Aktuell keine.
 | M5 | **Übersichten** | F-50 bis F-55, F-61: Dashboard, Monatsbilanz, Kontoübersicht, Transfers. Tests der Berechnungsregeln. |
 | M6 | **Wiederkehrend & Anlagen** | F-30 bis F-34, F-40 bis F-43, F-46: regelmäßige Buchungen, Anlagen mit Ständen und Sparraten. → **MVP fertig** |
 | M7 | **Komfort & Sicherheit** | F-04, F-06, F-15, F-25, F-26, F-44, F-56, F-60, CSRF-Schutz, Login-Bremse, Sicherheits-Header. |
-| M8 | **Betrieb & Auswertung** | Docker (10.8), Diagramme F-45/F-57, Health-Check. → **Version 1.0** |
-| M8.1 | **Handbuch** | F-07: Handbuch aus `docs/wiki` in der Anwendung. → **Version 1.1** |
-| M8.2 | **Einkäufe** | F-27 bis F-29, F-58, F-59: Geschäft, Kassenzettel, Artikel, Auswertungen. → **Version 1.2** |
-| M8.3 | **Fixkosten-Überblick** | F-35: Übersicht der regelmäßigen Buchungen mit Monatswerten, Filter und Sortierung; ganzzahlige Artikelmengen. → **Version 1.3** |
+| M8 | **Betrieb & Auswertung** | Docker (10.8), Diagramme F-45/F-57, Health-Check. |
+| M8.1 | **Handbuch** | F-07: Handbuch aus `docs/wiki` in der Anwendung. |
+| M8.2 | **Einkäufe** | F-27 bis F-29, F-58, F-59: Geschäft, Kassenzettel, Artikel, Auswertungen. |
+| M8.3 | **Fixkosten-Überblick** | F-35: Übersicht der regelmäßigen Buchungen mit Monatswerten, Filter und Sortierung; ganzzahlige Artikelmengen. |
 | M9 | **Ausbau** | CSV-Import (F-62), Budgets, weitere Auswertungen nach Bedarf. |
 
-**Stand Version 1.3.0:** M0 bis M8.3 sind umgesetzt. Offen ist nur F-62 (CSV-Import, Priorität K).
+**Stand Version 0.1.0** (noch kein Release): M0 bis M8.3 sind umgesetzt. Offen ist nur F-62 (CSV-Import, Priorität K).
 
 Bekannte Einschränkungen:
 

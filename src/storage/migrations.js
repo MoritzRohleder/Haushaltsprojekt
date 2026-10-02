@@ -9,7 +9,7 @@ const { DEFAULT_SHOPPING } = require('./seed');
 const MIGRATIONS = [
   {
     id: '2026-10-categories-merchant-required',
-    // v1.2: Kategorien bekommen das Feld merchant_required („Einkauf“).
+    // Kategorien bekommen das Feld merchant_required („Einkauf“).
     async run(storage) {
       for (const c of await storage.findAll('categories')) {
         if (c.merchant_required !== undefined) continue;
