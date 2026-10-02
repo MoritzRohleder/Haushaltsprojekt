@@ -27,9 +27,17 @@
         <option value="transfer" <%= filters.art === 'transfer' ? 'selected' : '' %>>Transfers</option>
       </select>
     </label>
+    <% if (merchants.length) { %>
+    <label>Geschäft
+      <select name="geschaeft">
+        <option value="">Alle</option>
+        <% merchants.forEach((m) => { %><option value="<%= m %>" <%= filters.geschaeft === m ? 'selected' : '' %>><%= m %></option><% }) %>
+      </select>
+    </label>
+    <% } %>
   </div>
   <div class="grid">
-    <input type="search" name="q" placeholder="Suche in Beschreibung und Notiz" value="<%= filters.q %>">
+    <input type="search" name="q" placeholder="Suche in Beschreibung, Notiz, Geschäft und Artikeln" value="<%= filters.q %>">
     <label class="compact">
       <input type="checkbox" name="alle" value="1" <%= filters.alle ? 'checked' : '' %>>
       Alle Monate

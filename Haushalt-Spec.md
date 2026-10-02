@@ -1,7 +1,7 @@
 # Haushalt-Spec
 
 > Spezifikation für die Webanwendung **Haushaltsprojekt** zur Verwaltung der monatlichen Finanzen.
-> Status: **v1.1** – umgesetzt in Version 1.1.0 der Anwendung (inkl. Betrieb mit Docker und eingebautem Handbuch).
+> Status: **v1.2** – umgesetzt in Version 1.2.0 der Anwendung (inkl. Betrieb mit Docker, eingebautem Handbuch, Geschäft/Kassenzettel/Artikel bei Ausgaben).
 > Getroffene Entscheidungen stehen in [Kapitel 13.1](#131-entscheidungen), offene Punkte in [Kapitel 13.2](#132-offene-fragen) (im Text mit `❓` markiert).
 
 ---
@@ -184,6 +184,7 @@ Pfeile zeigen in Richtung des Verweises: `A ──► B` heißt „A speichert d
 | `id` | UUID | ja | |
 | `name` | Text | ja | |
 | `kind` | Enum | ja | `income` oder `expense` – steuert, bei welcher Buchungsart sie angeboten wird |
+| `merchant_required` | Boolean | ja | „Einkauf“: Bei Ausgaben dieser Kategorie ist das Geschäft Pflicht. Ab Werk bei Lebensmittel, Haushalt, Kleidung, Geschenke. Umschaltbar in der Oberfläche (bei Standard-Kategorien für alle Nutzer) |
 | `owner_id` | UUID → users | nein | Leer = **Standard-Kategorie** (für alle sichtbar); gesetzt = eigene Kategorie dieses Nutzers |
 | `archived` | Boolean | ja | |
 
@@ -217,6 +218,9 @@ Vorschlag für die erzeugte Liste:
 | `description` | Text | ja | Kurzer Text, z. B. „Wocheneinkauf“ |
 | `note` | Text | nein | Freitext |
 | `recurring_id` | UUID → recurring | nein | Gesetzt, wenn aus einer wiederkehrenden Buchung erzeugt |
+| `merchant` | Text | nur Ausgabe | Geschäft, z. B. „Edeka“ (max. 80 Zeichen). Pflicht, wenn die Kategorie `merchant_required` hat – außer bei automatisch erzeugten Buchungen |
+| `items` | Liste | nur Ausgabe | Artikel: `{ name, quantity, unit_price_cents, total_cents }` mit `total_cents = round(quantity × unit_price_cents)`. Menge bis 3 Nachkommastellen, Stückpreis darf negativ sein (Pfand, Rabatt). Reine Aufstellung – der Betrag der Buchung wird nicht daraus berechnet; Abweichungen werden nur angezeigt |
+| `receipt` | Objekt | nur Ausgabe | Kassenzettel: `{ file, mime, original_name, size }`; Datei in `data/uploads/` (siehe 10.3) |
 | `created_by` | UUID → users | ja | Nur zur Information, wer die Buchung erfasst hat. Bestimmt **nicht**, wem sie gehört |
 | `created_at`, `updated_at` | Zeitstempel | ja | |
 
@@ -239,7 +243,7 @@ Entsteht, wenn beim Erfassen einer Buchung „regelmäßig“ angehakt wird. Sie
 | `to_account_id` | UUID | Transfer auf Konto | Zielkonto |
 | `to_asset_id` | UUID | Transfer in Anlage | Ziel-Anlage (z. B. Sparplan) |
 | `amount_cents` | Integer | ja | Betrag (positiv, Richtung ergibt sich aus `type`) |
-| `category_id`, `description`, `note` | | | wie bei der Buchung |
+| `category_id`, `merchant`, `description`, `note` | | | wie bei der Buchung (Artikel und Kassenzettel gibt es bei Vorlagen nicht) |
 | `interval_unit` | Enum | ja | Einheit des Rhythmus: `day`, `week`, `month`, `year` |
 | `interval_count` | Integer ≥ 1 | ja | Anzahl der Einheiten zwischen zwei Terminen, z. B. `20` + `day` = alle 20 Tage, `3` + `month` = vierteljährlich, `4` + `year` = alle 4 Jahre |
 | `day_of_month` | Integer 1–31 | bei `month`/`year` | Fester Tag des Termins, z. B. `20` = „am 20.“. Leer = Tag des `start_date` |
@@ -405,6 +409,9 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-24 | Buchungsliste mit Filtern: Monat/Zeitraum, Konto, Kategorie, Art, Freitextsuche | M |
 | F-25 | Schnelleingabe: Datum mit heute vorbelegt, zuletzt verwendetes Konto vorausgewählt; „Speichern & weitere erfassen“ | S |
 | F-26 | Buchung duplizieren („nochmal buchen“) | K |
+| F-27 | **Geschäft** bei Ausgaben; Pflicht bei Einkaufs-Kategorien (`merchant_required`), Vorschläge aus bisherigen Eingaben | S |
+| F-28 | **Artikel** zu einer Ausgabe erfassen (Name, Menge, Stückpreis); Hinweis, wenn die Summe vom Betrag abweicht | S |
+| F-29 | **Kassenzettel** (Foto JPG/PNG/WebP/HEIC oder PDF, max. 15 MB) an eine Ausgabe hängen, ansehen, ersetzen, entfernen | S |
 
 ### 7.4 Wiederkehrende Buchungen
 
@@ -440,6 +447,8 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-55 | **Kontoübersicht**: alle Buchungen eines Kontos inkl. Transfers mit laufendem Saldo | M |
 | F-56 | Vergleich über mehrere Monate (Tabelle: Monat × Einnahmen/Ausgaben/Saldo) | S |
 | F-57 | Diagramme (Ausgaben nach Kategorie, Verlauf Gesamtvermögen) | K |
+| F-58 | Monatsübersicht: **Ausgaben nach Geschäft**; Buchungsliste und CSV mit Filter/Spalte „Geschäft“, Suche auch in Artikeln | S |
+| F-59 | Auswertung **Artikel**: Käufe, Menge, Ausgaben, Ø-/min./max. Stückpreis, letzter Kauf; mit Suche (negative Positionen wie Pfand zählen nicht) | K |
 
 ### 7.7 Daten
 
@@ -517,6 +526,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | Wiederkehrend | `GET /wiederkehrend` | Vorlagen verwalten |
 | Kategorien | `GET /kategorien` | Standard-Kategorien (nur lesen) und eigene Kategorien |
 | Auswertung | `GET /auswertung?monate=6\|12\|24` | Saldo je Monat, Verlauf Gesamtvermögen, Monatsvergleich (F-56, F-57) |
+| Kassenzettel | `GET /buchungen/:id/beleg` | Datei zur Buchung (nur für Inhaber des Kontos) |
 | CSV-Export | `GET /buchungen/export.csv` | Gefilterte Buchungen als CSV (gleiche Filter wie die Liste, `alle=1` = alle Monate) |
 | Nochmal buchen | `GET /buchungen/neu?vorlage=:id` | Formular mit Werten einer bestehenden Buchung (F-26) |
 | Profil | `GET/POST /profil` | Darstellungsmodus, Passwort ändern |
@@ -584,6 +594,8 @@ Regel: Nur `storage/` weiß, wie und wo Daten gespeichert sind. Routes und Servi
 **JSON-Adapter (erste Umsetzung):**
 
 - Ordner `data/` (Pfad konfigurierbar), eine Datei pro Sammlung: `users.json`, `accounts.json`, `categories.json`, `transactions.json`, `recurring.json`, `assets.json`, `asset_values.json`.
+- Hochgeladene Dateien (Kassenzettel) liegen in `data/uploads/` unter zufälligen Namen (`<uuid>.<endung>`); die Speicherschicht bietet dafür `saveFile`, `filePath`, `removeFile`. Der Dateityp wird am Inhalt erkannt, nicht an Endung oder Browserangabe. Ausgeliefert werden Kassenzettel nur an Inhaber des Kontos (`GET /buchungen/:id/beleg`).
+- **Migrationen** (`src/storage/migrations.js`) passen bestehende Daten beim Start einmalig an neue Felder an; erledigte Migrationen stehen in `meta.json` (`migrations_done`).
 - Zusätzlich `meta.json` mit `schema_version` für spätere Umbauten am Datenformat (Migrationen).
 - Beim Start werden alle Dateien in den Arbeitsspeicher geladen; gelesen wird aus dem Speicher.
 - Schreibzugriffe laufen **nacheinander** (Warteschlange), damit sich zwei gleichzeitige Anfragen nicht gegenseitig überschreiben.
@@ -775,9 +787,10 @@ Aktuell keine.
 | M7 | **Komfort & Sicherheit** | F-04, F-06, F-15, F-25, F-26, F-44, F-56, F-60, CSRF-Schutz, Login-Bremse, Sicherheits-Header. |
 | M8 | **Betrieb & Auswertung** | Docker (10.8), Diagramme F-45/F-57, Health-Check. → **Version 1.0** |
 | M8.1 | **Handbuch** | F-07: Handbuch aus `docs/wiki` in der Anwendung. → **Version 1.1** |
+| M8.2 | **Einkäufe** | F-27 bis F-29, F-58, F-59: Geschäft, Kassenzettel, Artikel, Auswertungen. → **Version 1.2** |
 | M9 | **Ausbau** | CSV-Import (F-62), Budgets, weitere Auswertungen nach Bedarf. |
 
-**Stand Version 1.1.0:** M0 bis M8.1 sind umgesetzt. Offen ist nur F-62 (CSV-Import, Priorität K).
+**Stand Version 1.2.0:** M0 bis M8.2 sind umgesetzt. Offen ist nur F-62 (CSV-Import, Priorität K).
 
 Bekannte Einschränkungen:
 
@@ -807,3 +820,4 @@ In der `package.json` wird entsprechend `"license": "GPL-3.0-or-later"` eingetra
 | v1.0.2 | Manueller Stand hat immer Vorrang und gilt für den Zeitpunkt der Eingabe: kein Datumsfeld mehr bei „Stand aktualisieren“ und beim Startwert; nachgetragene Ein-/Auszahlungen mit Datum vor dem Stand gelten als enthalten; Uhrzeit der Eingabe im Verlauf. |
 | v1.1 | Handbuch in der Anwendung (F-07, Kap. 10.10): Quelle `docs/wiki`, Kapitel-Navigation, Suche, „?“-Knopf mit passendem Kapitel, Stand-Vermerk über `_Footer.md`. |
 | v1.1.1 | CI/CD (Kap. 10.9): Tests und Docker-Build bei jedem Push/PR, Release-Workflow veröffentlicht das Image nach ghcr.io; `docker-compose.yml` nutzt das fertige Image mit `pull_policy: always` und festem Projektnamen. |
+| v1.2 | Geschäft bei Ausgaben (Pflicht bei Einkaufs-Kategorien, `categories.merchant_required`), Artikel und Kassenzettel (`transactions.merchant/items/receipt`, Dateien in `data/uploads`), Auswertungen nach Geschäft und Artikel; Migrationen für bestehende Daten. |

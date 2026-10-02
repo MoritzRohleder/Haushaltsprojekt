@@ -1,0 +1,45 @@
+<%# Kassenzettel und Artikel einer Ausgabe. Erwartet: values, editing %>
+<% const names = [].concat(values.item_name ?? []); const qtys = [].concat(values.item_qty ?? []); const prices = [].concat(values.item_price ?? []); %>
+<% const rows = names.map((n, i) => ({ name: n, qty: qtys[i] ?? '1', price: prices[i] ?? '' })).filter((r) => r.name || r.price); %>
+<% const receipt = editing && editing.receipt; %>
+<details class="purchase" <%= rows.length || receipt ? 'open' : '' %>>
+  <summary>Kassenzettel und Artikel <span class="muted">(optional)</span></summary>
+
+  <label>Kassenzettel (Foto oder PDF, höchstens 15 MB)
+    <input type="file" name="receipt" accept="image/*,application/pdf">
+    <% if (receipt) { %><small>Eine neue Datei ersetzt den bisherigen Kassenzettel.</small><% } %>
+  </label>
+  <% if (receipt) { %>
+    <div class="receipt-current">
+      <% if (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(receipt.mime)) { %>
+        <a href="/buchungen/<%= editing.id %>/beleg" target="_blank" rel="noopener"><img src="/buchungen/<%= editing.id %>/beleg" alt="Kassenzettel" class="receipt-thumb"></a>
+      <% } %>
+      <div>
+        <a href="/buchungen/<%= editing.id %>/beleg" target="_blank" rel="noopener">🧾 <%= receipt.original_name %></a>
+        <span class="muted">(<%= Math.max(1, Math.round(receipt.size / 1024)) %> KB)</span>
+        · <a href="/buchungen/<%= editing.id %>/beleg?download=1">herunterladen</a>
+        <label><input type="checkbox" name="remove_receipt" value="1"> Kassenzettel entfernen</label>
+      </div>
+    </div>
+  <% } %>
+
+  <fieldset class="items" data-items>
+    <legend>Artikel</legend>
+    <div class="table-wrap">
+      <table class="items-table">
+        <thead><tr><th>Artikel</th><th>Menge</th><th>Stückpreis €</th><th class="amount">Summe</th><th></th></tr></thead>
+        <tbody data-items-body>
+          <% rows.forEach((item) => { %><%- include('item-row', { item }) %><% }) %>
+          <%- include('item-row', { item: { name: '', qty: '1', price: '' } }) %>
+        </tbody>
+      </table>
+    </div>
+    <template data-item-template><%- include('item-row', { item: { name: '', qty: '1', price: '' } }) %></template>
+    <div class="actions">
+      <button type="button" class="secondary outline small" data-add-item>+ Artikel</button>
+      <span class="muted" data-items-sum></span>
+      <span class="warning" data-items-diff></span>
+    </div>
+    <small class="muted">Rabatt oder Pfand als eigene Zeile mit negativem Preis (z. B. -0,25). Der Betrag oben wird nicht automatisch geändert.</small>
+  </fieldset>
+</details>

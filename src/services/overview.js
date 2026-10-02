@@ -140,6 +140,10 @@ function monthlySummary(ctx, year, month) {
     income, expense, saldo: income + expense, savedInAssets,
     incomeByCategory: sumBy(incomeRows, ctx.categoryName),
     expenseByCategory: sumBy(expenseRows, ctx.categoryName),
+    // Nur echte Ausgaben (keine Überträge); ohne Angabe gesammelt unter „Ohne Geschäft“
+    expenseByMerchant: expenseRows.some((t) => t.merchant)
+      ? sumBy(expenseRows.filter((t) => t.type === 'expense'), (t) => t.merchant || 'Ohne Geschäft')
+      : [],
     transfers, byAccount,
   };
 }

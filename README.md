@@ -146,6 +146,7 @@ Umgebungsvariablen (lokal direkt, bei Docker über `.env`):
 
 Alle Daten liegen als JSON-Dateien im Datenordner (lokal `data/`, bei Docker im Volume `haushalt-data`).
 Vor jedem Schreiben legt die Anwendung zusätzlich eine Sicherung in `backup/` an.
+Kassenzettel (Fotos/PDFs) liegen in `uploads/` – sie sind in Sicherung und Kopie automatisch enthalten. Bei vielen Fotos kann der Ordner einige hundert MB groß werden.
 
 **Sicherung bei Docker** (erzeugt `haushalt-backup.tar.gz` im aktuellen Ordner):
 

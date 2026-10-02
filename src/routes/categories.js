@@ -45,6 +45,15 @@ module.exports = (repos) => {
     res.redirect('/kategorien');
   });
 
+  router.post('/kategorien/:id/einkauf', async (req, res) => {
+    const required = req.body.required === 'true';
+    const category = await categories.setMerchantRequired(repos, req.session.user.id, req.params.id, required);
+    flash(req, required
+      ? `„${category.name}“ ist jetzt eine Einkaufs-Kategorie: Das Geschäft muss angegeben werden.`
+      : `Bei „${category.name}“ ist das Geschäft jetzt optional.`);
+    res.redirect('/kategorien');
+  });
+
   router.post('/kategorien/:id/archivieren', async (req, res) => {
     const archived = req.body.archived === 'true';
     await categories.setArchived(repos, req.session.user.id, req.params.id, archived);

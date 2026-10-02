@@ -96,6 +96,18 @@ function requireLogin(req, res, next) {
   next();
 }
 
+/** Multipart-Formulare (mit Datei) auslesen; andere Anfragen unverändert durchreichen. */
+function multipart(upload) {
+  return (req, res, next) => {
+    if (req.method !== 'POST' || !req.is('multipart/form-data')) return next();
+    upload(req, res, (err) => {
+      if (!err) return next();
+      if (err.code === 'LIMIT_FILE_SIZE') return next(new ValidationError('Die Datei ist zu groß (höchstens 15 MB).'));
+      return next(new ValidationError('Das Formular konnte nicht gelesen werden.'));
+    });
+  };
+}
+
 /** CSRF-Schutz für alle Formulare angemeldeter Nutzer (Formularfeld oder Header). */
 function csrf(req, res, next) {
   if (!req.session.user) return next();
@@ -151,5 +163,5 @@ function errorHandler(err, req, res, _next) {
 }
 
 module.exports = {
-  locals, securityHeaders, requireLogin, csrf, recurringDaily, flash, safeBack, notFound, errorHandler,
+  locals, securityHeaders, requireLogin, multipart, csrf, recurringDaily, flash, safeBack, notFound, errorHandler,
 };

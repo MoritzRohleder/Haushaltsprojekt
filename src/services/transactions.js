@@ -4,6 +4,7 @@ const { randomUUID } = require('node:crypto');
 const v = require('../utils/validate');
 const { ValidationError } = require('../utils/errors');
 const { isOwner, getVisibleTransaction } = require('./visibility');
+const purchase = require('./purchase');
 
 /**
  * Buchungen anlegen, ändern, löschen (Spec 5.2 „Buchung“).
@@ -39,12 +40,34 @@ function checkOpeningDate(account, date, errors) {
   }
 }
 
+/** Kategorie prüfen; gibt die Kategorie zurück (oder null, wenn keine gewählt ist). */
 async function checkCategory(repos, categoryId, kind, actor, errors) {
   if (!categoryId) return null;
   const category = await repos.categories.findById(categoryId);
   const visible = category && (category.owner_id === null || actor.system || category.owner_id === actor.userId);
-  if (!visible || category.kind !== kind) errors.push('Kategorie ist ungültig.');
-  return categoryId;
+  if (!visible || category.kind !== kind) {
+    errors.push('Kategorie ist ungültig.');
+    return null;
+  }
+  return category;
+}
+
+/**
+ * Einkaufsdetails einer Ausgabe: Geschäft (Pflicht bei „Einkauf“-Kategorien),
+ * Artikel und ein neu hochgeladener Kassenzettel (input.receiptUpload).
+ */
+function readPurchase(input, category, actor, errors) {
+  return {
+    merchant: purchase.readMerchant(input, category, actor, errors),
+    items: purchase.readItems(input, errors),
+    upload: purchase.readReceipt(input.receiptUpload, errors),
+  };
+}
+
+/** Kassenzettel speichern; gibt die Angaben für das Feld `receipt` zurück. */
+async function storeReceipt(repos, upload) {
+  const file = await repos.files.save(upload.buffer, upload.type.ext);
+  return { file, mime: upload.type.mime, original_name: upload.original_name, size: upload.size };
 }
 
 function commonFields(input, errors) {
@@ -62,26 +85,39 @@ async function prepareBooking(repos, actor, input) {
   const type = v.oneOf(input.type, ['income', 'expense'], 'Buchungsart', errors);
   const f = commonFields(input, errors);
   const account = await loadAccount(repos, input.account_id, actor, errors);
-  const category_id = await checkCategory(repos, input.category_id, type, actor, errors);
+  const category = await checkCategory(repos, input.category_id, type, actor, errors);
   checkOpeningDate(account, f.date, errors);
+  const p = type === 'expense' ? readPurchase(input, category, actor, errors) : null;
   if (errors.length) throw new ValidationError(errors);
 
-  return {
+  const row = {
     account_id: account.id,
     type,
     date: f.date,
     amount_cents: type === 'income' ? f.amount : -f.amount,
-    category_id,
+    category_id: category?.id ?? null,
     description: f.description,
     note: f.note,
     recurring_id: input.recurring_id || null,
     created_by: actor.userId,
   };
+  if (p) Object.assign(row, { merchant: p.merchant, items: p.items, receipt: null });
+  // Upload nicht mitspeichern – createBooking legt die Datei ab.
+  Object.defineProperty(row, 'receiptUpload', { value: p?.upload ?? null, enumerable: false });
+  return row;
 }
 
-/** Einnahme oder Ausgabe anlegen. */
+/** Einnahme oder Ausgabe anlegen (inkl. Kassenzettel). */
 async function createBooking(repos, actor, input) {
-  return repos.transactions.insert(await prepareBooking(repos, actor, input));
+  const row = await prepareBooking(repos, actor, input);
+  if (!row.receiptUpload) return repos.transactions.insert(row);
+  const receipt = await storeReceipt(repos, row.receiptUpload);
+  try {
+    return await repos.transactions.insert({ ...row, receipt });
+  } catch (err) {
+    await repos.files.remove(receipt.file);
+    throw err;
+  }
 }
 
 /** "account:<id>" bzw. "asset:<id>" aus dem Formular zerlegen. */
@@ -190,26 +226,56 @@ async function updateTransaction(repos, userId, id, input) {
   const account = await loadAccount(repos, input.account_id, actor, errors, 'Konto', {
     allowArchived: input.account_id === row.account_id,
   });
-  const category_id = await checkCategory(repos, input.category_id, row.type, actor, errors);
+  const category = await checkCategory(repos, input.category_id, row.type, actor, errors);
   checkOpeningDate(account, f.date, errors);
+  const p = row.type === 'expense' ? readPurchase(input, category, actor, errors) : null;
   if (errors.length) throw new ValidationError(errors);
+
+  const changes = {};
+  const oldFile = row.receipt?.file || null;
+  let newFile = null;
+  if (p) {
+    changes.merchant = p.merchant;
+    changes.items = p.items;
+    if (p.upload) {
+      changes.receipt = await storeReceipt(repos, p.upload);
+      newFile = changes.receipt.file;
+    } else if (input.remove_receipt) {
+      changes.receipt = null;
+    }
+  }
+  let updated;
+  try {
+    updated = await saveBooking(repos, row, account, category, f, changes);
+  } catch (err) {
+    if (newFile) await repos.files.remove(newFile);
+    throw err;
+  }
+  // Ersetzten oder entfernten Kassenzettel erst nach erfolgreichem Speichern löschen.
+  if (oldFile && 'receipt' in changes) await repos.files.remove(oldFile);
+  return updated;
+}
+
+function saveBooking(repos, row, account, category, f, changes) {
   return repos.transactions.update(row.id, {
+    ...changes,
     account_id: account.id,
     date: f.date,
     amount_cents: row.type === 'income' ? f.amount : -f.amount,
-    category_id,
+    category_id: category?.id ?? null,
     description: f.description,
     note: f.note,
   });
 }
 
-/** Buchung löschen; bei Transfers immer beide Hälften (S-06). */
+/** Buchung löschen; bei Transfers immer beide Hälften (S-06). Kassenzettel werden mit gelöscht. */
 async function deleteTransaction(repos, userId, id) {
   const row = await getVisibleTransaction(repos, userId, id);
   const rows = await relatedRows(repos, row);
   await repos.transaction(async () => {
     for (const r of rows) await repos.transactions.remove(r.id);
   });
+  for (const r of rows) if (r.receipt?.file) await repos.files.remove(r.receipt.file);
 }
 
 module.exports = {

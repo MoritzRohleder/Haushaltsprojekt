@@ -219,3 +219,20 @@ button.small, [role=button].small { padding: 0.1rem 0.5rem; font-size: 0.85em; w
   .manual-layout { grid-template-columns: 1fr; }
   .manual-nav { position: static; }
 }
+
+/* Ausgaben: Kassenzettel und Artikel */
+details.purchase { margin-bottom: var(--pico-spacing); }
+details.purchase > summary { font-weight: 600; }
+.items { border: 0; padding: 0; margin-top: var(--pico-spacing); }
+.items-table { margin-bottom: 0.5rem; }
+.items-table input { margin: 0; padding: 0.35rem 0.5rem; height: auto; }
+.items-table td { padding: 0.25rem; vertical-align: middle; }
+.items-table td.qty { width: 5.5rem; }
+.items-table td.price { width: 8rem; }
+.items-table td.amount { width: 7rem; white-space: nowrap; }
+.receipt-current { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: var(--pico-spacing); }
+.receipt-thumb { max-width: 8rem; max-height: 10rem; border-radius: var(--pico-border-radius); border: 1px solid var(--pico-muted-border-color); }
+.flash.warning { border-left-color: var(--hh-warning); }
+.search-row { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: start; }
+.search-row button { width: auto; }
+.nowrap { white-space: nowrap; }

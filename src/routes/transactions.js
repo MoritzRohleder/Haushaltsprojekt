@@ -6,22 +6,53 @@ const { visibleCategories, getVisibleTransaction } = require('../services/visibi
 const tx = require('../services/transactions');
 const recurring = require('../services/recurring');
 const { flash } = require('../middleware');
-const { centsToInput } = require('../utils/money');
+const { centsToInput, formatEuro } = require('../utils/money');
 const { today, parts, monthRange, formatDate, MONTH_NAMES } = require('../utils/dates');
 const { toCsv, centsToCsv } = require('../utils/csv');
 const { NotFoundError } = require('../utils/errors');
+const purchase = require('../services/purchase');
 const { handleForm, sortByName, contextOptions } = require('./helpers');
 
 const TYPES = { einnahme: 'income', ausgabe: 'expense', transfer: 'transfer' };
+
+/** Artikel einer Buchung als Formularwerte (parallele Listen). */
+function itemValues(items = []) {
+  return {
+    item_name: items.map((i) => i.name),
+    item_qty: items.map((i) => String(i.quantity).replace('.', ',')),
+    item_price: items.map((i) => centsToInput(i.unit_price_cents)),
+  };
+}
 const TITLES = { income: 'Einnahme', expense: 'Ausgabe', transfer: 'Transfer' };
 
 module.exports = (repos) => {
   const router = express.Router();
 
+  /** Erfolgsmeldung; mit Hinweis, wenn die Artikelsumme vom Betrag abweicht. */
+  function savedMessage(req, booking, text) {
+    const items = booking?.items || [];
+    const sum = purchase.itemsTotal(items);
+    if (items.length && booking.type === 'expense' && sum !== -booking.amount_cents) {
+      flash(req, `${text} Hinweis: Die Artikel ergeben ${formatEuro(sum)}, der Betrag ist ${formatEuro(-booking.amount_cents)}.`, 'warning');
+    } else {
+      flash(req, text);
+    }
+  }
+
+  /** Bisher verwendete Geschäfte, häufigste zuerst (Vorschläge beim Tippen). */
+  function knownMerchants(ctx) {
+    const counts = new Map();
+    for (const t of ctx.rows) {
+      if (t.merchant) counts.set(t.merchant, (counts.get(t.merchant) || 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'de')).map(([m]) => m);
+  }
+
   /** Daten für das Buchungsformular. */
   async function formData(userId, type, { includeHidden = false } = {}) {
     const ctx = await loadContext(repos, userId);
     return {
+      merchants: knownMerchants(ctx),
       accounts: sortByName(ctx.accounts.filter((a) => !a.archived)),
       assets: sortByName(ctx.assets.filter((a) => !a.archived)),
       categories: type === 'transfer' ? [] : await visibleCategories(repos, userId, { kind: type, includeHidden }),
@@ -48,6 +79,7 @@ module.exports = (repos) => {
       konto: String(query.konto || ''),
       kategorie: String(query.kategorie || ''),
       art: String(query.art || ''),
+      geschaeft: String(query.geschaeft || ''),
       q: String(query.q || '').trim(),
     };
     const [y, m] = filters.monat.split('-').map(Number);
@@ -58,9 +90,16 @@ module.exports = (repos) => {
       .filter((t) => !filters.konto || t.account_id === filters.konto)
       .filter((t) => !filters.kategorie || t.category_id === filters.kategorie)
       .filter((t) => !filters.art || ctx.classify(t) === filters.art)
-      .filter((t) => !q || `${t.description} ${t.note} ${ctx.label(t)}`.toLowerCase().includes(q))
+      .filter((t) => !filters.geschaeft || t.merchant === filters.geschaeft)
+      .filter((t) => !q || searchText(ctx, t).includes(q))
       .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
     return { filters, rows };
+  }
+
+  /** Durchsuchbarer Text einer Buchung: Beschreibung, Notiz, Gegenseite, Geschäft, Artikel. */
+  function searchText(ctx, t) {
+    return [t.description, t.note, ctx.label(t), t.merchant, ...(t.items || []).map((i) => i.name)]
+      .filter(Boolean).join(' ').toLowerCase();
   }
 
   router.get('/buchungen', async (req, res) => {
@@ -68,7 +107,8 @@ module.exports = (repos) => {
     const { filters, rows } = filterRows(ctx, req.query);
     res.render('transactions/list', {
       title: 'Buchungen', ctx, rows, filters,
-      exportQuery: new URLSearchParams(Object.entries(req.query).filter(([k]) => ['monat', 'alle', 'konto', 'kategorie', 'art', 'q'].includes(k)).map(([k, v]) => [k, String(v)])).toString(),
+      exportQuery: new URLSearchParams(Object.entries(req.query).filter(([k]) => ['monat', 'alle', 'konto', 'kategorie', 'art', 'geschaeft', 'q'].includes(k)).map(([k, v]) => [k, String(v)])).toString(),
+      merchants: knownMerchants(ctx).sort((a, b) => a.localeCompare(b, 'de')),
       accounts: sortByName(ctx.accounts),
       categories: await visibleCategories(repos, req.session.user.id, { includeArchived: true, includeHidden: true }),
     });
@@ -80,15 +120,18 @@ module.exports = (repos) => {
     const { filters, rows } = filterRows(ctx, req.query);
     const KIND = { income: 'Einnahme', expense: 'Ausgabe', transfer: 'Transfer' };
     const csv = toCsv(
-      ['Datum', 'Konto', 'Art', 'Kategorie / Gegenseite', 'Beschreibung', 'Notiz', 'Betrag (EUR)', 'Regelmäßig'],
+      ['Datum', 'Konto', 'Art', 'Kategorie / Gegenseite', 'Geschäft', 'Beschreibung', 'Notiz', 'Betrag (EUR)', 'Artikel', 'Kassenzettel', 'Regelmäßig'],
       [...rows].reverse().map((t) => [
         formatDate(t.date),
         ctx.accountsById.get(t.account_id)?.name ?? '',
         KIND[ctx.classify(t)],
         ctx.label(t),
+        t.merchant || '',
         t.description,
         t.note,
         centsToCsv(t.amount_cents),
+        (t.items || []).map((i) => `${i.name} (${String(i.quantity).replace('.', ',')} × ${centsToCsv(i.unit_price_cents)})`).join('; '),
+        t.receipt ? 'ja' : '',
         t.recurring_id ? 'ja' : '',
       ]),
     );
@@ -129,6 +172,8 @@ module.exports = (repos) => {
       category_id: row.category_id || '',
       description: row.description,
       note: row.note,
+      merchant: row.merchant || '',
+      ...itemValues(row.items),
       interval_count: '1',
       interval_unit: 'month',
     };
@@ -143,14 +188,16 @@ module.exports = (repos) => {
   router.post('/buchungen', async (req, res) => {
     const type = TYPES[req.body.typ] ? TYPES[req.body.typ] : req.body.type;
     if (!TITLES[type]) throw new NotFoundError();
-    const input = { ...req.body, type };
+    const input = { ...req.body, type, receiptUpload: req.file };
     await handleForm(res, async () => {
       const result = await recurring.createFromForm(repos, req.session.user.id, input);
       const accountId = type === 'transfer' ? tx.parseEndpoint(input.from)?.id : input.account_id;
       req.session.lastAccountId = accountId;
-      flash(req, result.recurring
-        ? `Regelmäßige Buchung „${result.recurring.description}“ angelegt (${recurring.describeInterval(result.recurring)}).`
-        : 'Buchung gespeichert.');
+      if (result.recurring) {
+        flash(req, `Regelmäßige Buchung „${result.recurring.description}“ angelegt (${recurring.describeInterval(result.recurring)}).`);
+      } else {
+        savedMessage(req, result.booking, 'Buchung gespeichert.');
+      }
       if (req.body.weitere) {
         const typ = Object.keys(TYPES).find((k) => TYPES[k] === type);
         return res.redirect(`/buchungen/neu?typ=${typ}`);
@@ -175,6 +222,8 @@ module.exports = (repos) => {
         category_id: row.category_id || '',
         description: row.description,
         note: row.note,
+        merchant: row.merchant || '',
+        ...itemValues(row.items),
       },
     });
   });
@@ -182,8 +231,8 @@ module.exports = (repos) => {
   router.post('/buchungen/:id/bearbeiten', async (req, res) => {
     const row = await getVisibleTransaction(repos, req.session.user.id, req.params.id);
     await handleForm(res, async () => {
-      await tx.updateTransaction(repos, req.session.user.id, row.id, req.body);
-      flash(req, 'Buchung geändert.');
+      const updated = await tx.updateTransaction(repos, req.session.user.id, row.id, { ...req.body, receiptUpload: req.file });
+      savedMessage(req, updated, 'Buchung geändert.');
       res.redirect(`/konten/${row.account_id}`);
     }, async (errors) => {
       const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
@@ -191,6 +240,21 @@ module.exports = (repos) => {
         type: row.type, values: req.body, errors,
         editing: { ...row, label: ctx.label(row), accountName: ctx.accountsById.get(row.account_id)?.name },
       });
+    });
+  });
+
+  /** Kassenzettel einer sichtbaren Buchung anzeigen (F-29). */
+  router.get('/buchungen/:id/beleg', async (req, res) => {
+    const row = await getVisibleTransaction(repos, req.session.user.id, req.params.id);
+    if (!row.receipt?.file) throw new NotFoundError('Kein Kassenzettel vorhanden');
+    const name = encodeURIComponent(row.receipt.original_name || `beleg.${row.receipt.file.split('.').pop()}`);
+    res.set({
+      'Content-Type': row.receipt.mime,
+      'Content-Disposition': `${req.query.download ? 'attachment' : 'inline'}; filename*=UTF-8''${name}`,
+      'Cache-Control': 'private, no-store',
+    });
+    res.sendFile(repos.files.path(row.receipt.file), (err) => {
+      if (err && !res.headersSent) res.status(404).end();
     });
   });
 

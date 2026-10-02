@@ -146,7 +146,7 @@ test('Sicherheits-Header, Health-Check, Theme, Auswertung, Export, Nochmal buche
   const accountId = acc.location.split('/').pop();
   await c.request('/buchungen', { method: 'POST', form: { _csrf: token, type: 'expense', date: '2026-02-03', amount: '12,34', description: 'Bäcker; Brot', account_id: accountId } });
   const csv = await c.request('/buchungen/export.csv?alle=1');
-  assert.match(csv.html, /03\.02\.2026;Giro;Ausgabe;Ohne Kategorie;"Bäcker; Brot";;-12,34;/);
+  assert.match(csv.html, /03\.02\.2026;Giro;Ausgabe;Ohne Kategorie;;"Bäcker; Brot";;-12,34;;;/);
   const rowId = (await repos.transactions.findAll())[0].id;
   const dup = await c.request(`/buchungen/neu?vorlage=${rowId}`);
   assert.match(dup.html, /value="12,34"/);

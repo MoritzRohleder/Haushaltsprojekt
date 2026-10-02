@@ -85,6 +85,10 @@ function readRecurringOptions(input) {
   if (input.type === 'transfer' && parseEndpoint(input.from)?.kind === 'asset') {
     errors.push('Regelmäßige Auszahlungen aus einer Anlage werden nicht unterstützt.');
   }
+  const hasItems = [].concat(input.item_name ?? []).some((n) => String(n).trim());
+  if (hasItems || input.receiptUpload?.size) {
+    errors.push('Artikel und Kassenzettel gehören zu einer einzelnen Buchung – bei regelmäßigen Buchungen bitte weglassen.');
+  }
   if (errors.length) throw new ValidationError(errors);
   return interval;
 }
@@ -114,6 +118,7 @@ async function createFromForm(repos, userId, input, today = todayIso()) {
       to_asset_id: input.type === 'transfer' && to.kind === 'asset' ? to.id : null,
       amount_cents: Math.abs(first.amount_cents),
       category_id: first.category_id,
+      merchant: first.merchant || '',
       description: first.description,
       note: first.note,
       ...interval,
@@ -137,7 +142,9 @@ function toInput(rec, date) {
     note: rec.note,
     recurring_id: rec.id,
   };
-  if (rec.type !== 'transfer') return { ...base, account_id: rec.account_id, category_id: rec.category_id };
+  if (rec.type !== 'transfer') {
+    return { ...base, account_id: rec.account_id, category_id: rec.category_id, merchant: rec.merchant || '' };
+  }
   return {
     ...base,
     from: `account:${rec.account_id}`,
@@ -212,10 +219,12 @@ async function updateRecurring(repos, userId, id, input) {
   const amount_cents = v.positiveAmount(input.amount, 'Betrag', errors);
   const description = v.text(input.description, { label: 'Beschreibung', required: true, max: 120 }, errors);
   const note = v.text(input.note, { label: 'Notiz', max: 500 }, errors);
+  const merchant = v.text(input.merchant, { label: 'Geschäft', max: 80 }, errors);
   const interval = readInterval(input, errors, rec.start_date);
   if (errors.length) throw new ValidationError(errors);
 
   const changes = { amount_cents, description, note, ...interval };
+  if (rec.type === 'expense') changes.merchant = merchant;
   const rhythmChanged = RHYTHM_FIELDS.some((f) => (rec[f] ?? null) !== (interval[f] ?? null));
   if (rhythmChanged && rec.last_generated_date) {
     const next = nextOccurrenceAfter({ ...rec, end_date: null }, rec.last_generated_date);

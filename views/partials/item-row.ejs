@@ -1,0 +1,8 @@
+<%# Eine Zeile der Artikelliste. Erwartet: item ({ name, qty, price }) %>
+<tr data-item-row>
+  <td><input name="item_name" maxlength="80" placeholder="z. B. Milch" value="<%= item.name %>" aria-label="Artikel"></td>
+  <td class="qty"><input name="item_qty" inputmode="decimal" value="<%= item.qty %>" aria-label="Menge"></td>
+  <td class="price"><input name="item_price" inputmode="decimal" placeholder="0,00" value="<%= item.price %>" aria-label="Stückpreis in Euro"></td>
+  <td class="amount" data-item-total></td>
+  <td><button type="button" class="secondary outline small" data-remove-item aria-label="Artikel entfernen">✕</button></td>
+</tr>
