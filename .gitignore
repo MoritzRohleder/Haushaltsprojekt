@@ -144,3 +144,6 @@ vite.config.ts.timestamp-*
 
 # Haushalt: lokale Daten (JSON, Sitzungen, Sicherungen)
 data/
+
+# Screenshots o. Ä. im Projekt-Hauptordner nicht versionieren
+/*.png
