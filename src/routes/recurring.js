@@ -2,44 +2,29 @@
 
 const express = require('express');
 const recurring = require('../services/recurring');
+const recurringOverview = require('../services/recurringOverview');
 const { loadContext } = require('../services/overview');
 const { flash } = require('../middleware');
 const { centsToInput } = require('../utils/money');
-const { nextOccurrenceAfter, today, MONTH_NAMES } = require('../utils/dates');
+const { MONTH_NAMES } = require('../utils/dates');
 const { handleForm, contextOptions } = require('./helpers');
-
-/** Nächster noch nicht gebuchter Termin einer Vorlage. */
-function nextDate(rec) {
-  return rec.active ? nextOccurrenceAfter(rec, rec.last_generated_date) : null;
-}
 
 module.exports = (repos) => {
   const router = express.Router();
 
-  function describe(ctx, rec) {
-    const from = ctx.accountsById.get(rec.account_id)?.name ?? '?';
-    let target = '';
-    if (rec.to_account_id) target = ctx.accountsById.get(rec.to_account_id)?.name ?? '?';
-    if (rec.to_asset_id) target = ctx.assetsById.get(rec.to_asset_id)?.name ?? '?';
-    return {
-      ...rec,
-      route: rec.type === 'transfer' ? `${from} → ${target}` : from,
-      category: ctx.categoriesById.get(rec.category_id)?.name ?? '',
-      rhythm: recurring.describeInterval(rec),
-      next: nextDate(rec),
-    };
-  }
-
   router.get('/wiederkehrend', async (req, res) => {
     const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
-    const list = (await recurring.listForUser(repos, req.session.user.id)).map((r) => describe(ctx, r));
-    res.render('recurring/list', { title: 'Regelmäßige Buchungen', list, today: today() });
+    const templates = await recurring.listForUser(repos, req.session.user.id);
+    const overview = recurringOverview.buildOverview(ctx, templates, req.query);
+    res.render('recurring/list', {
+      title: 'Regelmäßige Buchungen', ...overview, unitLabels: recurring.UNIT_LABELS,
+    });
   });
 
   async function renderForm(req, res, { rec, values, errors = [] }) {
     const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     res.render('recurring/form', {
-      title: 'Regelmäßige Buchung bearbeiten', rec: describe(ctx, rec), values, errors,
+      title: 'Regelmäßige Buchung bearbeiten', rec: recurringOverview.describe(ctx, rec), values, errors,
       unitLabels: recurring.UNIT_LABELS, monthNames: MONTH_NAMES,
     });
   }

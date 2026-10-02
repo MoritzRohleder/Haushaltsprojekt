@@ -76,9 +76,9 @@ function parseEuro(text) {
 }
 
 function parseQty(text) {
-  const t = String(text || '').trim().replace(',', '.');
+  const t = String(text || '').trim();
   if (!t) return 1;
-  return /^\d+(\.\d{1,3})?$/.test(t) && Number(t) > 0 ? Number(t) : null;
+  return /^\d{1,6}$/.test(t) && Number(t) > 0 ? Number(t) : null;
 }
 
 document.querySelectorAll('[data-category-select]').forEach((select) => {

@@ -28,12 +28,44 @@ Das **Datum** oben im Formular ist das **Startdatum**: Der erste Termin ist der 
 - Liegt das Startdatum in der Vergangenheit, werden alle bisherigen Termine sofort **rückwirkend** gebucht.
 - Lässt du „Am Tag“ leer, gilt der Tag des Startdatums.
 
+## Übersicht
+
+Über deinen Nutzernamen → **Regelmäßige Buchungen** siehst du alle Vorlagen auf einen Blick – praktisch, um die **festen Kosten** im Blick zu behalten.
+
+Oben stehen die Summen **pro Monat**:
+
+| Kachel | Bedeutung |
+|--------|-----------|
+| Einnahmen pro Monat | z. B. Gehalt, darunter der Wert fürs ganze Jahr |
+| Ausgaben pro Monat | z. B. Miete, Abos, Versicherungen |
+| Saldo pro Monat | Einnahmen minus Ausgaben – so viel bleibt nach den festen Posten übrig |
+| Transfers pro Monat | Geld zwischen eigenen Konten, darunter der Teil, der in Anlagen fließt (Sparraten) |
+
+Beträge, die nicht monatlich gebucht werden, rechnet Haushalt auf einen **Durchschnittsmonat** um: Eine Versicherung über 480 € im Jahr zählt mit 40 € pro Monat, 45 € jede Woche mit etwa 195,67 €. In der Tabelle steht der umgerechnete Wert klein unter dem Betrag.
+
+Pausierte und beendete Einträge werden angezeigt (blasser), zählen aber **nicht** in die Summen.
+
+**Filtern**
+
+| Filter | Zeigt |
+|--------|-------|
+| Konto | Einträge, die dieses Konto oder diese Anlage betreffen – egal ob als Quelle oder Ziel |
+| Turnus | Täglich, wöchentlich, monatlich oder jährlich (auch z. B. „alle 3 Monate“ unter „monatlich“) |
+| Art | Einnahmen, Ausgaben oder Transfers |
+| Status | Laufend, pausiert oder beendet |
+
+Die Summen oben beziehen sich immer auf die **gefilterte** Liste. So siehst du z. B., was das Gemeinsame Konto jeden Monat an festen Ausgaben trägt.
+
+Wie bei Buchungen gilt die Sicht des jeweiligen Nutzers: Ein Transfer, dessen Gegenkonto du nicht siehst, ist für dich eine Einnahme bzw. Ausgabe (siehe [Transfers](Transfers)).
+
+**Sortieren**
+
+Ein Klick auf eine Spaltenüberschrift sortiert danach, ein zweiter Klick dreht die Reihenfolge um (▲/▼). Sortieren kannst du nach Beschreibung, Konto, Turnus, nächstem Termin, Betrag und **Betrag pro Monat** – absteigend nach „pro Monat“ stehen die größten Posten oben.
+
 ## Verwalten
 
-Über deinen Nutzernamen → **Regelmäßige Buchungen** siehst du alle Vorlagen mit Rhythmus und **nächstem Termin**.
-
 - **✎ Bearbeiten**: Betrag, Beschreibung, Notiz, Rhythmus und Enddatum ändern. Änderungen gelten **ab dem nächsten Termin** – bereits gebuchte Termine bleiben unverändert, und im laufenden Monat wird nichts doppelt gebucht.
-- **Pausieren / Fortsetzen**: Während der Pause wird nichts gebucht. Beim Fortsetzen werden die Termine aus der Pause **nicht** nachgeholt.
+- **⏸ Pausieren / ▶ Fortsetzen**: Während der Pause wird nichts gebucht. Beim Fortsetzen werden die Termine aus der Pause **nicht** nachgeholt.
 - **Löschen** (im Bearbeiten-Formular): Die Vorlage verschwindet, bereits gebuchte Termine bleiben erhalten.
 - Eine einzelne automatisch erzeugte Buchung kannst du wie jede andere Buchung ändern oder löschen, ohne die Vorlage zu verändern. Eine gelöschte Einzelbuchung wird nicht erneut erzeugt.
 

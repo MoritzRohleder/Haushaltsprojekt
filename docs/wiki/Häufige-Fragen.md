@@ -16,6 +16,12 @@ Ein manueller Stand beschreibt den Wert zum Zeitpunkt der Eingabe; ältere Einza
 **Eine regelmäßige Buchung wurde nicht gebucht.**
 Prüfe unter **Regelmäßige Buchungen**, ob sie pausiert ist oder ihr Enddatum erreicht hat. Ist das Konto archiviert, wird ebenfalls nicht gebucht.
 
+**Wie viel kosten mich meine festen Ausgaben im Monat?**
+Unter **Regelmäßige Buchungen** stehen oben Einnahmen, Ausgaben und Saldo pro Monat – jährliche oder wöchentliche Beträge sind auf einen Monat umgerechnet. Mit dem Filter **Konto** siehst du die Werte für ein einzelnes Konto. Siehe [Übersicht](Regelmäßige-Buchungen#übersicht).
+
+**Warum kann ich bei Artikeln keine Menge wie 0,5 eingeben?**
+Die Menge ist eine Stückzahl und deshalb immer ganzzahlig. Für Ware nach Gewicht trägst du Menge `1` und den Preis laut Kassenzettel ein, z. B. „Äpfel 0,8 kg“ zu 2,39 €.
+
 **Wie lege ich eine Kreditkarte an?**
 Kreditkarten mit monatlicher Abrechnung werden nicht unterstützt. Eine Prepaid-Karte legst du als Konto vom Typ „Prepaid-Karte“ an.
 

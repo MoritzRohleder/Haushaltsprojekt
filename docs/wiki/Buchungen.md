@@ -35,8 +35,8 @@ Unter **Kassenzettel und Artikel** (aufklappen) kannst du zu einer Ausgabe festh
 | Spalte | Bedeutung |
 |--------|-----------|
 | Artikel | Name, z. B. „Milch 1,5 %“ |
-| Menge | Anzahl oder Gewicht, z. B. `2` oder `0,5` |
-| Stückpreis € | Preis pro Stück bzw. Einheit |
+| Menge | Stückzahl als ganze Zahl, z. B. `2` (leer = 1) |
+| Stückpreis € | Preis pro Stück |
 | Summe | wird berechnet: Menge × Stückpreis |
 
 - Mit **+ Artikel** fügst du eine Zeile hinzu, mit **✕** entfernst du sie.

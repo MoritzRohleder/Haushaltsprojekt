@@ -1,31 +1,120 @@
 <%- include('../partials/head') %>
+<%
+  const KIND_LABELS = { income: 'Einnahme', expense: 'Ausgabe', transfer: 'Transfer' };
+  // Adresse mit den aktuellen Filtern und geänderter Sortierung
+  const sortLink = (key) => {
+    const dir = filters.sort === key && filters.dir === 'asc' ? 'desc' : 'asc';
+    const q = new URLSearchParams();
+    ['konto', 'turnus', 'art', 'status'].forEach((k) => { if (filters[k]) q.set(k, filters[k]); });
+    q.set('sort', key);
+    q.set('dir', dir);
+    return '/wiederkehrend?' + q.toString();
+  };
+  const sortMark = (key) => (filters.sort === key ? (filters.dir === 'asc' ? ' ▲' : ' ▼') : '');
+  const ariaSort = (key) => (filters.sort === key ? (filters.dir === 'asc' ? 'ascending' : 'descending') : 'none');
+  const filtered = filters.konto || filters.turnus || filters.art || filters.status;
+%>
 <h1>Regelmäßige Buchungen</h1>
 <p class="muted">Neue regelmäßige Buchungen legst du beim Erfassen einer Einnahme, Ausgabe oder eines Transfers über den Schalter „Regelmäßig“ an.</p>
-<% if (!list.length) { %>
+<% if (!total) { %>
   <p>Noch keine regelmäßigen Buchungen.</p>
 <% } else { %>
+
+<div class="stats">
+  <article><span class="label">Einnahmen pro Monat</span><span class="value income"><%= euro(summary.income, { sign: true }) %></span><small class="muted"><%= euro(summary.income * 12) %> im Jahr</small></article>
+  <article><span class="label">Ausgaben pro Monat</span><span class="value expense"><%= euro(summary.expense, { sign: true }) %></span><small class="muted"><%= euro(-summary.expense * 12) %> im Jahr</small></article>
+  <article><span class="label">Saldo pro Monat</span><span class="value <%= summary.net < 0 ? 'expense' : 'income' %>"><%= euro(summary.net, { sign: true }) %></span><small class="muted">Einnahmen minus Ausgaben</small></article>
+  <article><span class="label">Transfers pro Monat</span><span class="value transfer"><%= euro(summary.transfer) %></span><small class="muted">davon in Anlagen <%= euro(summary.toAssets) %></small></article>
+</div>
+<p class="muted"><small>Umgerechnet auf einen Durchschnittsmonat, nur laufende Einträge<%= filtered ? ' der gefilterten Liste' : '' %> (<%= summary.running %>). Pausierte und beendete zählen nicht mit.</small></p>
+
+<form method="get" action="/wiederkehrend">
+  <input type="hidden" name="sort" value="<%= filters.sort %>">
+  <input type="hidden" name="dir" value="<%= filters.dir %>">
+  <div class="grid">
+    <label>Konto
+      <select name="konto">
+        <option value="">Alle</option>
+        <% if (options.accounts.length) { %><optgroup label="Konten">
+          <% options.accounts.forEach((a) => { %><option value="<%= a.id %>" <%= filters.konto === a.id ? 'selected' : '' %>><%= a.name %></option><% }) %>
+        </optgroup><% } %>
+        <% if (options.assets.length) { %><optgroup label="Anlagen">
+          <% options.assets.forEach((a) => { %><option value="<%= a.id %>" <%= filters.konto === a.id ? 'selected' : '' %>><%= a.name %></option><% }) %>
+        </optgroup><% } %>
+      </select>
+    </label>
+    <label>Turnus
+      <select name="turnus">
+        <option value="">Alle</option>
+        <% Object.entries({ day: 'Täglich', week: 'Wöchentlich', month: 'Monatlich', year: 'Jährlich' }).forEach(([unit, text]) => { %>
+          <option value="<%= unit %>" <%= filters.turnus === unit ? 'selected' : '' %>><%= text %> (auch alle n <%= unitLabels[unit][1] %>)</option>
+        <% }) %>
+      </select>
+    </label>
+    <label>Art
+      <select name="art">
+        <option value="">Alle</option>
+        <option value="income" <%= filters.art === 'income' ? 'selected' : '' %>>Einnahmen</option>
+        <option value="expense" <%= filters.art === 'expense' ? 'selected' : '' %>>Ausgaben</option>
+        <option value="transfer" <%= filters.art === 'transfer' ? 'selected' : '' %>>Transfers</option>
+      </select>
+    </label>
+    <label>Status
+      <select name="status">
+        <option value="">Alle</option>
+        <option value="laufend" <%= filters.status === 'laufend' ? 'selected' : '' %>>Laufend</option>
+        <option value="pausiert" <%= filters.status === 'pausiert' ? 'selected' : '' %>>Pausiert</option>
+        <option value="beendet" <%= filters.status === 'beendet' ? 'selected' : '' %>>Beendet</option>
+      </select>
+    </label>
+  </div>
+  <p class="actions">
+    <button type="submit" class="secondary">Filtern</button>
+    <% if (filtered) { %><a href="/wiederkehrend?sort=<%= filters.sort %>&amp;dir=<%= filters.dir %>">Filter zurücksetzen</a><% } %>
+    <span class="muted"><%= rows.length %> von <%= total %> Einträgen</span>
+  </p>
+</form>
+
+<% if (!rows.length) { %>
+  <p>Keine regelmäßigen Buchungen passen zu diesem Filter.</p>
+<% } else { %>
 <div class="table-wrap">
-<table class="striped">
-  <thead><tr><th>Beschreibung</th><th>Konto</th><th>Rhythmus</th><th>Nächster Termin</th><th class="amount">Betrag</th><th></th></tr></thead>
+<table class="striped sortable">
+  <thead><tr>
+    <th aria-sort="<%= ariaSort('beschreibung') %>"><a href="<%= sortLink('beschreibung') %>">Beschreibung<%= sortMark('beschreibung') %></a></th>
+    <th aria-sort="<%= ariaSort('konto') %>"><a href="<%= sortLink('konto') %>">Konto<%= sortMark('konto') %></a></th>
+    <th aria-sort="<%= filters.sort === 'naechster' ? ariaSort('naechster') : ariaSort('turnus') %>">
+      <a href="<%= sortLink('turnus') %>">Turnus<%= sortMark('turnus') %></a><br>
+      <small><a href="<%= sortLink('naechster') %>">nächster Termin<%= sortMark('naechster') %></a></small>
+    </th>
+    <th class="amount" aria-sort="<%= filters.sort === 'betrag' ? ariaSort('betrag') : ariaSort('monat') %>">
+      <a href="<%= sortLink('betrag') %>">Betrag<%= sortMark('betrag') %></a><br>
+      <small><a href="<%= sortLink('monat') %>">pro Monat<%= sortMark('monat') %></a></small>
+    </th>
+    <th></th>
+  </tr></thead>
   <tbody>
-  <% list.forEach((r) => { const cls = r.type === 'transfer' ? (r.to_asset_id ? 'asset' : 'transfer') : r.type; %>
-    <tr>
-      <td><%= r.description %><% if (r.category) { %><br><small class="muted"><%= r.category %></small><% } %></td>
+  <% rows.forEach((r) => { %>
+    <tr class="<%= r.status !== 'laufend' ? 'inactive' : '' %>">
+      <td><%= r.description %><br><small class="muted"><span class="<%= r.kindClass %>"><%= KIND_LABELS[r.kind] %></span><% if (r.category) { %> · <%= r.category %><% } %><% if (r.merchant) { %> · <%= r.merchant %><% } %></small></td>
       <td><%= r.route %></td>
-      <td><%= r.rhythm %><% if (r.end_date) { %><br><small class="muted">bis <%= date(r.end_date) %></small><% } %></td>
       <td>
-        <% if (!r.active) { %><span class="badge warning">pausiert</span>
-        <% } else if (r.next) { %><%= date(r.next) %>
+        <%= r.rhythm %><% if (r.end_date) { %>, bis <%= date(r.end_date) %><% } %><br>
+        <% if (r.status === 'pausiert') { %><span class="badge warning">pausiert</span>
+        <% } else if (r.next) { %><small class="muted nowrap">nächster: <%= date(r.next) %></small>
         <% } else { %><span class="badge muted">beendet</span><% } %>
       </td>
-      <td class="amount strong <%= cls %>"><%= euro(r.type === 'expense' ? -r.amount_cents : r.amount_cents, { sign: r.type !== 'transfer' }) %></td>
+      <td class="amount <%= r.kindClass %>">
+        <strong><%= euro(r.signed_cents, { sign: r.kind !== 'transfer' }) %></strong>
+        <% if (r.interval_unit !== 'month' || r.interval_count !== 1) { %><br><small title="umgerechnet auf einen Durchschnittsmonat">≈ <%= euro(r.monthly_cents, { sign: r.kind !== 'transfer' }) %> / Monat</small><% } %>
+      </td>
       <td>
         <div class="actions">
           <a href="/wiederkehrend/<%= r.id %>/bearbeiten" aria-label="Bearbeiten">✎</a>
           <form method="post" action="/wiederkehrend/<%= r.id %>/aktiv">
             <%- include('../partials/csrf') %>
             <input type="hidden" name="active" value="<%= r.active ? 'false' : 'true' %>">
-            <button type="submit" class="secondary outline"><%= r.active ? 'Pausieren' : 'Fortsetzen' %></button>
+            <button type="submit" class="secondary outline small" title="<%= r.active ? 'Pausieren' : 'Fortsetzen' %>" aria-label="<%= r.active ? 'Pausieren' : 'Fortsetzen' %>"><%= r.active ? '⏸' : '▶' %></button>
           </form>
         </div>
       </td>
@@ -34,5 +123,6 @@
   </tbody>
 </table>
 </div>
+<% } %>
 <% } %>
 <%- include('../partials/foot') %>

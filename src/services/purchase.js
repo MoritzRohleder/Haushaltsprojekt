@@ -14,11 +14,11 @@ const MAX_RECEIPT_BYTES = 15 * 1024 * 1024;
 /** Formularfelder mit Mehrfachwerten (item_name, item_qty, item_price) als Liste. */
 const asList = (value) => (value === undefined ? [] : [].concat(value));
 
-/** Menge mit Komma oder Punkt, bis 3 Nachkommastellen, z. B. „1“, „0,5“, „2.25“. */
+/** Stückzahl: ganze Zahl ab 1, z. B. „1“ oder „12“. Leer bedeutet 1. */
 function parseQuantity(text) {
-  const t = String(text ?? '').trim().replace(',', '.');
+  const t = String(text ?? '').trim();
   if (t === '') return 1;
-  if (!/^\d{1,6}(\.\d{1,3})?$/.test(t)) return null;
+  if (!/^\d{1,6}$/.test(t)) return null;
   const q = Number(t);
   return q > 0 ? q : null;
 }
@@ -42,7 +42,7 @@ function readItems(input, errors) {
     if (!name) errors.push(`${label}: Name fehlt.`);
     if (name.length > 80) errors.push(`${label}: Name darf höchstens 80 Zeichen lang sein.`);
     const quantity = parseQuantity(qtyText);
-    if (quantity === null) errors.push(`${label}: Menge ist ungültig (z. B. 2 oder 0,5).`);
+    if (quantity === null) errors.push(`${label}: Menge muss eine ganze Zahl ab 1 sein (z. B. 2).`);
     const unit = parseEuro(priceText);
     if (unit === null) errors.push(`${label}: Stückpreis ist kein gültiger Betrag.`);
     if (quantity !== null && unit !== null) {

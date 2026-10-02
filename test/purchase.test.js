@@ -74,6 +74,9 @@ test('Artikel werden gespeichert; Betrag bleibt wie eingegeben', async (t) => {
   assert.deepEqual(row.items.map((i) => [i.name, i.quantity, i.unit_price_cents, i.total_cents]),
     [['Milch', 2, 119, 238], ['Butter', 1, 249, 249], ['Pfand', 1, -25, -25]]);
   await assert.rejects(tx.createBooking(s.repos, { userId: s.a.id }, { ...s.base, item_name: ['Käse'], item_qty: ['x'], item_price: ['1'] }), /Menge/);
+  for (const qty of ['0,5', '1.5', '0', '-1']) {
+    await assert.rejects(tx.createBooking(s.repos, { userId: s.a.id }, { ...s.base, item_name: ['Käse'], item_qty: [qty], item_price: ['1'] }), /ganze Zahl/);
+  }
   await assert.rejects(tx.createBooking(s.repos, { userId: s.a.id }, { ...s.base, item_name: [''], item_qty: ['1'], item_price: ['1'] }), /Name fehlt/);
 });
 
