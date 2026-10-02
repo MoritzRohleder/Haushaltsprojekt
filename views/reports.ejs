@@ -1,0 +1,52 @@
+<%- include('partials/head') %>
+<div class="page-head">
+  <h1>Auswertung</h1>
+  <div class="actions">
+    <% ranges.forEach((r) => { %>
+      <a href="/auswertung?monate=<%= r %>" role="button" class="<%= r === months ? '' : 'secondary outline' %>" <%= r === months ? 'aria-current=page' : '' %>><%= r %> Monate</a>
+    <% }) %>
+  </div>
+</div>
+
+<% if (!hasData) { %>
+  <p>Noch keine Daten. <a href="/konten/neu">Lege dein erstes Konto an.</a></p>
+<% } else { %>
+<article>
+  <header><strong>Saldo je Monat</strong> <span class="muted">– Einnahmen minus Ausgaben; über der Linie Überschuss, darunter Defizit</span></header>
+  <%- include('partials/chart-columns', { chart: saldoChart, cssClass: '', title: `Saldo je Monat, letzte ${months} Monate` }) %>
+</article>
+
+<article>
+  <header><strong>Gesamtvermögen</strong> <span class="muted">– Konten und Anlagen jeweils zum Monatsende</span></header>
+  <%- include('partials/chart-line', { chart: worthChart, cssClass: '', title: `Gesamtvermögen, letzte ${months} Monate` }) %>
+</article>
+
+<h2>Monatsvergleich</h2>
+<div class="table-wrap">
+<table class="striped">
+  <thead>
+    <tr>
+      <th>Monat</th>
+      <th class="amount">Einnahmen</th>
+      <th class="amount">Ausgaben</th>
+      <th class="amount">Saldo</th>
+      <th class="amount">In Anlagen gespart</th>
+      <th class="amount">Gesamtvermögen</th>
+    </tr>
+  </thead>
+  <tbody>
+  <% series.forEach((m) => { %>
+    <tr>
+      <td><a href="/monat/<%= m.year %>/<%= m.month %>"><%= monthName(m.year, m.month) %></a></td>
+      <td class="amount income"><%= euro(m.income) %></td>
+      <td class="amount expense"><%= euro(m.expense) %></td>
+      <td class="amount strong <%= m.saldo < 0 ? 'expense' : '' %>"><%= euro(m.saldo, { sign: true }) %></td>
+      <td class="amount asset"><%= euro(m.savedInAssets) %></td>
+      <td class="amount"><%= euro(m.netWorth.total) %></td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+</div>
+<% } %>
+<%- include('partials/foot') %>

@@ -1,0 +1,103 @@
+<%- include('../partials/head') %>
+<h1><%= title %></h1>
+<%- include('../partials/errors') %>
+
+<% if (editing && editing.type === 'transfer') { %>
+  <p class="muted">
+    <%= editing.accountName %>: <%= editing.label %>.
+    <% if (editing.transfer_id) { %>Änderungen gelten für beide Seiten des Transfers.<% } %>
+    Um Konten oder Anlage zu ändern, lösche den Transfer und lege ihn neu an.
+  </p>
+<% } %>
+
+<form method="post" action="<%= editing ? `/buchungen/${editing.id}/bearbeiten` : '/buchungen' %>">
+  <%- include('../partials/csrf') %>
+  <input type="hidden" name="type" value="<%= type %>">
+
+  <div class="grid">
+    <label>Datum <input type="date" name="date" required value="<%= values.date || '' %>"></label>
+    <label>Betrag in €
+      <input name="amount" inputmode="decimal" required placeholder="0,00" value="<%= values.amount || '' %>" <%= editing ? '' : 'autofocus' %>>
+    </label>
+  </div>
+
+  <% if (type === 'transfer') { %>
+    <% if (!editing) { %>
+    <div class="grid">
+      <label>Von
+        <select name="from" required>
+          <option value="">Bitte wählen</option>
+          <optgroup label="Konten">
+            <% accounts.forEach((a) => { %><option value="account:<%= a.id %>" <%= values.from === `account:${a.id}` ? 'selected' : '' %>><%= a.name %></option><% }) %>
+          </optgroup>
+          <% if (assets.length) { %>
+          <optgroup label="Anlagen (Auszahlung)">
+            <% assets.forEach((a) => { %><option value="asset:<%= a.id %>" <%= values.from === `asset:${a.id}` ? 'selected' : '' %>><%= a.name %></option><% }) %>
+          </optgroup>
+          <% } %>
+        </select>
+      </label>
+      <label>Nach
+        <select name="to" required>
+          <option value="">Bitte wählen</option>
+          <optgroup label="Konten">
+            <% accounts.forEach((a) => { %><option value="account:<%= a.id %>" <%= values.to === `account:${a.id}` ? 'selected' : '' %>><%= a.name %></option><% }) %>
+          </optgroup>
+          <% if (assets.length) { %>
+          <optgroup label="Anlagen (Einzahlung)">
+            <% assets.forEach((a) => { %><option value="asset:<%= a.id %>" <%= values.to === `asset:${a.id}` ? 'selected' : '' %>><%= a.name %></option><% }) %>
+          </optgroup>
+          <% } %>
+        </select>
+      </label>
+    </div>
+    <small class="muted">Nur deine eigenen Konten und Anlagen. Geld an ein Konto, das du nicht siehst, erfasst du als Ausgabe.</small>
+    <% } %>
+  <% } else { %>
+    <div class="grid">
+      <label>Konto
+        <select name="account_id" required>
+          <option value="">Bitte wählen</option>
+          <% accounts.forEach((a) => { %><option value="<%= a.id %>" <%= values.account_id === a.id ? 'selected' : '' %>><%= a.name %></option><% }) %>
+        </select>
+      </label>
+      <label>Kategorie
+        <select name="category_id">
+          <option value="">Ohne Kategorie</option>
+          <% categories.forEach((c) => { %><option value="<%= c.id %>" <%= values.category_id === c.id ? 'selected' : '' %>><%= c.name %><%= c.owner_id ? ' (eigene)' : '' %></option><% }) %>
+        </select>
+      </label>
+    </div>
+  <% } %>
+
+  <label>Beschreibung <input name="description" required maxlength="120" value="<%= values.description || '' %>"></label>
+  <label>Notiz <textarea name="note" rows="2" maxlength="500"><%= values.note || '' %></textarea></label>
+
+  <% if (!editing) { %>
+    <fieldset>
+      <label>
+        <input type="checkbox" name="recurring" value="1" role="switch" data-toggle="interval-fields" <%= values.recurring ? 'checked' : '' %>>
+        Regelmäßig
+      </label>
+      <div id="interval-fields">
+        <%- include('../partials/interval') %>
+        <small class="muted">Das Datum oben ist das Startdatum: Der erste Termin ist der erste passende Tag ab diesem Datum. Fällige Termine werden automatisch gebucht – bei einem Startdatum in der Vergangenheit auch rückwirkend.</small>
+      </div>
+    </fieldset>
+  <% } %>
+
+  <div class="actions">
+    <button type="submit">Speichern</button>
+    <% if (!editing) { %><button type="submit" name="weitere" value="1" class="secondary">Speichern &amp; weitere erfassen</button><% } %>
+    <a href="<%= editing ? `/konten/${editing.account_id}` : '/buchungen' %>" role="button" class="secondary outline">Abbrechen</a>
+  </div>
+</form>
+
+<% if (editing) { %>
+  <p><a href="/buchungen/neu?vorlage=<%= editing.id %>">↻ Nochmal buchen</a> <span class="muted">– neue Buchung mit diesen Werten und heutigem Datum</span></p>
+  <form method="post" action="/buchungen/<%= editing.id %>/loeschen" data-confirm="<%= editing.transfer_id ? 'Transfer wirklich löschen? Beide Seiten werden gelöscht.' : 'Buchung wirklich löschen?' %>">
+    <%- include('../partials/csrf') %>
+    <button type="submit" class="secondary outline">Löschen</button>
+  </form>
+<% } %>
+<%- include('../partials/foot') %>

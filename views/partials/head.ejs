@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="de"<% if (theme !== 'auto') { %> data-theme="<%= theme %>"<% } %>>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="<%= theme === 'auto' ? 'light dark' : theme %>">
+  <title><%= title %> · Haushalt</title>
+  <link rel="stylesheet" href="/vendor/pico/pico.min.css">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><a href="/" class="brand"><strong>Haushalt</strong></a></li></ul>
+      <% if (currentUser) { %>
+      <ul>
+        <li><a href="/" <%= path === '/' ? 'aria-current=page' : '' %>>Übersicht</a></li>
+        <li><a href="/monat" <%= path.startsWith('/monat') ? 'aria-current=page' : '' %>>Monat</a></li>
+        <li><a href="/buchungen" <%= path.startsWith('/buchungen') ? 'aria-current=page' : '' %>>Buchungen</a></li>
+        <li><a href="/konten" <%= path.startsWith('/konten') ? 'aria-current=page' : '' %>>Konten</a></li>
+        <li><a href="/anlagen" <%= path.startsWith('/anlagen') ? 'aria-current=page' : '' %>>Anlagen</a></li>
+        <li><a href="/auswertung" <%= path.startsWith('/auswertung') ? 'aria-current=page' : '' %>>Auswertung</a></li>
+        <li><a href="<%= helpUrl %>" class="help-link" aria-label="Handbuch (Hilfe zu dieser Seite)" title="Handbuch – Hilfe zu dieser Seite">?</a></li>
+        <li>
+          <form method="post" action="/einstellungen/darstellung" class="inline-form" data-theme-toggle data-theme-current="<%= theme %>">
+            <%- include('csrf') %>
+            <input type="hidden" name="theme" value="<%= theme === 'dark' ? 'light' : 'dark' %>">
+            <input type="hidden" name="back" value="<%= path %>">
+            <button type="submit" class="theme-toggle" aria-label="Hell/Dunkel umschalten" title="Hell/Dunkel umschalten">
+              <svg class="icon-dark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+              <svg class="icon-light" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
+            </button>
+          </form>
+        </li>
+        <li>
+          <details class="dropdown">
+            <summary><%= currentUser.username %></summary>
+            <ul dir="rtl">
+              <li><a href="/wiederkehrend">Regelmäßige Buchungen</a></li>
+              <li><a href="/kategorien">Kategorien</a></li>
+              <li><a href="/profil">Profil</a></li>
+              <li><a href="/handbuch">Handbuch</a></li>
+              <li>
+                <form method="post" action="/logout" class="inline-form">
+                  <%- include('csrf') %>
+                  <button type="submit" class="secondary outline">Abmelden</button>
+                </form>
+              </li>
+            </ul>
+          </details>
+        </li>
+      </ul>
+      <% } else { %>
+      <ul><li><a href="/handbuch" <%= path.startsWith('/handbuch') ? 'aria-current=page' : '' %>>Handbuch</a></li></ul>
+      <% } %>
+    </nav>
+  </header>
+  <main class="container">
+    <% if (flash) { %>
+      <div class="flash <%= flash.type %>" role="status"><%= flash.text %></div>
+    <% } %>

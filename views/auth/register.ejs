@@ -1,0 +1,22 @@
+<%- include('../partials/head') %>
+<article class="narrow">
+  <h1>Registrieren</h1>
+  <%- include('../partials/errors') %>
+  <form method="post" action="/registrieren">
+    <label>Nutzername
+      <input name="username" autocomplete="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._\-]+" value="<%= values.username || '' %>">
+      <small>3–32 Zeichen: Buchstaben, Ziffern, Punkt, Unterstrich, Bindestrich.</small>
+    </label>
+    <label>Passwort
+      <input type="password" name="password" autocomplete="new-password" required minlength="8">
+      <small>Mindestens 8 Zeichen.</small>
+    </label>
+    <label>Passwort wiederholen
+      <input type="password" name="passwordRepeat" autocomplete="new-password" required minlength="8">
+    </label>
+    <button type="submit">Registrieren</button>
+  </form>
+  <p class="muted">Schon registriert? <a href="/login">Anmelden</a></p>
+  <p class="muted">Fragen zur Bedienung? Im <a href="/handbuch">Handbuch</a> ist alles erklärt.</p>
+</article>
+<%- include('../partials/foot') %>

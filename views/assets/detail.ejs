@@ -1,0 +1,88 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1><%= asset.name %> <% if (asset.archived) { %><span class="badge muted">archiviert</span><% } %></h1>
+    <span class="muted"><%= types[asset.type] %><% if (asset.provider) { %> · <%= asset.provider %><% } %> · Inhaber: <%= asset.owner_ids.map((id) => usersById.get(id)).join(', ') %></span>
+  </div>
+  <div class="actions">
+    <a href="/anlagen/<%= asset.id %>/stand" role="button">Stand aktualisieren</a>
+    <a href="/buchungen/neu?typ=transfer&nach=asset:<%= asset.id %>" role="button" class="outline">Einzahlung / Sparrate</a>
+    <a href="/anlagen/<%= asset.id %>/bearbeiten" role="button" class="secondary outline">Bearbeiten</a>
+  </div>
+</div>
+<% if (asset.note) { %><p><%= asset.note %></p><% } %>
+
+<section class="stats">
+  <article><span class="label">Aktueller Wert</span><span class="value asset"><%= euro(summary.value_cents) %></span></article>
+  <article>
+    <span class="label">Letzte manuelle Aktualisierung</span>
+    <span class="value"><%= date(summary.last_manual_date) %></span>
+    <% if (summary.last_manual_correction_cents !== null) { %>
+      <span class="muted">Korrektur <%= euro(summary.last_manual_correction_cents, { sign: true }) %></span>
+    <% } %>
+    <% if (summary.stale) { %>
+      <span class="badge warning-badge" title="Bitte den aktuellen Stand eintragen">⚠ älter als <%= ctx.assetStaleMonths %> Monate</span>
+    <% } %>
+  </article>
+</section>
+
+<% if (chart) { %>
+  <article>
+    <header><strong>Wertverlauf</strong></header>
+    <%- include('../partials/chart-line', { chart, cssClass: 'asset', title: `Wertverlauf ${asset.name}` }) %>
+  </article>
+<% } %>
+
+<h2>Verlauf</h2>
+<div class="table-wrap">
+<table class="striped">
+  <thead><tr><th>Datum</th><th>Art</th><th>Details</th><th class="amount">Änderung</th><th class="amount">Wert danach</th><th></th></tr></thead>
+  <tbody>
+  <% history.forEach((e) => { %>
+    <tr>
+      <td><%= date(e.date) %><% if (e.kind === 'manual') { %><br><small class="muted"><%= time(e.row.created_at) %> Uhr</small><% } %></td>
+      <td>
+        <% if (e.kind === 'manual') { %><span class="badge warning">manuell</span>
+        <% } else if (e.kind === 'deposit') { %><span class="badge asset">Einzahlung</span>
+        <% } else { %><span class="badge transfer">Auszahlung</span><% } %>
+      </td>
+      <td>
+        <% if (e.kind === 'manual') { %>
+          <%= e.row.note || 'Stand gesetzt' %>
+        <% } else { %>
+          <%= e.row.description %> <small class="muted">(<%= ctx.accountsById.get(e.row.account_id)?.name %>)</small>
+          <% if (e.row.recurring_id) { %><span class="badge muted">↻</span><% } %>
+        <% } %>
+      </td>
+      <td class="amount <%= e.change_cents === null ? '' : (e.change_cents < 0 ? 'expense' : 'income') %>">
+        <%= e.change_cents === null ? 'Startwert' : euro(e.change_cents, { sign: true }) %>
+      </td>
+      <td class="amount strong"><%= euro(e.value_cents) %></td>
+      <td>
+        <% if (e.kind === 'manual') { %>
+          <form method="post" action="/anlagen/<%= asset.id %>/staende/<%= e.row.id %>/loeschen" class="inline-form" data-confirm="Diesen Stand löschen?">
+            <%- include('../partials/csrf') %>
+            <button type="submit" class="secondary outline small" aria-label="Stand löschen">✕</button>
+          </form>
+        <% } else if (ctx.accountIds.has(e.row.account_id)) { %>
+          <a href="/buchungen/<%= e.row.id %>/bearbeiten" aria-label="Bearbeiten">✎</a>
+        <% } %>
+      </td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+</div>
+
+<div class="actions">
+  <form method="post" action="/anlagen/<%= asset.id %>/archivieren">
+    <%- include('../partials/csrf') %>
+    <input type="hidden" name="archived" value="<%= asset.archived ? 'false' : 'true' %>">
+    <button type="submit" class="secondary outline"><%= asset.archived ? 'Wiederherstellen' : 'Archivieren' %></button>
+  </form>
+  <form method="post" action="/anlagen/<%= asset.id %>/loeschen" data-confirm="Anlage mit allen Ständen wirklich löschen?">
+    <%- include('../partials/csrf') %>
+    <button type="submit" class="secondary outline">Löschen</button>
+  </form>
+</div>
+<%- include('../partials/foot') %>

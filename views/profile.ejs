@@ -1,0 +1,42 @@
+<%- include('partials/head') %>
+<h1>Profil</h1>
+<p>Angemeldet als <strong><%= currentUser.username %></strong>.</p>
+
+<article>
+  <h2>Darstellung</h2>
+  <form method="post" action="/einstellungen/darstellung">
+    <%- include('partials/csrf') %>
+    <input type="hidden" name="back" value="/profil">
+    <fieldset>
+      <% Object.entries(themes).forEach(([key, label]) => { %>
+        <label>
+          <input type="radio" name="theme" value="<%= key %>" <%= theme === key ? 'checked' : '' %>>
+          <%= label %>
+        </label>
+      <% }) %>
+    </fieldset>
+    <button type="submit">Speichern</button>
+  </form>
+  <small class="muted">Den Modus kannst du auch jederzeit über den Schalter ☀/☾ in der Navigation wechseln. Er wird für deinen Nutzer gespeichert.</small>
+</article>
+
+<article>
+  <h2>Passwort ändern</h2>
+  <%- include('partials/errors') %>
+  <form method="post" action="/profil">
+    <%- include('partials/csrf') %>
+    <label>Aktuelles Passwort
+      <input type="password" name="currentPassword" autocomplete="current-password" required>
+    </label>
+    <div class="grid">
+      <label>Neues Passwort
+        <input type="password" name="password" autocomplete="new-password" required minlength="8">
+      </label>
+      <label>Neues Passwort wiederholen
+        <input type="password" name="passwordRepeat" autocomplete="new-password" required minlength="8">
+      </label>
+    </div>
+    <button type="submit">Passwort ändern</button>
+  </form>
+</article>
+<%- include('partials/foot') %>

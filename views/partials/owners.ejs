@@ -1,0 +1,11 @@
+<fieldset>
+  <legend>Inhaber</legend>
+  <% const selected = [].concat(values.owner_ids || []); %>
+  <% users.forEach((u) => { %>
+    <label>
+      <input type="checkbox" name="owner_ids" value="<%= u.id %>" <%= selected.includes(u.id) ? 'checked' : '' %>>
+      <%= u.username %><%= u.id === currentUser.id ? ' (du)' : '' %>
+    </label>
+  <% }) %>
+  <small class="muted">Alle Inhaber sehen alles und dürfen alles ändern.</small>
+</fieldset>

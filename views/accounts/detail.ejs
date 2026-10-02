@@ -1,0 +1,36 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <div>
+    <h1><%= account.name %> <% if (account.archived) { %><span class="badge muted">archiviert</span><% } %></h1>
+    <span class="muted"><%= types[account.type] %> · Inhaber: <%= account.owner_ids.map((id) => usersById.get(id)).join(', ') %><% if (account.iban) { %> · <%= account.iban %><% } %></span>
+  </div>
+  <div class="actions">
+    <% if (!account.archived) { %>
+      <a href="/buchungen/neu?typ=einnahme&konto=<%= account.id %>" role="button" class="outline">+ Einnahme</a>
+      <a href="/buchungen/neu?typ=ausgabe&konto=<%= account.id %>" role="button" class="outline">+ Ausgabe</a>
+      <a href="/buchungen/neu?typ=transfer&von=account:<%= account.id %>" role="button" class="outline">⇄ Transfer</a>
+    <% } %>
+    <a href="/konten/<%= account.id %>/bearbeiten" role="button" class="secondary outline">Bearbeiten</a>
+  </div>
+</div>
+
+<section class="stats">
+  <article><span class="label">Kontostand</span><span class="value <%= balance < 0 ? 'expense' : '' %>"><%= euro(balance) %></span></article>
+  <article><span class="label">Anfangssaldo am <%= date(account.opening_date) %></span><span class="value"><%= euro(account.opening_balance_cents) %></span></article>
+</section>
+
+<h2>Buchungen</h2>
+<%- include('../partials/tx-table', { rows, showAccount: false, showBalance: true }) %>
+
+<div class="actions">
+  <form method="post" action="/konten/<%= account.id %>/archivieren">
+    <%- include('../partials/csrf') %>
+    <input type="hidden" name="archived" value="<%= account.archived ? 'false' : 'true' %>">
+    <button type="submit" class="secondary outline"><%= account.archived ? 'Wiederherstellen' : 'Archivieren' %></button>
+  </form>
+  <form method="post" action="/konten/<%= account.id %>/loeschen" data-confirm="Konto wirklich löschen?">
+    <%- include('../partials/csrf') %>
+    <button type="submit" class="secondary outline">Löschen</button>
+  </form>
+</div>
+<%- include('../partials/foot') %>

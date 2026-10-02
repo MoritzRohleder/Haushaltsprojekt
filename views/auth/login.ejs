@@ -1,0 +1,17 @@
+<%- include('../partials/head') %>
+<article class="narrow">
+  <h1>Anmelden</h1>
+  <%- include('../partials/errors') %>
+  <form method="post" action="/login">
+    <label>Nutzername
+      <input name="username" autocomplete="username" required autofocus value="<%= values.username || '' %>">
+    </label>
+    <label>Passwort
+      <input type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button type="submit">Anmelden</button>
+  </form>
+  <p class="muted">Noch kein Zugang? <a href="/registrieren">Registrieren</a></p>
+  <p class="muted">Fragen zur Bedienung? Im <a href="/handbuch">Handbuch</a> ist alles erklärt.</p>
+</article>
+<%- include('../partials/foot') %>

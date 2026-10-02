@@ -1,0 +1,46 @@
+<%- include('../partials/head') %>
+<div class="page-head">
+  <h1>Buchungen</h1>
+  <%- include('../partials/quick-actions') %>
+</div>
+
+<form method="get" action="/buchungen">
+  <div class="grid">
+    <label>Monat <input type="month" name="monat" value="<%= filters.monat %>"></label>
+    <label>Konto
+      <select name="konto">
+        <option value="">Alle</option>
+        <% accounts.forEach((a) => { %><option value="<%= a.id %>" <%= filters.konto === a.id ? 'selected' : '' %>><%= a.name %></option><% }) %>
+      </select>
+    </label>
+    <label>Kategorie
+      <select name="kategorie">
+        <option value="">Alle</option>
+        <% categories.forEach((c) => { %><option value="<%= c.id %>" <%= filters.kategorie === c.id ? 'selected' : '' %>><%= c.name %> (<%= c.kind === 'income' ? 'Einnahme' : 'Ausgabe' %>)</option><% }) %>
+      </select>
+    </label>
+    <label>Art
+      <select name="art">
+        <option value="">Alle</option>
+        <option value="income" <%= filters.art === 'income' ? 'selected' : '' %>>Einnahmen</option>
+        <option value="expense" <%= filters.art === 'expense' ? 'selected' : '' %>>Ausgaben</option>
+        <option value="transfer" <%= filters.art === 'transfer' ? 'selected' : '' %>>Transfers</option>
+      </select>
+    </label>
+  </div>
+  <div class="grid">
+    <input type="search" name="q" placeholder="Suche in Beschreibung und Notiz" value="<%= filters.q %>">
+    <label class="compact">
+      <input type="checkbox" name="alle" value="1" <%= filters.alle ? 'checked' : '' %>>
+      Alle Monate
+    </label>
+    <button type="submit" class="secondary">Filtern</button>
+  </div>
+</form>
+<p class="actions">
+  <span class="muted"><%= rows.length %> Buchung<%= rows.length === 1 ? '' : 'en' %></span>
+  <a href="/buchungen/export.csv?<%= exportQuery %>" download>⤓ Als CSV exportieren</a>
+</p>
+
+<%- include('../partials/tx-table', { rows }) %>
+<%- include('../partials/foot') %>

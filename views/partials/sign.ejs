@@ -1,0 +1,6 @@
+<%# Vorzeichen-Auswahl für einen Betrag. Erwartet: field (Name des Betragsfelds), values, plusLabel, minusLabel %>
+<% const current = values[`${field}_sign`] === 'minus' || String(values[field] || '').trim().startsWith('-') ? 'minus' : 'plus'; %>
+<fieldset class="sign-choice">
+  <label><input type="radio" name="<%= field %>_sign" value="plus" <%= current === 'plus' ? 'checked' : '' %>> <%= plusLabel %></label>
+  <label><input type="radio" name="<%= field %>_sign" value="minus" <%= current === 'minus' ? 'checked' : '' %>> <%= minusLabel %></label>
+</fieldset>

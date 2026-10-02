@@ -1,0 +1,81 @@
+# Tests bei jedem Push und bei Pull Requests auf master.
+# Die Job-Namen „Tests (Node 22)“, „Tests (Node 24)“ und „Docker-Image“ können in
+# GitHub als Pflicht-Checks für master eingetragen werden (siehe README).
+name: CI
+
+on:
+  push:
+    branches: ['**']
+    tags-ignore: ['**']
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Tests
+        run: npm test
+
+  docker:
+    name: Docker-Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: test
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Image bauen
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          push: false
+          tags: haushalt:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Container starten und Health-Check abwarten
+        run: |
+          docker run -d --name haushalt-ci -p 3000:3000 haushalt:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/health; then
+              echo; echo "Container läuft."
+              curl -fsS -o /dev/null http://localhost:3000/handbuch && echo "Handbuch erreichbar."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Container wurde nicht gesund"
+          docker logs haushalt-ci
+          exit 1
+
+      - name: Aufräumen
+        if: always()
+        run: docker rm -f haushalt-ci || true

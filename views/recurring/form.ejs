@@ -1,0 +1,22 @@
+<%- include('../partials/head') %>
+<h1><%= title %></h1>
+<p class="muted"><%= rec.route %><% if (rec.category) { %> · <%= rec.category %><% } %> · gültig ab <%= date(rec.start_date) %>. Änderungen gelten ab dem nächsten Termin.</p>
+<%- include('../partials/errors') %>
+<form method="post" action="/wiederkehrend/<%= rec.id %>/bearbeiten">
+  <%- include('../partials/csrf') %>
+  <div class="grid">
+    <label>Beschreibung <input name="description" required maxlength="120" value="<%= values.description || '' %>"></label>
+    <label>Betrag in € <input name="amount" inputmode="decimal" required value="<%= values.amount || '' %>"></label>
+  </div>
+  <label>Notiz <textarea name="note" rows="2" maxlength="500"><%= values.note || '' %></textarea></label>
+  <%- include('../partials/interval') %>
+  <div class="actions">
+    <button type="submit">Speichern</button>
+    <a href="/wiederkehrend" role="button" class="secondary outline">Abbrechen</a>
+  </div>
+</form>
+<form method="post" action="/wiederkehrend/<%= rec.id %>/loeschen" data-confirm="Regelmäßige Buchung löschen? Bereits gebuchte Termine bleiben erhalten.">
+  <%- include('../partials/csrf') %>
+  <button type="submit" class="secondary outline">Löschen</button>
+</form>
+<%- include('../partials/foot') %>

@@ -1,0 +1,71 @@
+<%- include('partials/head') %>
+<div class="page-head">
+  <h1>Übersicht</h1>
+  <%- include('partials/quick-actions') %>
+</div>
+
+<section class="stats">
+  <article><span class="label">Konten</span><span class="value"><%= euro(totals.accountsTotal) %></span></article>
+  <article><span class="label">Anlagen</span><span class="value asset"><%= euro(totals.assetsTotal) %></span></article>
+  <article><span class="label">Gesamtvermögen</span><span class="value"><%= euro(totals.netWorth) %></span></article>
+</section>
+
+<div class="grid cards">
+  <article>
+    <header class="page-head"><strong>Konten</strong><a href="/konten/neu">+ Konto</a></header>
+    <% if (!accounts.length) { %>
+      <p>Du hast noch keine Konten. <a href="/konten/neu">Lege dein erstes Konto an.</a></p>
+    <% } else { %>
+      <div class="table-wrap"><table>
+        <tbody>
+        <% accounts.forEach((a) => { const b = ctx.balance(a); %>
+          <tr>
+            <td><a href="/konten/<%= a.id %>"><%= a.name %></a><% if (a.owner_ids.length > 1) { %> <span class="badge muted">gemeinsam</span><% } %></td>
+            <td class="amount strong <%= b < 0 ? 'expense' : '' %>"><%= euro(b) %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+    <% } %>
+  </article>
+
+  <article>
+    <header class="page-head"><strong>Anlagen</strong><a href="/anlagen/neu">+ Anlage</a></header>
+    <% if (!assets.length) { %>
+      <p class="muted">Noch keine Anlagen.</p>
+    <% } else { %>
+      <div class="table-wrap"><table>
+        <tbody>
+        <% assets.forEach((a) => { const s = ctx.assetSummary(a); %>
+          <tr>
+            <td>
+              <a href="/anlagen/<%= a.id %>"><%= a.name %></a><br>
+              <small class="muted"><% if (s.last_manual_correction_cents === null) { %>Startwert vom <%= date(s.last_manual_date) %><% } else { %>manuell am <%= date(s.last_manual_date) %>, Korrektur <%= euro(s.last_manual_correction_cents, { sign: true }) %><% } %></small>
+              <% if (s.stale) { %><br><span class="badge warning-badge">⚠ Stand veraltet</span><% } %>
+              <br><a href="/anlagen/<%= a.id %>/stand" class="muted">Stand aktualisieren</a>
+            </td>
+            <td class="amount strong asset"><%= euro(s.value_cents) %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table></div>
+    <% } %>
+  </article>
+</div>
+
+<article>
+  <header class="page-head">
+    <strong><%= monthName(summary.year, summary.month) %></strong>
+    <a href="/monat/<%= summary.year %>/<%= summary.month %>">Monatsübersicht →</a>
+  </header>
+  <section class="stats">
+    <div><span class="label muted">Einnahmen</span><span class="value income"><%= euro(summary.income, { sign: true }) %></span></div>
+    <div><span class="label muted">Ausgaben</span><span class="value expense"><%= euro(summary.expense) %></span></div>
+    <div><span class="label muted">Saldo</span><span class="value <%= summary.saldo < 0 ? 'expense' : 'income' %>"><%= euro(summary.saldo, { sign: true }) %></span></div>
+    <div><span class="label muted">In Anlagen gespart</span><span class="value asset"><%= euro(summary.savedInAssets) %></span></div>
+  </section>
+</article>
+
+<h2>Letzte Buchungen</h2>
+<%- include('partials/tx-table', { rows: recent }) %>
+<%- include('partials/foot') %>

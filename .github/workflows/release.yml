@@ -1,0 +1,98 @@
+# Beim Veröffentlichen eines Releases: Tests, dann Docker-Image bauen und nach
+# ghcr.io/<owner>/<repo> hochladen (amd64 + arm64).
+#
+# Tags am Image (Beispiel Release v1.1.0): 1.1.0, 1.1, 1, latest
+# Vorabversionen (Release als „pre-release“ markiert, z. B. v1.2.0-rc.1) bekommen
+# nur ihren eigenen Tag, nicht „latest“.
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Release-Tag passt zur Version in package.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "::error::Release-Tag $GITHUB_REF_NAME passt nicht zur Version $VERSION in package.json. Tag v$VERSION verwenden oder package.json anpassen."
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm test
+
+  publish:
+    name: Docker-Image veröffentlichen
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: test
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Image-Namen bestimmen (Kleinbuchstaben)
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Bei der GitHub Container Registry anmelden
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tags und Labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: latest=false
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ !github.event.release.prerelease }}
+
+      - name: Bauen und hochladen
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Zusammenfassung
+        run: |
+          {
+            echo "### Docker-Image veröffentlicht"
+            echo
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+            echo
+            echo "Auf dem Server aktualisieren: \`docker compose up -d\`"
+          } >> "$GITHUB_STEP_SUMMARY"
