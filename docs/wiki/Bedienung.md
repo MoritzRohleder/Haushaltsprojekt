@@ -24,7 +24,7 @@ Das Handbuch ist in Haushalt eingebaut – auch ohne Anmeldung, z. B. über den 
 | Grün | Einnahmen |
 | Rot | Ausgaben |
 | Grau | Transfers zwischen deinen eigenen Konten |
-| Violett | Anlagen, Sparraten, „In Anlagen gespart“ |
+| Violett | Anlagen, Sparraten, „In Anlagen gespart“, regelmäßiges Sparen |
 | Bernstein | Hinweise, z. B. „Stand veraltet“ |
 
 Beträge haben immer ein Vorzeichen (`+` / `−`), die Farbe ist nur eine zusätzliche Hilfe. Der farbige Streifen am Anfang einer Tabellenzeile zeigt die Art der Buchung. Das Symbol **↻** markiert Buchungen, die aus einer regelmäßigen Buchung entstanden sind.

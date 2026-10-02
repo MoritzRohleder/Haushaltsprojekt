@@ -38,8 +38,10 @@ Oben stehen die Summen **pro Monat**:
 |--------|-----------|
 | Einnahmen pro Monat | z. B. Gehalt, darunter der Wert fürs ganze Jahr |
 | Ausgaben pro Monat | z. B. Miete, Abos, Versicherungen |
-| Saldo pro Monat | Einnahmen minus Ausgaben minus Sparraten in Anlagen – so viel Geld bleibt nach den festen Posten **frei verfügbar** |
-| Transfers pro Monat | Geld zwischen eigenen Konten, darunter der Teil, der in Anlagen fließt (Sparraten) |
+| Saldo pro Monat | Einnahmen minus Ausgaben minus Gespartes – so viel Geld bleibt nach den festen Posten **frei verfügbar** |
+| Gespart pro Monat | Was regelmäßig auf **Sparkonten** und in **Anlagen** fließt, darunter getrennt nach beiden |
+
+Als gespart zählt ein Transfer auf ein Konto vom Typ **Sparkonto** oder in eine Anlage. Eine regelmäßige Entnahme vom Sparkonto auf ein anderes Konto wird davon abgezogen. Umbuchungen zwischen anderen eigenen Konten (z. B. Haushaltsgeld aufs Gemeinsame Konto) sind kein Sparen und ändern den Saldo nicht.
 
 Beträge, die nicht monatlich gebucht werden, rechnet Haushalt auf einen **Durchschnittsmonat** um: Eine Versicherung über 480 € im Jahr zählt mit 40 € pro Monat, 45 € jede Woche mit etwa 195,67 €. In der Tabelle steht der umgerechnete Wert klein unter dem Betrag.
 
@@ -51,7 +53,7 @@ Pausierte und beendete Einträge werden angezeigt (blasser), zählen aber **nich
 |--------|-------|
 | Konto | Einträge, die dieses Konto oder diese Anlage betreffen – egal ob als Quelle oder Ziel |
 | Turnus | Täglich, wöchentlich, monatlich oder jährlich (auch z. B. „alle 3 Monate“ unter „monatlich“) |
-| Art | Einnahmen, Ausgaben oder Transfers |
+| Art | Einnahmen, Ausgaben, Transfers oder nur Sparen (Sparkonten und Anlagen) |
 | Status | Laufend, pausiert oder beendet |
 
 Die Summen oben beziehen sich immer auf die **gefilterte** Liste. So siehst du z. B., was das Gemeinsame Konto jeden Monat an festen Ausgaben trägt.

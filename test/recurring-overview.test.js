@@ -39,7 +39,7 @@ async function plan(t) {
     const ctx = await loadContext(env.repos, userId);
     return buildOverview(ctx, await recurring.listForUser(env.repos, userId), query);
   };
-  return { ...env, a, b, giro, joint, fund, overview };
+  return { ...env, a, b, giro, joint, fund, overview, add };
 }
 
 test('Umrechnung auf einen Monat je Turnus', () => {
@@ -73,8 +73,10 @@ test('Übersicht: Arten, Summen pro Monat und Status', async (t) => {
   assert.equal(o.summary.income, 300000);
   assert.equal(o.summary.expense, -120000 - 5000 - 13045);
   assert.equal(o.summary.net, 300000 - 120000 - 5000 - 13045 - 20000); // Sparrate in Anlage mindert den Saldo
-  assert.equal(o.summary.transfer, 20000 + 16667);
+  // Gespart: nur die Sparrate in die Anlage – Haushaltsgeld aufs Gemeinsame Konto ist kein Sparen
+  assert.equal(o.summary.saved, 20000);
   assert.equal(o.summary.toAssets, 20000);
+  assert.equal(o.summary.toSavings, 0);
   assert.deepEqual(o.options.accounts.map((a) => a.name), ['Gemeinsam', 'Giro']);
   assert.deepEqual(o.options.assets.map((a) => a.name), ['ETF']);
 });
@@ -84,7 +86,7 @@ test('Übersicht aus Sicht des Mitinhabers: Transfer ohne sichtbare Gegenseite i
   const o = await p.overview(p.b.id);
   assert.deepEqual(o.rows.map((r) => [r.description, r.kind]), [['Haushaltsgeld', 'income'], ['Miete', 'expense']]);
   assert.equal(o.summary.income, 16667);
-  assert.equal(o.summary.transfer, 0);
+  assert.equal(o.summary.saved, 0);
 });
 
 test('Übersicht filtern nach Konto, Turnus, Art und Status', async (t) => {
@@ -115,4 +117,20 @@ test('Übersicht sortieren', async (t) => {
   // Ohne nächsten Termin (pausiert) immer am Ende, auch absteigend
   const next = await names({ sort: 'naechster', dir: 'desc' });
   assert.equal(next.at(-1), 'Streaming');
+});
+
+test('Gespart: Sparkonto und Anlagen mindern den Saldo, Entnahmen vom Sparkonto zählen dagegen', async (t) => {
+  const p = await plan(t);
+  const daily = await account(p.repos, 'Tagesgeld', [p.a.id], { type: 'savings' });
+  await p.add({ type: 'transfer', amount: '300', description: 'Rücklage', from: `account:${p.giro.id}`, to: `account:${daily.id}`, interval_unit: 'month' });
+  await p.add({ type: 'transfer', amount: '1200', description: 'Urlaubsgeld', from: `account:${daily.id}`, to: `account:${p.giro.id}`, interval_unit: 'year' });
+  const o = await p.overview(p.a.id);
+  assert.equal(o.summary.toSavings, 30000 - 10000);
+  assert.equal(o.summary.toAssets, 20000);
+  assert.equal(o.summary.saved, 40000);
+  assert.equal(o.summary.net, 300000 - 120000 - 5000 - 13045 - 40000);
+  const byName = Object.fromEntries(o.rows.map((r) => [r.description, r]));
+  assert.equal(byName.Rücklage.saves_into, 'savings');
+  assert.equal(byName.Haushaltsgeld.saves_into, null);
+  assert.deepEqual((await p.overview(p.a.id, { art: 'sparen' })).rows.map((r) => r.description), ['Rücklage', 'Sparrate', 'Urlaubsgeld']);
 });

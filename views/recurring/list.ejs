@@ -1,6 +1,7 @@
 <%- include('../partials/head') %>
 <%
   const KIND_LABELS = { income: 'Einnahme', expense: 'Ausgabe', transfer: 'Transfer' };
+  const kindLabel = (r) => (r.saves_into ? (r.saved_monthly_cents < 0 ? 'Entnahme vom Sparkonto' : 'Sparen') : KIND_LABELS[r.kind]);
   // Adresse mit den aktuellen Filtern und geänderter Sortierung
   const sortLink = (key) => {
     const dir = filters.sort === key && filters.dir === 'asc' ? 'desc' : 'asc';
@@ -23,8 +24,8 @@
 <div class="stats">
   <article><span class="label">Einnahmen pro Monat</span><span class="value income"><%= euro(summary.income, { sign: true }) %></span><small class="muted"><%= euro(summary.income * 12) %> im Jahr</small></article>
   <article><span class="label">Ausgaben pro Monat</span><span class="value expense"><%= euro(summary.expense, { sign: true }) %></span><small class="muted"><%= euro(-summary.expense * 12) %> im Jahr</small></article>
-  <article><span class="label">Saldo pro Monat</span><span class="value <%= summary.net < 0 ? 'expense' : 'income' %>"><%= euro(summary.net, { sign: true }) %></span><small class="muted">frei verfügbar nach Ausgaben und Sparraten</small></article>
-  <article><span class="label">Transfers pro Monat</span><span class="value transfer"><%= euro(summary.transfer) %></span><small class="muted">davon in Anlagen <%= euro(summary.toAssets) %></small></article>
+  <article><span class="label">Saldo pro Monat</span><span class="value <%= summary.net < 0 ? 'expense' : 'income' %>"><%= euro(summary.net, { sign: true }) %></span><small class="muted">frei verfügbar nach Ausgaben und Sparen</small></article>
+  <article><span class="label">Gespart pro Monat</span><span class="value asset"><%= euro(summary.saved) %></span><small class="muted">Sparkonten <%= euro(summary.toSavings) %> · Anlagen <%= euro(summary.toAssets) %></small></article>
 </div>
 <p class="muted"><small>Umgerechnet auf einen Durchschnittsmonat, nur laufende Einträge<%= filtered ? ' der gefilterten Liste' : '' %> (<%= summary.running %>). Pausierte und beendete zählen nicht mit.</small></p>
 
@@ -57,6 +58,7 @@
         <option value="income" <%= filters.art === 'income' ? 'selected' : '' %>>Einnahmen</option>
         <option value="expense" <%= filters.art === 'expense' ? 'selected' : '' %>>Ausgaben</option>
         <option value="transfer" <%= filters.art === 'transfer' ? 'selected' : '' %>>Transfers</option>
+        <option value="sparen" <%= filters.art === 'sparen' ? 'selected' : '' %>>Sparen</option>
       </select>
     </label>
     <label>Status
@@ -96,7 +98,7 @@
   <tbody>
   <% rows.forEach((r) => { %>
     <tr class="<%= r.status !== 'laufend' ? 'inactive' : '' %>">
-      <td><%= r.description %><br><small class="muted"><span class="<%= r.kindClass %>"><%= KIND_LABELS[r.kind] %></span><% if (r.category) { %> · <%= r.category %><% } %><% if (r.merchant) { %> · <%= r.merchant %><% } %></small></td>
+      <td><%= r.description %><br><small class="muted"><span class="<%= r.kindClass %>"><%= kindLabel(r) %></span><% if (r.category) { %> · <%= r.category %><% } %><% if (r.merchant) { %> · <%= r.merchant %><% } %></small></td>
       <td><%= r.route %></td>
       <td>
         <%= r.rhythm %><% if (r.end_date) { %>, bis <%= date(r.end_date) %><% } %><br>

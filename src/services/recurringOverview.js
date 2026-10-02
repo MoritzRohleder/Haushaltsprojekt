@@ -13,7 +13,7 @@ const PER_MONTH = { day: 365.25 / 12, week: 365.25 / 7 / 12, month: 1, year: 1 /
 /** Ungefähre Länge eines Turnus in Tagen – nur zum Sortieren. */
 const DAYS = { day: 1, week: 7, month: 30.44, year: 365.25 };
 
-const KINDS = ['income', 'expense', 'transfer'];
+const KINDS = ['income', 'expense', 'transfer', 'sparen'];
 const STATUSES = ['laufend', 'pausiert', 'beendet'];
 const SORT_KEYS = ['beschreibung', 'konto', 'turnus', 'naechster', 'betrag', 'monat'];
 
@@ -35,6 +35,21 @@ function kindFor(ctx, rec) {
   return fromVisible ? 'expense' : 'income';
 }
 
+/**
+ * Wohin ein eigener Transfer spart: 'asset' (Einzahlung in eine Anlage), 'savings'
+ * (auf ein Sparkonto, negativ bei Entnahme vom Sparkonto) oder null (reine Umbuchung).
+ */
+function savingsOf(ctx, rec, kind) {
+  if (kind !== 'transfer') return null;
+  if (rec.to_asset_id) return { into: 'asset', sign: 1 };
+  const isSavings = (id) => ctx.accountsById.get(id)?.type === 'savings';
+  const from = isSavings(rec.account_id);
+  const to = isSavings(rec.to_account_id);
+  if (to && !from) return { into: 'savings', sign: 1 };
+  if (from && !to) return { into: 'savings', sign: -1 };
+  return null;
+}
+
 function statusOf(rec) {
   if (!rec.active) return 'pausiert';
   return nextOccurrenceAfter(rec, rec.last_generated_date) ? 'laufend' : 'beendet';
@@ -49,10 +64,12 @@ function describe(ctx, rec) {
   const kind = kindFor(ctx, rec);
   const status = statusOf(rec);
   const sign = kind === 'expense' ? -1 : 1;
+  const saving = savingsOf(ctx, rec, kind);
   return {
     ...rec,
     kind,
-    kindClass: kind === 'transfer' && rec.to_asset_id ? 'asset' : kind,
+    // Violett für alles, was gespart wird (Anlagen und Sparkonten)
+    kindClass: saving && saving.sign > 0 ? 'asset' : kind,
     route: rec.type === 'transfer' ? `${from} → ${target}` : from,
     category: ctx.categoriesById.get(rec.category_id)?.name ?? (rec.type === 'transfer' && kind !== 'transfer' ? 'Übertrag' : ''),
     rhythm: describeInterval(rec),
@@ -60,6 +77,8 @@ function describe(ctx, rec) {
     next: status === 'laufend' ? nextOccurrenceAfter(rec, rec.last_generated_date) : null,
     signed_cents: sign * rec.amount_cents,
     monthly_cents: sign * monthlyCents(rec),
+    saves_into: saving?.into ?? null,
+    saved_monthly_cents: saving ? saving.sign * monthlyCents(rec) : 0,
   };
 }
 
@@ -79,7 +98,7 @@ function readFilters(query) {
 function matches(row, f) {
   if (f.konto && ![row.account_id, row.to_account_id, row.to_asset_id].includes(f.konto)) return false;
   if (f.turnus && row.interval_unit !== f.turnus) return false;
-  if (f.art && row.kind !== f.art) return false;
+  if (f.art === 'sparen' ? !row.saves_into : f.art && row.kind !== f.art) return false;
   if (f.status && row.status !== f.status) return false;
   return true;
 }
@@ -110,15 +129,18 @@ function summarize(rows) {
   const sum = (list) => list.reduce((s, r) => s + r.monthly_cents, 0);
   const income = sum(running.filter((r) => r.kind === 'income'));
   const expense = sum(running.filter((r) => r.kind === 'expense'));
-  const transfers = running.filter((r) => r.kind === 'transfer');
-  const toAssets = sum(transfers.filter((r) => r.to_asset_id));
+  const saved = (into) => running.filter((r) => r.saves_into === into).reduce((s, r) => s + r.saved_monthly_cents, 0);
+  const toSavings = saved('savings');
+  const toAssets = saved('asset');
   return {
     running: running.length,
     income,
     expense,
-    // Geld, das in Anlagen fließt, ist nicht mehr frei verfügbar – es mindert den Saldo.
-    net: income + expense - toAssets,
-    transfer: sum(transfers),
+    // Gespartes (Sparkonten, Anlagen) ist nicht zum Ausgeben gedacht – es mindert den Saldo.
+    // Umbuchungen zwischen anderen eigenen Konten ändern ihn nicht.
+    net: income + expense - toSavings - toAssets,
+    saved: toSavings + toAssets,
+    toSavings,
     toAssets,
   };
 }

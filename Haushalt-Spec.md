@@ -385,7 +385,8 @@ Die Übersicht der regelmäßigen Buchungen (F-35) rechnet jeden Betrag auf eine
 
 - Die Art (Einnahme, Ausgabe, Transfer) gilt aus Sicht des Nutzers wie bei Buchungen (6.2): Ein Transfer, dessen Gegenseite der Nutzer nicht sieht, zählt für ihn als Einnahme bzw. Ausgabe.
 - Die Summen enthalten nur **laufende** Einträge (aktiv und mit künftigem Termin); pausierte und beendete werden angezeigt, zählen aber nicht mit. Sie beziehen sich auf die gefilterte Liste.
-- **Saldo pro Monat** = Einnahmen − Ausgaben − Einzahlungen in Anlagen: Angelegtes Geld ist nicht mehr frei verfügbar (liquide) und mindert deshalb den Saldo. Transfers zwischen eigenen Konten ändern ihn nicht; sie werden getrennt ausgewiesen, davon gesondert die Einzahlungen in Anlagen.
+- **Gespart pro Monat** = eigene Transfers auf Konten vom Typ `savings` (Sparkonto) + Einzahlungen in Anlagen − Entnahmen von einem Sparkonto auf ein anderes Konto; getrennt ausgewiesen nach Sparkonten und Anlagen. Umbuchungen zwischen sonstigen eigenen Konten sind kein Sparen.
+- **Saldo pro Monat** = Einnahmen − Ausgaben − Gespart: Gespartes ist nicht zum Ausgeben gedacht und mindert deshalb den frei verfügbaren Betrag. Sonstige Umbuchungen ändern den Saldo nicht.
 - Sortieren nach Betrag nutzt den Betrag ohne Vorzeichen (größte Posten zuerst bei absteigender Reihenfolge); Einträge ohne nächsten Termin stehen beim Sortieren nach Termin immer am Ende.
 
 ## 7. Funktionale Anforderungen
@@ -438,7 +439,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-32 | Übersicht aller wiederkehrenden Buchungen auf den eigenen Konten; bearbeiten, pausieren, beenden | M |
 | F-33 | Eine automatisch erzeugte Buchung kann einzeln geändert oder gelöscht werden, ohne die Vorlage zu ändern | M |
 | F-34 | Änderungen an der Vorlage gelten nur für künftige Termine | M |
-| F-35 | **Übersicht der regelmäßigen Buchungen**: Betrag umgerechnet auf einen Monat, Summen pro Monat (Einnahmen, Ausgaben, Saldo, Transfers, davon in Anlagen) über alle laufenden Einträge der gefilterten Liste; **filtern** nach Konto/Anlage, Turnus (Einheit), Art (aus Sicht des Nutzers, 6.2) und Status; **sortieren** nach Beschreibung, Konto, Turnus, nächstem Termin, Betrag und Betrag pro Monat (6.7) | S |
+| F-35 | **Übersicht der regelmäßigen Buchungen**: Betrag umgerechnet auf einen Monat, Summen pro Monat (Einnahmen, Ausgaben, Saldo, Gespart nach Sparkonten und Anlagen) über alle laufenden Einträge der gefilterten Liste; **filtern** nach Konto/Anlage, Turnus (Einheit), Art (aus Sicht des Nutzers, 6.2, zusätzlich „Sparen“) und Status; **sortieren** nach Beschreibung, Konto, Turnus, nächstem Termin, Betrag und Betrag pro Monat (6.7) | S |
 
 ### 7.5 Anlagen
 
@@ -540,7 +541,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | Anlage anlegen/bearbeiten | `GET/POST /anlagen/neu`, `/anlagen/:id/bearbeiten` | inkl. Inhaber, Startwert |
 | Anlagedetail | `GET /anlagen/:id` | Verlauf aus Ständen und Ein-/Auszahlungen |
 | Stand erfassen | `GET/POST /anlagen/:id/stand` | |
-| Wiederkehrend | `GET /wiederkehrend?konto=&turnus=day\|week\|month\|year&art=income\|expense\|transfer&status=laufend\|pausiert\|beendet&sort=&dir=asc\|desc` | Übersicht mit Summen pro Monat, Filter und Sortierung; Vorlagen verwalten (F-32, F-35) |
+| Wiederkehrend | `GET /wiederkehrend?konto=&turnus=day\|week\|month\|year&art=income\|expense\|transfer\|sparen&status=laufend\|pausiert\|beendet&sort=&dir=asc\|desc` | Übersicht mit Summen pro Monat, Filter und Sortierung; Vorlagen verwalten (F-32, F-35) |
 | Kategorien | `GET /kategorien` | Standard-Kategorien (nur lesen) und eigene Kategorien |
 | Auswertung | `GET /auswertung?monate=6\|12\|24` | Saldo je Monat, Verlauf Gesamtvermögen, Monatsvergleich (F-56, F-57) |
 | Kassenzettel | `GET /buchungen/:id/beleg` | Datei zur Buchung (nur für Inhaber des Kontos) |
