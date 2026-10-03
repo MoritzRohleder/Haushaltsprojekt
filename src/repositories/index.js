@@ -20,7 +20,14 @@ class Repository {
 }
 
 function createRepositories(storage) {
-  const repos = { transaction: (fn) => storage.transaction(() => fn(repos)) };
+  const repos = {
+    transaction: (fn) => storage.transaction(() => fn(repos)),
+    files: {
+      save: (buffer, ext) => storage.saveFile(buffer, ext),
+      path: (name) => storage.filePath(name),
+      remove: (name) => storage.removeFile(name),
+    },
+  };
   for (const name of COLLECTIONS) {
     const key = name.replace(/_(\w)/g, (_, c) => c.toUpperCase()); // asset_values → assetValues
     repos[key] = new Repository(storage, name);

@@ -105,6 +105,14 @@ tr.row-asset > td:first-child { box-shadow: inset 4px 0 0 var(--hh-asset); }
 /* Tabellen auf schmalen Bildschirmen scrollbar */
 .table-wrap { overflow-x: auto; }
 table td, table th { vertical-align: middle; }
+/* Sortierbare Spalten: Kopf als Link, Pfeil zeigt die Richtung */
+table.sortable th a { color: inherit; text-decoration: none; white-space: nowrap; }
+table.sortable th a:hover { text-decoration: underline; }
+table.sortable th[aria-sort=ascending], table.sortable th[aria-sort=descending] { color: var(--pico-primary); }
+tr.inactive td { opacity: 0.6; }
+table.sortable td.amount { white-space: nowrap; }
+table.sortable .actions { flex-wrap: nowrap; align-items: center; }
+.stats small { display: block; }
 
 /* Meldungen */
 .flash { padding: 0.75rem 1rem; border-radius: var(--pico-border-radius); margin-bottom: var(--pico-spacing); border-left: 4px solid var(--hh-income); background: var(--pico-card-background-color); }
@@ -117,9 +125,13 @@ nav ul { flex-wrap: wrap; }
 
 /* Schmale Bildschirme */
 /* Mittlere Breiten: Navigation unter den Namen der App, statt ungleichmäßig umzubrechen */
-@media (max-width: 1024px) {
+/* Bis 1279px ist Picos Inhaltsbreite nur 950px – dann passt die Navigation nicht in eine Zeile */
+@media (max-width: 1279.98px) {
   nav { flex-direction: column; align-items: flex-start; }
   nav ul:last-child { margin-left: 0; }
+  nav ul:last-child > li { padding-left: 0.4rem; padding-right: 0.4rem; }
+}
+@media (max-width: 1024px) {
   .grid.cards { grid-template-columns: 1fr; }
 }
 .cards td { padding-left: 0.5rem; padding-right: 0.5rem; }
@@ -219,3 +231,32 @@ button.small, [role=button].small { padding: 0.1rem 0.5rem; font-size: 0.85em; w
   .manual-layout { grid-template-columns: 1fr; }
   .manual-nav { position: static; }
 }
+
+/* Ausgaben: Kassenzettel und Artikel */
+details.purchase { margin-bottom: var(--pico-spacing); }
+details.purchase > summary { font-weight: 600; }
+.items { border: 0; padding: 0; margin-top: var(--pico-spacing); }
+.items-table { margin-bottom: 0.5rem; }
+.items-table input { margin: 0; padding: 0.35rem 0.5rem; height: auto; }
+.items-table td { padding: 0.25rem; vertical-align: middle; }
+.items-table td.qty { width: 5.5rem; }
+.items-table td.price { width: 8rem; }
+.items-table td.amount { width: 7rem; white-space: nowrap; }
+.receipt-current { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: var(--pico-spacing); }
+.receipt-thumb { max-width: 8rem; max-height: 10rem; border-radius: var(--pico-border-radius); border: 1px solid var(--pico-muted-border-color); }
+.flash.warning { border-left-color: var(--hh-warning); }
+.search-row { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: start; }
+.search-row button { width: auto; }
+.nowrap { white-space: nowrap; }
+
+/* Mehrfachauswahl in Filtern */
+.multiselect { margin-bottom: var(--pico-spacing); min-width: 0; }
+.multiselect-label { display: block; margin-bottom: calc(var(--pico-spacing) * 0.375); }
+.multiselect details.dropdown { margin-bottom: 0; }
+.multiselect details.dropdown > summary { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.multiselect details.dropdown > ul { max-height: 22rem; overflow-y: auto; min-width: 100%; width: max-content; max-width: min(24rem, calc(100vw - 2rem)); }
+.multiselect details.dropdown > ul li label { width: 100%; cursor: pointer; }
+.multiselect-group { font-size: 0.8em; font-weight: 600; color: var(--pico-muted-color); text-transform: uppercase; letter-spacing: 0.03em; }
+/* Picos Klickfläche über der ganzen Seite abschalten: sonst schließt der erste Klick auf „Filtern“
+   nur das Menü. Schließen bei Klick daneben übernimmt app.js. */
+.multiselect details.dropdown[open] > summary::before { display: none; }

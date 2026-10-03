@@ -4,8 +4,9 @@ const express = require('express');
 const { contextOptions } = require('./helpers');
 const { loadContext, monthlySeries } = require('../services/overview');
 const { lineChart, columnChart } = require('../utils/charts');
+const { articleStats } = require('../services/articles');
 const { formatEuro } = require('../utils/money');
-const { formatMonth, formatDate } = require('../utils/dates');
+const { formatMonth, formatDate, monthRange } = require('../utils/dates');
 
 const RANGES = [6, 12, 24];
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
@@ -34,8 +35,16 @@ module.exports = (repos) => {
         + `(Konten ${formatEuro(m.netWorth.accounts)}, Anlagen ${formatEuro(m.netWorth.assets)})`,
     })), { xMode: 'index' });
 
+    const articleQuery = String(req.query.artikel || '').trim().slice(0, 60);
+    const articles = articleStats(ctx, {
+      from: monthRange(series[0].year, series[0].month).from,
+      to: series[series.length - 1].end,
+      query: articleQuery,
+    });
+
     res.render('reports', {
       title: 'Auswertung', months, ranges: RANGES, series: [...series].reverse(), saldoChart, worthChart,
+      articles, articleQuery,
       hasData: ctx.accounts.length > 0 || ctx.assets.length > 0,
     });
   });

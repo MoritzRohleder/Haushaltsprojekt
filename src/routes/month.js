@@ -33,6 +33,8 @@ module.exports = (repos) => {
       summary,
       incomeBars: bars(summary.incomeByCategory),
       expenseBars: bars(summary.expenseByCategory),
+      merchantBars: bars(summary.expenseByMerchant),
+      monthParam: `${year}-${String(month).padStart(2, '0')}`,
       prevUrl: `/monat/${prev.year}/${prev.month}`,
       nextUrl: `/monat/${next.year}/${next.month}`,
     });

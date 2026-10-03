@@ -1,0 +1,10 @@
+<%# Umschalter „Einkauf“ (Geschäft Pflicht) für eine Ausgaben-Kategorie. Erwartet: c %>
+<% if (c.kind === 'expense') { %>
+  <form method="post" action="/kategorien/<%= c.id %>/einkauf" class="inline-form">
+    <%- include('csrf') %>
+    <input type="hidden" name="required" value="<%= c.merchant_required ? 'false' : 'true' %>">
+    <button type="submit" class="<%= c.merchant_required ? '' : 'secondary outline' %> small" title="<%= c.merchant_required ? 'Geschäft ist Pflicht – klicken, um es optional zu machen' : 'Klicken, damit das Geschäft Pflicht wird' %>">
+      🛒 <%= c.merchant_required ? 'Einkauf' : 'kein Einkauf' %>
+    </button>
+  </form>
+<% } %>

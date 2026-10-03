@@ -10,7 +10,7 @@ Du findest es auch direkt in der Anwendung: Der Knopf **?** in der Navigation ö
 4. **[Kategorien](Kategorien)** – Standard- und eigene Kategorien
 5. **[Buchungen](Buchungen)** – Einnahmen und Ausgaben erfassen, Buchungsliste, CSV-Export
 6. **[Transfers](Transfers)** – Geld zwischen eigenen Konten und Anlagen verschieben
-7. **[Regelmäßige Buchungen](Regelmäßige-Buchungen)** – Gehalt, Miete und Sparraten automatisch buchen
+7. **[Regelmäßige Buchungen](Regelmäßige-Buchungen)** – Gehalt, Miete und Sparraten automatisch buchen, feste Kosten pro Monat im Blick
 8. **[Anlagen](Anlagen)** – Fonds, Bausparverträge, Stände und Sparraten
 9. **[Übersicht und Auswertung](Übersicht-und-Auswertung)** – Übersicht, Monatsbilanz und Auswertungen lesen
 10. **[Profil und Darstellung](Profil-und-Darstellung)** – Hell/Dunkel und Passwort

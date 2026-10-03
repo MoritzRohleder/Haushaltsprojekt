@@ -146,7 +146,7 @@ test('Sicherheits-Header, Health-Check, Theme, Auswertung, Export, Nochmal buche
   const accountId = acc.location.split('/').pop();
   await c.request('/buchungen', { method: 'POST', form: { _csrf: token, type: 'expense', date: '2026-02-03', amount: '12,34', description: 'Bäcker; Brot', account_id: accountId } });
   const csv = await c.request('/buchungen/export.csv?alle=1');
-  assert.match(csv.html, /03\.02\.2026;Giro;Ausgabe;Ohne Kategorie;"Bäcker; Brot";;-12,34;/);
+  assert.match(csv.html, /03\.02\.2026;Giro;Ausgabe;Ohne Kategorie;;"Bäcker; Brot";;-12,34;;;/);
   const rowId = (await repos.transactions.findAll())[0].id;
   const dup = await c.request(`/buchungen/neu?vorlage=${rowId}`);
   assert.match(dup.html, /value="12,34"/);
@@ -178,4 +178,31 @@ test('Login mit falschem Passwort zeigt neutrale Meldung', async (t) => {
   assert.match(res.html, /Nutzername oder Passwort falsch/);
   const ok = await other.request('/login', { method: 'POST', form: { username: 'CARLA', password: 'geheim123' } });
   assert.equal(ok.location, '/');
+});
+
+test('Mehrfachauswahl: mehrere Konten und Arten filtern, Export übernimmt die Auswahl', async (t) => {
+  const { base, repos } = await start(t);
+  const c = client(base);
+  await c.request('/registrieren', { method: 'POST', form: { username: 'anna', password: 'geheim123', passwordRepeat: 'geheim123' } });
+  const userId = (await repos.users.findAll())[0].id;
+  const token = await c.csrf('/');
+  const ids = {};
+  for (const name of ['Giro', 'Bar', 'Tagesgeld']) {
+    const r = await c.request('/konten', { method: 'POST', form: { _csrf: token, name, type: 'giro', opening_balance: '0', opening_date: '2026-01-01', owner_ids: userId } });
+    ids[name] = r.location.split('/').pop();
+    await c.request('/buchungen', { method: 'POST', form: { _csrf: token, type: 'expense', date: '2026-02-03', amount: '5', description: `Ausgabe ${name}`, account_id: ids[name] } });
+    await c.request('/buchungen', { method: 'POST', form: { _csrf: token, type: 'income', date: '2026-02-04', amount: '7', description: `Einnahme ${name}`, account_id: ids[name] } });
+  }
+  const list = (await c.request(`/buchungen?monat=2026-02&konto=${ids.Giro}&konto=${ids.Bar}&art=expense`)).html;
+  assert.match(list, /Ausgabe Giro/);
+  assert.match(list, /Ausgabe Bar/);
+  assert.doesNotMatch(list, /Ausgabe Tagesgeld|Einnahme /);
+  assert.match(list, /2 Buchungen/);
+  assert.match(list, /<summary aria-label="Konto: Bar, Giro"|<summary aria-label="Konto: Giro, Bar"/);
+  assert.match(list, new RegExp(`name="konto" value="${ids.Giro}"[^>]* checked`));
+  assert.match(list, new RegExp(`export\\.csv\\?monat=2026-02&amp;konto=${ids.Giro}&amp;konto=${ids.Bar}&amp;art=expense`));
+
+  const csv = (await c.request(`/buchungen/export.csv?monat=2026-02&konto=${ids.Giro}&konto=${ids.Bar}&art=expense&art=income`)).html;
+  assert.equal(csv.trim().split('\n').length, 1 + 4);
+  assert.equal((await c.request('/wiederkehrend?konto=x&konto=y&turnus=month&turnus=year&art=sparen&status=laufend')).status, 200);
 });

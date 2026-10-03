@@ -6,6 +6,7 @@ const { randomUUID } = require('node:crypto');
 const { AsyncLocalStorage } = require('node:async_hooks');
 
 const SCHEMA_VERSION = 1;
+const FILE_NAME = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]{2,5}$/;
 const BACKUPS_PER_COLLECTION = 5;
 
 /**
@@ -20,6 +21,7 @@ class JsonStorage {
   constructor({ dir, collections }) {
     this.dir = dir;
     this.backupDir = path.join(dir, 'backup');
+    this.uploadDir = path.join(dir, 'uploads');
     this.collections = collections;
     this.data = new Map();
     this.meta = {};
@@ -29,6 +31,7 @@ class JsonStorage {
 
   async init() {
     await fs.mkdir(this.backupDir, { recursive: true });
+    await fs.mkdir(this.uploadDir, { recursive: true });
     for (const name of this.collections) {
       this.data.set(name, await this.#readFile(`${name}.json`, []));
     }
@@ -120,6 +123,30 @@ class JsonStorage {
         throw err;
       }
     });
+  }
+
+  // ---- Dateien (z. B. Kassenzettel) -------------------------------------------
+
+  /** Datei unter einem zufälligen Namen ablegen; gibt den Dateinamen zurück. */
+  async saveFile(buffer, ext) {
+    if (!/^[a-z0-9]{2,5}$/.test(ext)) throw new Error(`Ungültige Dateiendung: ${ext}`);
+    const name = `${randomUUID()}.${ext}`;
+    const target = path.join(this.uploadDir, name);
+    const tmp = `${target}.${process.pid}.tmp`;
+    await fs.writeFile(tmp, buffer);
+    await fs.rename(tmp, target);
+    return name;
+  }
+
+  /** Pfad einer gespeicherten Datei – nur für Namen, die saveFile erzeugt haben. */
+  filePath(name) {
+    if (!FILE_NAME.test(String(name))) throw new Error('Ungültiger Dateiname');
+    return path.join(this.uploadDir, name);
+  }
+
+  async removeFile(name) {
+    if (!name) return;
+    await fs.rm(this.filePath(name), { force: true });
   }
 
   // ---- intern ------------------------------------------------------------

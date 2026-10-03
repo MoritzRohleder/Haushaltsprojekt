@@ -2,6 +2,7 @@
 
 const { JsonStorage } = require('./json/JsonStorage');
 const { seed } = require('./seed');
+const { migrate } = require('./migrations');
 
 const COLLECTIONS = ['users', 'accounts', 'categories', 'transactions', 'recurring', 'assets', 'asset_values'];
 
@@ -17,6 +18,7 @@ async function createStorage(config) {
   }
   await storage.init();
   await seed(storage);
+  await migrate(storage);
   return storage;
 }
 

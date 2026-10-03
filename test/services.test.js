@@ -9,6 +9,9 @@ const recurring = require('../src/services/recurring');
 const { loadContext, totals, monthlySummary } = require('../src/services/overview');
 const { ValidationError, NotFoundError } = require('../src/utils/errors');
 
+/** Kurz warten, damit Erfassungszeitpunkte (created_at, ms) sicher verschieden sind. */
+const tick = () => new Promise((resolve) => setTimeout(resolve, 3));
+
 /** Haushalt aus dem Beispiel in Spec Kapitel 4. */
 async function household(t) {
   const env = await setup();
@@ -124,6 +127,7 @@ test('Einzahlung am selben Tag wie ein manueller Stand ist darin enthalten', asy
   await tx.createTransfer(h.repos, { userId: h.a.id }, {
     date: '2026-02-01', amount: '100', description: 'Rate', from: `account:${h.giroA.id}`, to: `asset:${fund.id}`,
   });
+  await tick();
   await assets.addValue(h.repos, h.a.id, fund.id, { value: '1105' }, { today: '2026-02-01' });
   const ctx = await loadContext(h.repos, h.a.id);
   assert.equal(ctx.assetSummary(fund).value_cents, 110500);
@@ -139,6 +143,7 @@ test('Einzahlung am selben Tag, aber nach dem Stand erfasst, wird aufaddiert (ne
   let ctx = await loadContext(h.repos, h.a.id);
   assert.equal(ctx.assetSummary(fund).value_cents, -500000);
   const before = totals(ctx);
+  await tick();
 
   await tx.createTransfer(h.repos, { userId: h.a.id }, {
     date: '2026-10-01', amount: '200', description: 'Rate', from: `account:${h.giroA.id}`, to: `asset:${fund.id}`,
@@ -161,8 +166,10 @@ test('Manueller Stand gilt für jetzt: vorher Erfasstes ist enthalten, später E
   });
   await deposit('2026-09-15');
   await deposit('2026-10-05');
+  await tick();
   // Am 15.10. wird der aktuelle Stand eingetragen: er enthält beide Einzahlungen
   await assets.addValue(h.repos, h.a.id, fund.id, { value: '1250' }, { today: '2026-10-15' });
+  await tick();
   let ctx = await loadContext(h.repos, h.a.id);
   assert.equal(ctx.assetSummary(fund).value_cents, 125000);
   assert.equal(ctx.assetSummary(fund).last_manual_correction_cents, 5000);

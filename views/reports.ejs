@@ -21,6 +21,48 @@
   <%- include('partials/chart-line', { chart: worthChart, cssClass: '', title: `Gesamtvermögen, letzte ${months} Monate` }) %>
 </article>
 
+<article id="artikel">
+  <header>
+    <strong>Artikel</strong> <span class="muted">– aus den Artikellisten der Ausgaben, letzte <%= months %> Monate</span>
+  </header>
+  <form method="get" action="/auswertung#artikel" class="search-row" role="search">
+    <input type="hidden" name="monate" value="<%= months %>">
+    <input type="search" name="artikel" placeholder="Artikel suchen, z. B. Milch" value="<%= articleQuery %>" aria-label="Artikel suchen">
+    <button type="submit" class="secondary">Suchen</button>
+  </form>
+  <% if (!articles.items.length) { %>
+    <p class="muted"><%= articleQuery ? 'Keine passenden Artikel gefunden.' : 'Noch keine Artikel erfasst. Artikel trägst du beim Erfassen einer Ausgabe unter „Kassenzettel und Artikel“ ein.' %></p>
+  <% } else { %>
+    <div class="table-wrap">
+    <table class="striped">
+      <thead>
+        <tr>
+          <th>Artikel</th><th class="amount">Käufe</th><th class="amount">Menge</th><th class="amount">Ausgaben</th>
+          <th class="amount">Ø Stückpreis</th><th class="amount">Preisspanne</th><th>Zuletzt</th>
+        </tr>
+      </thead>
+      <tbody>
+      <% articles.items.forEach((a) => { %>
+        <tr>
+          <td><strong><%= a.name %></strong><% if (a.merchants.length) { %><br><small class="muted"><%= a.merchants.slice(0, 3).join(', ') %></small><% } %></td>
+          <td class="amount"><%= a.purchases %></td>
+          <td class="amount"><%= String(a.quantity).replace('.', ',') %></td>
+          <td class="amount expense"><%= euro(a.total_cents) %></td>
+          <td class="amount"><%= euro(a.avg_unit_cents) %></td>
+          <td class="amount"><%= a.min_unit_cents === a.max_unit_cents ? '–' : `${euro(a.min_unit_cents)} – ${euro(a.max_unit_cents)}` %></td>
+          <td class="nowrap">
+            <a href="/buchungen/<%= a.last.transaction_id %>/bearbeiten"><%= date(a.last.date) %></a> · <%= euro(a.last.unit_price_cents) %>
+            <% if (a.last.merchant) { %><br><small class="muted"><%= a.last.merchant %></small><% } %>
+          </td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+    </div>
+    <% if (articles.total > articles.items.length) { %><small class="muted"><%= articles.items.length %> von <%= articles.total %> Artikeln (nach Ausgaben sortiert) – nutze die Suche für weitere.</small><% } %>
+  <% } %>
+</article>
+
 <h2>Monatsvergleich</h2>
 <div class="table-wrap">
 <table class="striped">

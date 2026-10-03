@@ -10,7 +10,7 @@
   </p>
 <% } %>
 
-<form method="post" action="<%= editing ? `/buchungen/${editing.id}/bearbeiten` : '/buchungen' %>">
+<form method="post" action="<%= editing ? `/buchungen/${editing.id}/bearbeiten` : '/buchungen' %>"<% if (type === 'expense') { %> enctype="multipart/form-data"<% } %>>
   <%- include('../partials/csrf') %>
   <input type="hidden" name="type" value="<%= type %>">
 
@@ -62,16 +62,25 @@
         </select>
       </label>
       <label>Kategorie
-        <select name="category_id">
+        <select name="category_id" data-category-select>
           <option value="">Ohne Kategorie</option>
-          <% categories.forEach((c) => { %><option value="<%= c.id %>" <%= values.category_id === c.id ? 'selected' : '' %>><%= c.name %><%= c.owner_id ? ' (eigene)' : '' %></option><% }) %>
+          <% categories.forEach((c) => { %><option value="<%= c.id %>" <%= c.merchant_required ? 'data-shopping' : '' %> <%= values.category_id === c.id ? 'selected' : '' %>><%= c.name %><%= c.merchant_required ? ' 🛒' : '' %><%= c.owner_id ? ' (eigene)' : '' %></option><% }) %>
         </select>
       </label>
     </div>
+    <% if (type === 'expense') { %>
+      <label data-merchant-field>
+        Geschäft <span class="muted" data-merchant-hint>(bei 🛒-Kategorien Pflicht)</span>
+        <input name="merchant" maxlength="80" list="merchant-list" autocomplete="off" placeholder="z. B. Edeka, Hagebaumarkt, C&amp;A" value="<%= values.merchant || '' %>">
+        <datalist id="merchant-list"><% merchants.forEach((m) => { %><option value="<%= m %>"></option><% }) %></datalist>
+      </label>
+    <% } %>
   <% } %>
 
   <label>Beschreibung <input name="description" required maxlength="120" value="<%= values.description || '' %>"></label>
   <label>Notiz <textarea name="note" rows="2" maxlength="500"><%= values.note || '' %></textarea></label>
+
+  <% if (type === 'expense') { %><%- include('../partials/purchase-fields', { values, editing }) %><% } %>
 
   <% if (!editing) { %>
     <fieldset>

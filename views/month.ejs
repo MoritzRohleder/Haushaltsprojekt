@@ -26,6 +26,14 @@
   </article>
 </div>
 
+<% if (merchantBars.length) { %>
+<article>
+  <header><strong>Ausgaben nach Geschäft</strong></header>
+  <%- include('partials/chart-bars', { bars: merchantBars, cssClass: 'expense', empty: '' }) %>
+  <small class="muted">Ein Klick auf „Buchungen“ und den Filter „Geschäft“ zeigt die einzelnen Einkäufe.</small>
+</article>
+<% } %>
+
 <article>
   <header><strong>Nach Konto</strong></header>
   <div class="table-wrap">

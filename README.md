@@ -52,8 +52,8 @@ Welche Versionen gezogen werden, steuert `HAUSHALT_VERSION` in `.env`:
 | Wert | Bedeutung |
 |------|-----------|
 | `latest` | immer die neueste veröffentlichte Version (Standard) |
-| `1` | neueste Version 1.x – keine Sprünge auf 2.0 |
-| `1.1.0` | genau diese Version (kein automatisches Update) |
+| `0.1` | neueste Version 0.1.x – nur Fehlerbehebungen, keine Sprünge auf 0.2 |
+| `0.1.0` | genau diese Version (kein automatisches Update) |
 
 Vor einem größeren Update lohnt sich eine [Sicherung](#daten-sicherung-und-wiederherstellung).
 
@@ -89,13 +89,15 @@ TRUST_PROXY=1
 
 ## Neue Version veröffentlichen
 
-1. Version in `package.json` erhöhen, z. B. `npm version minor --no-git-tag-version` (1.1.0 → 1.2.0), und in
+1. Version in `package.json` erhöhen, z. B. `npm version minor --no-git-tag-version` (0.1.0 → 0.2.0), und in
    `docs/wiki/_Footer.md` Handbuch-Stand und Version anpassen.
 2. Änderungen per Pull Request nach `master` bringen (die Tests müssen grün sein).
-3. Auf GitHub unter **Releases → Draft a new release** einen Tag `v1.2.0` auf `master` anlegen und veröffentlichen.
+3. Auf GitHub unter **Releases → Draft a new release** einen Tag `v0.2.0` auf `master` anlegen und veröffentlichen.
    Der Tag muss zur Version in `package.json` passen, sonst bricht der Release-Workflow ab.
-4. Der Workflow **Release** testet, baut das Image und lädt es als `1.2.0`, `1.2`, `1` und `latest` hoch.
+4. Der Workflow **Release** testet, baut das Image und lädt es als `0.2.0`, `0.2`, `0` und `latest` hoch.
    Ein als *pre-release* markiertes Release bekommt nur seinen eigenen Tag, nicht `latest`.
+
+Für das **erste Release** steht die Version bereits auf `0.1.0` – Schritt 1 entfällt, der Tag heißt `v0.1.0`.
 
 Beim allerersten Release ist das Paket auf ghcr.io eventuell noch **privat**. Dann einmalig auf GitHub unter
 **Packages → haushaltsprojekt → Package settings → Change visibility** auf **Public** stellen, damit der Server
@@ -146,6 +148,7 @@ Umgebungsvariablen (lokal direkt, bei Docker über `.env`):
 
 Alle Daten liegen als JSON-Dateien im Datenordner (lokal `data/`, bei Docker im Volume `haushalt-data`).
 Vor jedem Schreiben legt die Anwendung zusätzlich eine Sicherung in `backup/` an.
+Kassenzettel (Fotos/PDFs) liegen in `uploads/` – sie sind in Sicherung und Kopie automatisch enthalten. Bei vielen Fotos kann der Ordner einige hundert MB groß werden.
 
 **Sicherung bei Docker** (erzeugt `haushalt-backup.tar.gz` im aktuellen Ordner):
 

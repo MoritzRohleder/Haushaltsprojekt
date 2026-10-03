@@ -15,6 +15,10 @@
       </select>
       <button type="submit">Anlegen</button>
     </div>
+    <label>
+      <input type="checkbox" name="shopping" value="1" <%= values.shopping ? 'checked' : '' %>>
+      Einkauf – bei Ausgaben dieser Kategorie muss das Geschäft angegeben werden
+    </label>
   </form>
 </article>
 
@@ -24,7 +28,7 @@
 <% } else { %>
 <div class="table-wrap">
 <table>
-  <thead><tr><th>Name</th><th>Art</th><th></th></tr></thead>
+  <thead><tr><th>Name</th><th>Art</th><th>Einkauf</th><th></th></tr></thead>
   <tbody>
   <% own.forEach((c) => { %>
     <tr>
@@ -36,6 +40,7 @@
         </form>
       </td>
       <td><%= kinds[c.kind] %><% if (c.archived) { %> <span class="badge muted">archiviert</span><% } %></td>
+      <td><%- include('partials/shopping-toggle', { c }) %></td>
       <td>
         <div class="actions">
           <form method="post" action="/kategorien/<%= c.id %>/archivieren">
@@ -58,7 +63,8 @@
 
 <h2>Standard-Kategorien</h2>
 <p class="muted">Für alle Nutzer. Sie werden in <code>data/categories.json</code> gepflegt (bei gestopptem Server). Kategorien, die du nicht brauchst, kannst du für dich ausblenden.</p>
-<div class="grid">
+<p class="muted">🛒 <strong>Einkauf</strong>: Bei Ausgaben dieser Kategorie muss das Geschäft angegeben werden (z. B. Edeka, C&amp;A). Die Einstellung gilt bei Standard-Kategorien für alle Nutzer.</p>
+<div>
   <% Object.entries(kinds).forEach(([key, label]) => { %>
     <article>
       <header><strong><%= label %>n</strong></header>
@@ -68,6 +74,7 @@
           <tr>
             <td class="<%= isHidden ? 'muted' : '' %>"><%= c.name %><% if (isHidden) { %> <span class="badge muted">ausgeblendet</span><% } %></td>
             <td class="amount">
+              <%- include('partials/shopping-toggle', { c }) %>
               <form method="post" action="/kategorien/<%= c.id %>/ausblenden" class="inline-form">
                 <%- include('partials/csrf') %>
                 <input type="hidden" name="hidden" value="<%= isHidden ? 'false' : 'true' %>">

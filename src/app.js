@@ -2,10 +2,12 @@
 
 const path = require('node:path');
 const express = require('express');
+const multer = require('multer');
 const session = require('express-session');
 const { JsonSessionStore } = require('./storage/sessionStore');
 const { LoginThrottle } = require('./services/loginThrottle');
 const { Manual } = require('./services/manual');
+const { MAX_RECEIPT_BYTES } = require('./services/purchase');
 const mw = require('./middleware');
 
 const ROOT = path.join(__dirname, '..');
@@ -42,7 +44,13 @@ function createApp({ config, repos, sessionStore, loginThrottle = new LoginThrot
   app.use(require('./routes/manual')(manual));
 
   // Ab hier nur angemeldet
-  app.use(mw.requireLogin, mw.csrf, mw.recurringDaily(repos));
+  // Formulare mit Datei (Kassenzettel): erst nach der Anmeldeprüfung auslesen,
+  // damit das CSRF-Token im Formular danach geprüft werden kann.
+  const receiptUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: MAX_RECEIPT_BYTES, files: 1, fields: 2000 },
+  }).single('receipt');
+  app.use(mw.requireLogin, mw.multipart(receiptUpload), mw.csrf, mw.recurringDaily(repos));
   app.use(require('./routes/dashboard')(repos));
   app.use(require('./routes/month')(repos));
   app.use(require('./routes/transactions')(repos));

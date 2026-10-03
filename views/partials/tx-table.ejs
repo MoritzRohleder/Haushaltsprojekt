@@ -22,6 +22,9 @@
       <td>
         <%= t.description %>
         <% if (t.recurring_id) { %> <span class="badge muted" title="aus regelmäßiger Buchung">↻</span><% } %>
+        <% if (t.receipt) { %> <a href="/buchungen/<%= t.id %>/beleg" target="_blank" rel="noopener" class="badge muted" title="Kassenzettel ansehen">🧾</a><% } %>
+        <% if (t.items && t.items.length) { %> <span class="badge muted" title="<%= t.items.map((i) => i.name).join(', ') %>"><%= t.items.length %> Artikel</span><% } %>
+        <% if (t.merchant) { %><br><small class="muted">🛒 <%= t.merchant %></small><% } %>
         <% if (t.note) { %><br><small class="muted"><%= t.note %></small><% } %>
       </td>
       <% if (withAccount) { %><td class="hide-mobile"><%= ctx.accountsById.get(t.account_id)?.name %></td><% } %>
