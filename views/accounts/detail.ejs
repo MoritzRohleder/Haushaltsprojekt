@@ -14,10 +14,57 @@
   </div>
 </div>
 
+<% const f = forecast; const s = f.summary; %>
 <section class="stats">
   <article><span class="label">Kontostand</span><span class="value <%= balance < 0 ? 'expense' : '' %>"><%= euro(balance) %></span></article>
+  <% if (!account.archived) { %>
+  <article>
+    <span class="label">Voraussichtlich am <%= date(f.monthEnd) %></span>
+    <span class="value <%= s.projected < 0 ? 'expense' : '' %>"><%= euro(s.projected) %></span>
+    <small class="muted">
+      <% if (s.pendingIn || s.pendingOut) { %>noch <% if (s.pendingIn) { %><span class="income"><%= euro(s.pendingIn, { sign: true }) %></span><% } %><% if (s.pendingIn && s.pendingOut) { %> / <% } %><% if (s.pendingOut) { %><span class="expense"><%= euro(s.pendingOut, { sign: true }) %></span><% } %> regelmäßig<% } else { %>keine regelmäßigen Buchungen mehr in diesem Monat<% } %><% if (s.bookedUntilMonthEnd !== balance) { %> · erfasst bis Monatsende <%= euro(s.bookedUntilMonthEnd) %><% } %>
+    </small>
+  </article>
+  <% } %>
   <article><span class="label">Anfangssaldo am <%= date(account.opening_date) %></span><span class="value"><%= euro(account.opening_balance_cents) %></span></article>
 </section>
+
+<% if (f.rows.length) { %>
+<h2>Regelmäßige Buchungen</h2>
+<div class="stats">
+  <article><span class="label">Eingänge pro Monat</span><span class="value income"><%= euro(s.monthlyIn, { sign: true }) %></span><small class="muted">Einnahmen und Transfers auf dieses Konto</small></article>
+  <article><span class="label">Abgänge pro Monat</span><span class="value expense"><%= euro(s.monthlyOut, { sign: true }) %></span><small class="muted">Ausgaben und Transfers von diesem Konto</small></article>
+  <article><span class="label">Saldo pro Monat</span><span class="value <%= s.monthlyNet < 0 ? 'expense' : 'income' %>"><%= euro(s.monthlyNet, { sign: true }) %></span><small class="muted">Eingänge minus Abgänge</small></article>
+</div>
+<div class="table-wrap">
+<table class="striped">
+  <thead><tr><th>Beschreibung</th><th>Von / an</th><th>Turnus<br><small>nächster Termin</small></th><th class="amount">Betrag<br><small>pro Monat</small></th><th class="amount">Noch in diesem Monat</th><th></th></tr></thead>
+  <tbody>
+  <% f.rows.forEach((r) => { %>
+    <tr class="<%= r.status !== 'laufend' ? 'inactive' : '' %>">
+      <td><%= r.description %><% if (r.category) { %><br><small class="muted"><%= r.category %></small><% } %></td>
+      <td><%= r.type === 'transfer' ? r.route : (r.direction === 'in' ? 'Einnahme' : 'Ausgabe') %></td>
+      <td>
+        <%= r.rhythm %><br>
+        <% if (r.status === 'pausiert') { %><span class="badge warning">pausiert</span>
+        <% } else if (r.next) { %><small class="muted nowrap">nächster: <%= date(r.next) %></small>
+        <% } else { %><span class="badge muted">beendet</span><% } %>
+      </td>
+      <td class="amount <%= r.direction === 'in' ? 'income' : 'expense' %>">
+        <strong><%= euro(r.account_cents, { sign: true }) %></strong>
+        <% if (r.interval_unit !== 'month' || r.interval_count !== 1) { %><br><small>≈ <%= euro(r.account_monthly_cents, { sign: true }) %> / Monat</small><% } %>
+      </td>
+      <td class="amount">
+        <% if (r.pending_dates.length) { %><%= euro(r.pending_cents, { sign: true }) %><br><small class="muted"><%= r.pending_dates.map((d) => date(d).slice(0, 6)).join(', ') %></small><% } else { %><span class="muted">–</span><% } %>
+      </td>
+      <td><a href="/wiederkehrend/<%= r.id %>/bearbeiten" aria-label="Bearbeiten">✎</a></td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+</div>
+<p><small class="muted">„Voraussichtlich“ = alle bis Monatsende erfassten Buchungen plus die regelmäßigen Termine, die in diesem Monat noch anstehen. Pausierte zählen nicht. <a href="/wiederkehrend?konto=<%= account.id %>">In der Übersicht „Regelmäßig“ öffnen</a></small></p>
+<% } %>
 
 <h2>Buchungen</h2>
 <%- include('../partials/tx-table', { rows, showAccount: false, showBalance: true }) %>

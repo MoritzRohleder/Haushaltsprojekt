@@ -5,6 +5,8 @@ const accounts = require('../services/accounts');
 const { loadContext } = require('../services/overview');
 const { getVisibleAccount } = require('../services/visibility');
 const { ledger } = require('../services/balances');
+const recurring = require('../services/recurring');
+const { accountRecurring, projectedBalances } = require('../services/accountForecast');
 const { flash } = require('../middleware');
 const { centsToInput } = require('../utils/money');
 const { today } = require('../utils/dates');
@@ -27,8 +29,10 @@ module.exports = (repos) => {
   router.get('/konten', async (req, res) => {
     const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     const usersById = new Map((await allUsers()).map((u) => [u.id, u.username]));
+    const templates = await recurring.listForUser(repos, req.session.user.id);
     res.render('accounts/list', {
       title: 'Konten', ctx, usersById, types: accounts.ACCOUNT_TYPES,
+      projected: projectedBalances(ctx, templates, ctx.accounts),
       active: sortByName(ctx.accounts.filter((a) => !a.archived)),
       archived: sortByName(ctx.accounts.filter((a) => a.archived)),
     });
@@ -56,6 +60,7 @@ module.exports = (repos) => {
       title: account.name, ctx, account, usersById, types: accounts.ACCOUNT_TYPES,
       rows: ledger(account, ctx.rows).reverse(),
       balance: ctx.balance(account),
+      forecast: accountRecurring(ctx, await recurring.listForUser(repos, req.session.user.id), account),
     });
   });
 

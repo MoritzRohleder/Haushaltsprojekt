@@ -389,6 +389,16 @@ Die Übersicht der regelmäßigen Buchungen (F-35) rechnet jeden Betrag auf eine
 - **Saldo pro Monat** = Einnahmen − Ausgaben − Gespart: Gespartes ist nicht zum Ausgeben gedacht und mindert deshalb den frei verfügbaren Betrag. Sonstige Umbuchungen ändern den Saldo nicht.
 - Sortieren nach Betrag nutzt den Betrag ohne Vorzeichen (größte Posten zuerst bei absteigender Reihenfolge); Einträge ohne nächsten Termin stehen beim Sortieren nach Termin immer am Ende.
 
+### 6.8 Regelmäßige Buchungen und Prognose je Konto
+
+Für ein einzelnes Konto (F-36) zählt die **Richtung** aus Sicht des Kontos, nicht die Art:
+
+- **Eingang (+)**: Einnahme auf das Konto, Transfer von einem anderen Konto auf dieses.
+- **Abgang (−)**: Ausgabe vom Konto, Transfer von diesem Konto auf ein anderes Konto oder in eine Anlage.
+- **Eingänge/Abgänge/Saldo pro Monat**: wie 6.7 umgerechnet, nur laufende Vorlagen.
+- **Noch ausstehend in diesem Monat**: alle Termine laufender Vorlagen nach `last_generated_date` bis einschließlich Monatsletztem (unter Beachtung von `end_date`).
+- **Voraussichtlich am Monatsende** = Kontostand mit allen Buchungen bis zum Monatsletzten (inkl. bereits erfasster künftiger Buchungen dieses Monats) + Summe der noch ausstehenden Termine.
+
 ## 7. Funktionale Anforderungen
 
 Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (später).
@@ -440,6 +450,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-33 | Eine automatisch erzeugte Buchung kann einzeln geändert oder gelöscht werden, ohne die Vorlage zu ändern | M |
 | F-34 | Änderungen an der Vorlage gelten nur für künftige Termine | M |
 | F-35 | **Übersicht der regelmäßigen Buchungen**: Betrag umgerechnet auf einen Monat, Summen pro Monat (Einnahmen, Ausgaben, Saldo, Gespart nach Sparkonten und Anlagen) über alle laufenden Einträge der gefilterten Liste; **filtern** (Mehrfachauswahl, 9.1) nach Konto/Anlage, Turnus (Einheit), Art (aus Sicht des Nutzers, 6.2, zusätzlich „Sparen“) und Status; **sortieren** nach Beschreibung, Konto, Turnus, nächstem Termin, Betrag und Betrag pro Monat (6.7) | S |
+| F-36 | **Regelmäßige Buchungen je Konto**: in der Kontoübersicht alle Vorlagen des Kontos mit Vorzeichen aus Sicht des Kontos (alles, was abgeht, auch Transfers, ist ein Minus), Eingänge/Abgänge/Saldo pro Monat, noch ausstehende Termine des Monats und **voraussichtlicher Kontostand am Monatsende**; die Kontenliste zeigt diesen Stand je Konto (6.8) | S |
 
 ### 7.5 Anlagen
 
@@ -534,9 +545,9 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | Neue Buchung | `GET/POST /buchungen/neu?typ=einnahme\|ausgabe\|transfer` | |
 | Buchung bearbeiten | `GET/POST /buchungen/:id/bearbeiten` | |
 | Buchung löschen | `POST /buchungen/:id/loeschen` | |
-| Konten | `GET /konten` | Sichtbare Konten mit Saldo und Inhabern |
+| Konten | `GET /konten` | Sichtbare Konten mit Saldo, Inhabern und voraussichtlichem Stand am Monatsende (F-36) |
 | Konto anlegen/bearbeiten | `GET/POST /konten/neu`, `/konten/:id/bearbeiten` | inkl. Inhaber |
-| Kontoübersicht | `GET /konten/:id` | Buchungen inkl. Transfers mit laufendem Saldo |
+| Kontoübersicht | `GET /konten/:id` | Buchungen inkl. Transfers mit laufendem Saldo; regelmäßige Buchungen des Kontos und Prognose zum Monatsende (F-36) |
 | Anlagen | `GET /anlagen` | Sichtbare Anlagen mit aktuellem Wert |
 | Anlage anlegen/bearbeiten | `GET/POST /anlagen/neu`, `/anlagen/:id/bearbeiten` | inkl. Inhaber, Startwert |
 | Anlagedetail | `GET /anlagen/:id` | Verlauf aus Ständen und Ein-/Auszahlungen |
