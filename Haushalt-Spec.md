@@ -1,7 +1,7 @@
 # Haushalt-Spec
 
 > Spezifikation für die Webanwendung **Haushaltsprojekt** zur Verwaltung der monatlichen Finanzen.
-> Status: **v1.3** der Spezifikation – umgesetzt in Version 0.1.0 der Anwendung (noch nicht veröffentlicht; inkl. Betrieb mit Docker, eingebautem Handbuch, Geschäft/Kassenzettel/Artikel bei Ausgaben, Übersicht der regelmäßigen Buchungen).
+> Status: **v1.3** der Spezifikation – umgesetzt in Version 1.0.0 der Anwendung (erstes Release; inkl. Betrieb mit Docker, eingebautem Handbuch, Geschäft/Kassenzettel/Artikel bei Ausgaben, Übersicht der regelmäßigen Buchungen).
 > Getroffene Entscheidungen stehen in [Kapitel 13.1](#131-entscheidungen), offene Punkte in [Kapitel 13.2](#132-offene-fragen) (im Text mit `❓` markiert).
 
 ---
@@ -817,7 +817,7 @@ Aktuell keine.
 | M8.3 | **Fixkosten-Überblick** | F-35: Übersicht der regelmäßigen Buchungen mit Monatswerten, Filter und Sortierung; ganzzahlige Artikelmengen. |
 | M9 | **Ausbau** | CSV-Import (F-62), Budgets, weitere Auswertungen nach Bedarf. |
 
-**Stand Version 0.1.0** (noch kein Release): M0 bis M8.3 sind umgesetzt. Offen ist nur F-62 (CSV-Import, Priorität K).
+**Stand Version 1.0.0** (erstes Release): M0 bis M8.3 sind umgesetzt. Offen ist nur F-62 (CSV-Import, Priorität K).
 
 Bekannte Einschränkungen:
 
