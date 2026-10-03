@@ -90,6 +90,8 @@ TRUST_PROXY=1
 
 ## Neue Version veröffentlichen
 
+Ausführliche Checkliste mit allen Stellen, an denen die Version steht: [docs/RELEASE.md](docs/RELEASE.md).
+
 1. Version in `package.json` erhöhen, z. B. `npm version minor --no-git-tag-version` (1.0.0 → 1.1.0), und in
    `docs/wiki/_Footer.md` Handbuch-Stand und Version anpassen.
 2. Änderungen per Pull Request nach `master` bringen (die Tests müssen grün sein).
