@@ -28,7 +28,9 @@ Ein Klick auf den Kontonamen zeigt alle Buchungen des Kontos (inklusive Transfer
 
 ### Voraussichtlicher Stand am Monatsende
 
-Neben dem Kontostand steht, wie viel **voraussichtlich am Monatsende** auf dem Konto ist: der heutige Stand plus alle [regelmäßigen Buchungen](Regelmäßige-Buchungen), die in diesem Monat noch anstehen. Darunter steht, wie viel noch hereinkommt (grün) und abgeht (rot). Buchungen, die du schon mit einem späteren Datum in diesem Monat erfasst hast, sind enthalten.
+Der **Kontostand heute** enthält nur Buchungen bis zum heutigen Tag – [vorgemerkte Buchungen](Buchungen#vorgemerkte-buchungen) mit späterem Datum zählen erst ab ihrem Datum.
+
+Daneben steht, wie viel **voraussichtlich am Monatsende** auf dem Konto ist: der heutige Stand plus alle [regelmäßigen Buchungen](Regelmäßige-Buchungen), die in diesem Monat noch anstehen, plus die vorgemerkten Buchungen dieses Monats. Darunter steht, wie viel noch hereinkommt (grün) und abgeht (rot).
 
 Die Kontenliste zeigt diesen Wert für jedes Konto in der Spalte **Voraussichtlich am Monatsende**.
 

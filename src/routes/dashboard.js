@@ -11,8 +11,11 @@ module.exports = (repos) => {
   router.get('/', async (req, res) => {
     const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     const { year, month } = parts(today());
-    const recent = [...ctx.rows]
+    const recent = ctx.rows.filter((t) => t.date <= ctx.today)
       .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at))
+      .slice(0, 8);
+    const planned = ctx.planned()
+      .sort((a, b) => a.date.localeCompare(b.date) || a.created_at.localeCompare(b.created_at))
       .slice(0, 8);
     res.render('dashboard', {
       title: 'Übersicht',
@@ -22,6 +25,7 @@ module.exports = (repos) => {
       totals: totals(ctx),
       summary: monthlySummary(ctx, year, month),
       recent,
+      planned,
     });
   });
 

@@ -16,13 +16,18 @@
 
 <% const f = forecast; const s = f.summary; %>
 <section class="stats">
-  <article><span class="label">Kontostand</span><span class="value <%= balance < 0 ? 'expense' : '' %>"><%= euro(balance) %></span></article>
+  <article>
+    <span class="label">Kontostand heute</span><span class="value <%= balance < 0 ? 'expense' : '' %>"><%= euro(balance) %></span>
+    <% if (planned.length) { const sumPlanned = planned.reduce((sum, t) => sum + t.amount_cents, 0); %>
+      <small class="muted"><%= planned.length %> vorgemerkte Buchung<%= planned.length === 1 ? '' : 'en' %> (<%= euro(sumPlanned, { sign: true }) %>) noch nicht enthalten</small>
+    <% } %>
+  </article>
   <% if (!account.archived) { %>
   <article>
     <span class="label">Voraussichtlich am <%= date(f.monthEnd) %></span>
     <span class="value <%= s.projected < 0 ? 'expense' : '' %>"><%= euro(s.projected) %></span>
     <small class="muted">
-      <% if (s.pendingIn || s.pendingOut) { %>noch <% if (s.pendingIn) { %><span class="income"><%= euro(s.pendingIn, { sign: true }) %></span><% } %><% if (s.pendingIn && s.pendingOut) { %> / <% } %><% if (s.pendingOut) { %><span class="expense"><%= euro(s.pendingOut, { sign: true }) %></span><% } %> regelmäßig<% } else { %>keine regelmäßigen Buchungen mehr in diesem Monat<% } %><% if (s.bookedUntilMonthEnd !== balance) { %> · erfasst bis Monatsende <%= euro(s.bookedUntilMonthEnd) %><% } %>
+      <% if (s.pendingIn || s.pendingOut) { %>noch <% if (s.pendingIn) { %><span class="income"><%= euro(s.pendingIn, { sign: true }) %></span><% } %><% if (s.pendingIn && s.pendingOut) { %> / <% } %><% if (s.pendingOut) { %><span class="expense"><%= euro(s.pendingOut, { sign: true }) %></span><% } %> regelmäßig<% } else { %>keine regelmäßigen Buchungen mehr in diesem Monat<% } %><% if (s.bookedUntilMonthEnd !== balance) { %> · vorgemerkt <%= euro(s.bookedUntilMonthEnd - balance, { sign: true }) %><% } %>
     </small>
   </article>
   <% } %>

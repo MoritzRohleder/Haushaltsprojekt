@@ -302,6 +302,8 @@ Kontostand(K, Stichtag) = Anfangssaldo(K) + Σ amount_cents aller Buchungen auf 
 ```
 
 Weil Beträge ein Vorzeichen haben, gilt diese eine Formel für Einnahmen, Ausgaben und Transfers.
+
+Der **aktuelle Kontostand** ist `Kontostand(K, heute)`. Buchungen mit einem Datum nach heute sind **vorgemerkt** (F-25a): Sie werden in Listen gekennzeichnet und zählen erst ab ihrem Datum zum Kontostand, zum Gesamtvermögen (6.4) und – bei Ein-/Auszahlungen – zum Wert einer Anlage (6.3, Stichtag heute). Die Monatsbilanz (6.5) enthält alle Buchungen des Monats, auch vorgemerkte; die Prognose zum Monatsende (6.8) ebenfalls.
 Buchungen vor dem `opening_date` eines Kontos sind nicht erlaubt.
 
 ### 6.2 Einordnung einer Buchung aus Sicht des Nutzers
@@ -435,6 +437,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-23 | Buchung bearbeiten und löschen (mit Bestätigung); bei Transfers immer beide Hälften | M |
 | F-24 | Buchungsliste mit Filtern: Monat/Zeitraum, Konto, Kategorie, Art, Geschäft, Freitextsuche. Auswahlfilter sind **Mehrfachauswahlen** (siehe 9.1) | M |
 | F-25 | Schnelleingabe: Datum mit heute vorbelegt, zuletzt verwendetes Konto vorausgewählt; „Speichern & weitere erfassen“ | S |
+| F-25a | **Vorgemerkte Buchungen**: Buchung mit künftigem Datum zählt erst ab diesem Datum zum aktuellen Kontostand und Anlagenwert; Kennzeichnung „vorgemerkt“ in allen Listen, eigener Abschnitt im Dashboard, Hinweis in der Kontoansicht (6.1) | M |
 | F-26 | Buchung duplizieren („nochmal buchen“) | K |
 | F-27 | **Geschäft** bei Ausgaben; Pflicht bei Einkaufs-Kategorien (`merchant_required`), Vorschläge aus bisherigen Eingaben | S |
 | F-28 | **Artikel** zu einer Ausgabe erfassen (Name, Menge, Stückpreis); Hinweis, wenn die Summe vom Betrag abweicht | S |

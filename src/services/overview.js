@@ -68,13 +68,18 @@ async function loadContext(repos, userId, { assetStaleMonths = 6, today = todayI
   }
 
   const staleBefore = addMonths(today, -assetStaleMonths);
-  const assetSummaries = new Map(assets.map((a) => [a.id, assetSummary(a, values, transactions, null, { staleBefore })]));
+  // Stand heute: Buchungen mit späterem Datum sind vorgemerkt und zählen noch nicht (Spec 6.1).
+  const assetSummaries = new Map(assets.map((a) => [a.id, assetSummary(a, values, transactions, today, { staleBefore })]));
 
   return {
     userId, accounts, assets, rows, values, transactions, assetStaleMonths,
     accountIds, assetIds, accountsById, assetsById, categoriesById,
     classify, kindClass, label, categoryName, counterName,
-    balance: (account, asOf = null) => accountBalance(account, rows, asOf),
+    today,
+    /** Kontostand am Stichtag – ohne Angabe heute, also ohne vorgemerkte Buchungen. */
+    balance: (account, asOf = today) => accountBalance(account, rows, asOf),
+    /** Vorgemerkte Buchungen (Datum nach heute), optional nur eines Kontos. */
+    planned: (accountId = null) => rows.filter((t) => t.date > today && (!accountId || t.account_id === accountId)),
     assetSummary: (asset) => assetSummaries.get(asset.id),
   };
 }

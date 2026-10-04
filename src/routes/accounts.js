@@ -60,6 +60,7 @@ module.exports = (repos) => {
       title: account.name, ctx, account, usersById, types: accounts.ACCOUNT_TYPES,
       rows: ledger(account, ctx.rows).reverse(),
       balance: ctx.balance(account),
+      planned: ctx.planned(account.id),
       forecast: accountRecurring(ctx, await recurring.listForUser(repos, req.session.user.id), account),
     });
   });
