@@ -11,6 +11,8 @@ const { ValidationError, NotFoundError } = require('../src/utils/errors');
 
 /** Kurz warten, damit Erfassungszeitpunkte (created_at, ms) sicher verschieden sind. */
 const tick = () => new Promise((resolve) => setTimeout(resolve, 3));
+/** Stichtag weit nach allen Testbuchungen – damit zählen alle Buchungen zum aktuellen Stand. */
+const LATER = '2099-12-31';
 
 /** Haushalt aus dem Beispiel in Spec Kapitel 4. */
 async function household(t) {
@@ -36,14 +38,14 @@ test('Beispiel Spec Kap. 4: A sieht einen Transfer, B nur eine Einnahme', async 
   assert.equal(rows[0].transfer_id, rows[1].transfer_id);
   assert.deepEqual(rows.map((r) => r.amount_cents).sort((x, y) => x - y), [-50000, 50000]);
 
-  const ctxA = await loadContext(h.repos, h.a.id);
+  const ctxA = await loadContext(h.repos, h.a.id, { today: LATER });
   const monthA = monthlySummary(ctxA, 2026, 10);
   assert.equal(monthA.income, 0);
   assert.equal(monthA.expense, 0);
   assert.equal(monthA.transfers.length, 1);
   assert.equal(totals(ctxA).netWorth, 100000);
 
-  const ctxB = await loadContext(h.repos, h.b.id);
+  const ctxB = await loadContext(h.repos, h.b.id, { today: LATER });
   const monthB = monthlySummary(ctxB, 2026, 10);
   assert.equal(ctxB.rows.length, 1);
   assert.equal(monthB.income, 50000);
@@ -101,12 +103,12 @@ test('Anlagenwert: Einzahlungen auf letzten manuellen Stand, Korrektur sichtbar 
   });
   await deposit('2026-09-15');
   await deposit('2026-10-15');
-  let ctx = await loadContext(h.repos, h.a.id);
+  let ctx = await loadContext(h.repos, h.a.id, { today: LATER });
   assert.equal(ctx.assetSummary(fund).value_cents, 1040000);
 
   await assets.addValue(h.repos, h.a.id, fund.id, { value: '10350' }, { today: '2026-10-20' });
   await deposit('2026-11-15');
-  ctx = await loadContext(h.repos, h.a.id);
+  ctx = await loadContext(h.repos, h.a.id, { today: LATER });
   const summary = ctx.assetSummary(fund);
   assert.equal(summary.value_cents, 1055000);
   assert.equal(summary.last_manual_date, '2026-10-20');
@@ -129,7 +131,7 @@ test('Einzahlung am selben Tag wie ein manueller Stand ist darin enthalten', asy
   });
   await tick();
   await assets.addValue(h.repos, h.a.id, fund.id, { value: '1105' }, { today: '2026-02-01' });
-  const ctx = await loadContext(h.repos, h.a.id);
+  const ctx = await loadContext(h.repos, h.a.id, { today: LATER });
   assert.equal(ctx.assetSummary(fund).value_cents, 110500);
   assert.equal(ctx.assetSummary(fund).last_manual_correction_cents, 500);
 });
@@ -140,7 +142,7 @@ test('Einzahlung am selben Tag, aber nach dem Stand erfasst, wird aufaddiert (ne
     name: 'Bauspar', type: 'building_savings', owner_ids: [h.a.id],
     start_value: '5.000,00', start_value_sign: 'minus', 
   }, { today: '2026-10-01' });
-  let ctx = await loadContext(h.repos, h.a.id);
+  let ctx = await loadContext(h.repos, h.a.id, { today: LATER });
   assert.equal(ctx.assetSummary(fund).value_cents, -500000);
   const before = totals(ctx);
   await tick();
@@ -148,7 +150,7 @@ test('Einzahlung am selben Tag, aber nach dem Stand erfasst, wird aufaddiert (ne
   await tx.createTransfer(h.repos, { userId: h.a.id }, {
     date: '2026-10-01', amount: '200', description: 'Rate', from: `account:${h.giroA.id}`, to: `asset:${fund.id}`,
   });
-  ctx = await loadContext(h.repos, h.a.id);
+  ctx = await loadContext(h.repos, h.a.id, { today: LATER });
   const after = totals(ctx);
   assert.equal(ctx.assetSummary(fund).value_cents, -480000);
   assert.equal(after.accountsTotal, before.accountsTotal - 20000);
@@ -170,14 +172,14 @@ test('Manueller Stand gilt für jetzt: vorher Erfasstes ist enthalten, später E
   // Am 15.10. wird der aktuelle Stand eingetragen: er enthält beide Einzahlungen
   await assets.addValue(h.repos, h.a.id, fund.id, { value: '1250' }, { today: '2026-10-15' });
   await tick();
-  let ctx = await loadContext(h.repos, h.a.id);
+  let ctx = await loadContext(h.repos, h.a.id, { today: LATER });
   assert.equal(ctx.assetSummary(fund).value_cents, 125000);
   assert.equal(ctx.assetSummary(fund).last_manual_correction_cents, 5000);
   // Danach erfasst: rückdatiert (vor dem Stand) zählt nicht, heute und später schon
   await deposit('2026-10-10');
   await deposit('2026-10-15');
   await deposit('2026-11-15');
-  ctx = await loadContext(h.repos, h.a.id);
+  ctx = await loadContext(h.repos, h.a.id, { today: LATER });
   assert.equal(ctx.assetSummary(fund).value_cents, 125000 + 20000);
 });
 
@@ -187,7 +189,7 @@ test('Negative Werte über Vorzeichen-Auswahl oder Minus', async (t) => {
     name: 'Darlehen', type: 'building_savings', owner_ids: [h.a.id], start_value: '-1.000', 
   }, { today: '2026-01-01' });
   await assets.addValue(h.repos, h.a.id, fund.id, { value: '900', value_sign: 'minus' }, { today: '2026-02-01' });
-  const ctx = await loadContext(h.repos, h.a.id);
+  const ctx = await loadContext(h.repos, h.a.id, { today: LATER });
   assert.equal(ctx.assetSummary(fund).value_cents, -90000);
   assert.equal(ctx.assetSummary(fund).last_manual_correction_cents, 10000);
 });
@@ -206,7 +208,7 @@ test('Kontrollrechnung Spec 6.5: Veränderung Konten = Saldo − In Anlagen gesp
   // B bucht vom Gemeinschaftskonto auf sein Privatkonto: für A eine Ausgabe.
   await tx.createTransfer(h.repos, { userId: h.b.id }, { date: '2026-10-05', amount: '50', description: 'Taschengeld', from: `account:${h.shared.id}`, to: `account:${h.giroB.id}` });
 
-  const ctx = await loadContext(h.repos, h.a.id);
+  const ctx = await loadContext(h.repos, h.a.id, { today: LATER });
   const m = monthlySummary(ctx, 2026, 10);
   const before = ctx.accounts.reduce((s, a) => s + ctx.balance(a, '2026-09-30'), 0);
   const after = ctx.accounts.reduce((s, a) => s + ctx.balance(a, '2026-10-31'), 0);
@@ -314,4 +316,26 @@ test('Rhythmus ändern gilt ab dem nächsten Termin – keine doppelte Buchung i
   await recurring.generateDue(h.repos, '2026-11-25');
   const dates = (await h.repos.transactions.findAll({ recurring_id: rec.id })).map((r) => r.date).sort();
   assert.deepEqual(dates, ['2026-10-05', '2026-11-20']);
+});
+
+test('Vorgemerkte Buchungen (Datum nach heute) zählen nicht zum aktuellen Stand', async (t) => {
+  const h = await household(t);
+  const fund = await assets.createAsset(h.repos, h.a.id, { name: 'ETF', type: 'fund', owner_ids: [h.a.id], start_value: '1000' }, { today: '2026-10-01' });
+  const before = (await loadContext(h.repos, h.a.id, { today: '2026-10-10' })).balance(h.giroA);
+  await tx.createBooking(h.repos, { userId: h.a.id }, { type: 'expense', date: '2026-11-15', amount: '300', description: 'Versicherung (einmalig)', account_id: h.giroA.id });
+  await tx.createTransfer(h.repos, { userId: h.a.id }, { date: '2026-10-20', amount: '100', description: 'Sonderzahlung', from: `account:${h.giroA.id}`, to: `asset:${fund.id}` });
+
+  let ctx = await loadContext(h.repos, h.a.id, { today: '2026-10-10' });
+  assert.equal(ctx.balance(h.giroA), before);                 // heute: noch nichts abgebucht
+  assert.equal(ctx.assetSummary(fund).value_cents, 100000);  // Einzahlung erst am 20.10.
+  assert.equal(totals(ctx).accountsTotal - totals(await loadContext(h.repos, h.a.id, { today: '2026-10-09' })).accountsTotal, 0);
+  assert.deepEqual(ctx.planned(h.giroA.id).map((r) => r.date).sort(), ['2026-10-20', '2026-11-15']);
+  assert.equal(ctx.balance(h.giroA, '2026-10-31'), before - 10000);           // Stichtag explizit
+  assert.equal(ctx.balance(h.giroA, '2026-11-30'), before - 10000 - 30000);
+
+  // Am Tag der Buchung zählt sie
+  ctx = await loadContext(h.repos, h.a.id, { today: '2026-11-15' });
+  assert.equal(ctx.balance(h.giroA), before - 40000);
+  assert.equal(ctx.assetSummary(fund).value_cents, 110000);
+  assert.deepEqual(ctx.planned(), []);
 });

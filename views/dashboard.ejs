@@ -66,6 +66,12 @@
   </section>
 </article>
 
+<% if (planned.length) { %>
+<h2>Vorgemerkt</h2>
+<p class="muted"><small>Buchungen mit einem Datum in der Zukunft. Sie zählen erst ab ihrem Datum zum Kontostand.</small></p>
+<%- include('partials/tx-table', { rows: planned }) %>
+<% } %>
+
 <h2>Letzte Buchungen</h2>
 <%- include('partials/tx-table', { rows: recent }) %>
 <%- include('partials/foot') %>

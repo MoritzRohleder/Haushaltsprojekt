@@ -1,7 +1,7 @@
 # Haushalt-Spec
 
 > Spezifikation für die Webanwendung **Haushaltsprojekt** zur Verwaltung der monatlichen Finanzen.
-> Status: **v1.3** der Spezifikation – umgesetzt in Version 0.1.0 der Anwendung (noch nicht veröffentlicht; inkl. Betrieb mit Docker, eingebautem Handbuch, Geschäft/Kassenzettel/Artikel bei Ausgaben, Übersicht der regelmäßigen Buchungen).
+> Status: **v1.3** der Spezifikation – umgesetzt in Version 1.0.0 der Anwendung (erstes Release; inkl. Betrieb mit Docker, eingebautem Handbuch, Geschäft/Kassenzettel/Artikel bei Ausgaben, Übersicht der regelmäßigen Buchungen).
 > Getroffene Entscheidungen stehen in [Kapitel 13.1](#131-entscheidungen), offene Punkte in [Kapitel 13.2](#132-offene-fragen) (im Text mit `❓` markiert).
 
 ---
@@ -302,6 +302,8 @@ Kontostand(K, Stichtag) = Anfangssaldo(K) + Σ amount_cents aller Buchungen auf 
 ```
 
 Weil Beträge ein Vorzeichen haben, gilt diese eine Formel für Einnahmen, Ausgaben und Transfers.
+
+Der **aktuelle Kontostand** ist `Kontostand(K, heute)`. Buchungen mit einem Datum nach heute sind **vorgemerkt** (F-25a): Sie werden in Listen gekennzeichnet und zählen erst ab ihrem Datum zum Kontostand, zum Gesamtvermögen (6.4) und – bei Ein-/Auszahlungen – zum Wert einer Anlage (6.3, Stichtag heute). Die Monatsbilanz (6.5) enthält alle Buchungen des Monats, auch vorgemerkte; die Prognose zum Monatsende (6.8) ebenfalls.
 Buchungen vor dem `opening_date` eines Kontos sind nicht erlaubt.
 
 ### 6.2 Einordnung einer Buchung aus Sicht des Nutzers
@@ -389,6 +391,16 @@ Die Übersicht der regelmäßigen Buchungen (F-35) rechnet jeden Betrag auf eine
 - **Saldo pro Monat** = Einnahmen − Ausgaben − Gespart: Gespartes ist nicht zum Ausgeben gedacht und mindert deshalb den frei verfügbaren Betrag. Sonstige Umbuchungen ändern den Saldo nicht.
 - Sortieren nach Betrag nutzt den Betrag ohne Vorzeichen (größte Posten zuerst bei absteigender Reihenfolge); Einträge ohne nächsten Termin stehen beim Sortieren nach Termin immer am Ende.
 
+### 6.8 Regelmäßige Buchungen und Prognose je Konto
+
+Für ein einzelnes Konto (F-36) zählt die **Richtung** aus Sicht des Kontos, nicht die Art:
+
+- **Eingang (+)**: Einnahme auf das Konto, Transfer von einem anderen Konto auf dieses.
+- **Abgang (−)**: Ausgabe vom Konto, Transfer von diesem Konto auf ein anderes Konto oder in eine Anlage.
+- **Eingänge/Abgänge/Saldo pro Monat**: wie 6.7 umgerechnet, nur laufende Vorlagen.
+- **Noch ausstehend in diesem Monat**: alle Termine laufender Vorlagen nach `last_generated_date` bis einschließlich Monatsletztem (unter Beachtung von `end_date`).
+- **Voraussichtlich am Monatsende** = Kontostand mit allen Buchungen bis zum Monatsletzten (inkl. bereits erfasster künftiger Buchungen dieses Monats) + Summe der noch ausstehenden Termine.
+
 ## 7. Funktionale Anforderungen
 
 Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (später).
@@ -425,6 +437,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-23 | Buchung bearbeiten und löschen (mit Bestätigung); bei Transfers immer beide Hälften | M |
 | F-24 | Buchungsliste mit Filtern: Monat/Zeitraum, Konto, Kategorie, Art, Geschäft, Freitextsuche. Auswahlfilter sind **Mehrfachauswahlen** (siehe 9.1) | M |
 | F-25 | Schnelleingabe: Datum mit heute vorbelegt, zuletzt verwendetes Konto vorausgewählt; „Speichern & weitere erfassen“ | S |
+| F-25a | **Vorgemerkte Buchungen**: Buchung mit künftigem Datum zählt erst ab diesem Datum zum aktuellen Kontostand und Anlagenwert; Kennzeichnung „vorgemerkt“ in allen Listen, eigener Abschnitt im Dashboard, Hinweis in der Kontoansicht (6.1) | M |
 | F-26 | Buchung duplizieren („nochmal buchen“) | K |
 | F-27 | **Geschäft** bei Ausgaben; Pflicht bei Einkaufs-Kategorien (`merchant_required`), Vorschläge aus bisherigen Eingaben | S |
 | F-28 | **Artikel** zu einer Ausgabe erfassen (Name, Menge, Stückpreis); Hinweis, wenn die Summe vom Betrag abweicht | S |
@@ -440,6 +453,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-33 | Eine automatisch erzeugte Buchung kann einzeln geändert oder gelöscht werden, ohne die Vorlage zu ändern | M |
 | F-34 | Änderungen an der Vorlage gelten nur für künftige Termine | M |
 | F-35 | **Übersicht der regelmäßigen Buchungen**: Betrag umgerechnet auf einen Monat, Summen pro Monat (Einnahmen, Ausgaben, Saldo, Gespart nach Sparkonten und Anlagen) über alle laufenden Einträge der gefilterten Liste; **filtern** (Mehrfachauswahl, 9.1) nach Konto/Anlage, Turnus (Einheit), Art (aus Sicht des Nutzers, 6.2, zusätzlich „Sparen“) und Status; **sortieren** nach Beschreibung, Konto, Turnus, nächstem Termin, Betrag und Betrag pro Monat (6.7) | S |
+| F-36 | **Regelmäßige Buchungen je Konto**: in der Kontoübersicht alle Vorlagen des Kontos mit Vorzeichen aus Sicht des Kontos (alles, was abgeht, auch Transfers, ist ein Minus), Eingänge/Abgänge/Saldo pro Monat, noch ausstehende Termine des Monats und **voraussichtlicher Kontostand am Monatsende**; die Kontenliste zeigt diesen Stand je Konto (6.8) | S |
 
 ### 7.5 Anlagen
 
@@ -534,9 +548,9 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | Neue Buchung | `GET/POST /buchungen/neu?typ=einnahme\|ausgabe\|transfer` | |
 | Buchung bearbeiten | `GET/POST /buchungen/:id/bearbeiten` | |
 | Buchung löschen | `POST /buchungen/:id/loeschen` | |
-| Konten | `GET /konten` | Sichtbare Konten mit Saldo und Inhabern |
+| Konten | `GET /konten` | Sichtbare Konten mit Saldo, Inhabern und voraussichtlichem Stand am Monatsende (F-36) |
 | Konto anlegen/bearbeiten | `GET/POST /konten/neu`, `/konten/:id/bearbeiten` | inkl. Inhaber |
-| Kontoübersicht | `GET /konten/:id` | Buchungen inkl. Transfers mit laufendem Saldo |
+| Kontoübersicht | `GET /konten/:id` | Buchungen inkl. Transfers mit laufendem Saldo; regelmäßige Buchungen des Kontos und Prognose zum Monatsende (F-36) |
 | Anlagen | `GET /anlagen` | Sichtbare Anlagen mit aktuellem Wert |
 | Anlage anlegen/bearbeiten | `GET/POST /anlagen/neu`, `/anlagen/:id/bearbeiten` | inkl. Inhaber, Startwert |
 | Anlagedetail | `GET /anlagen/:id` | Verlauf aus Ständen und Ein-/Auszahlungen |
@@ -817,7 +831,7 @@ Aktuell keine.
 | M8.3 | **Fixkosten-Überblick** | F-35: Übersicht der regelmäßigen Buchungen mit Monatswerten, Filter und Sortierung; ganzzahlige Artikelmengen. |
 | M9 | **Ausbau** | CSV-Import (F-62), Budgets, weitere Auswertungen nach Bedarf. |
 
-**Stand Version 0.1.0** (noch kein Release): M0 bis M8.3 sind umgesetzt. Offen ist nur F-62 (CSV-Import, Priorität K).
+**Stand Version 1.0.0** (erstes Release): M0 bis M8.3 sind umgesetzt. Offen ist nur F-62 (CSV-Import, Priorität K).
 
 Bekannte Einschränkungen:
 

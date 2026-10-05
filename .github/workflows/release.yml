@@ -1,8 +1,8 @@
 # Beim Veröffentlichen eines Releases: Tests, dann Docker-Image bauen und nach
 # ghcr.io/<owner>/<repo> hochladen (amd64 + arm64).
 #
-# Tags am Image (Beispiel Release v0.2.0): 0.2.0, 0.2, 0, latest
-# Vorabversionen (Release als „pre-release“ markiert, z. B. v0.2.0-rc.1) bekommen
+# Tags am Image (Beispiel Release v1.1.0): 1.1.0, 1.1, 1, latest
+# Vorabversionen (Release als „pre-release“ markiert, z. B. v1.1.0-rc.1) bekommen
 # nur ihren eigenen Tag, nicht „latest“.
 name: Release
 

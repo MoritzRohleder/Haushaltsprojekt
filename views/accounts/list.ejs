@@ -6,14 +6,15 @@
 <% const table = (list) => { %>
   <div class="table-wrap">
   <table class="striped">
-    <thead><tr><th>Name</th><th>Typ</th><th>Inhaber</th><th class="amount">Kontostand</th></tr></thead>
+    <thead><tr><th>Name</th><th>Typ</th><th>Inhaber</th><th class="amount">Kontostand</th><th class="amount" title="Kontostand plus die regelmäßigen Buchungen, die in diesem Monat noch anstehen">Voraussichtlich am Monatsende</th></tr></thead>
     <tbody>
-    <% list.forEach((a) => { const b = ctx.balance(a); %>
+    <% list.forEach((a) => { const b = ctx.balance(a); const p = projected.get(a.id); %>
       <tr>
         <td><a href="/konten/<%= a.id %>"><%= a.name %></a></td>
         <td><%= types[a.type] %></td>
         <td><%= a.owner_ids.map((id) => usersById.get(id)).join(', ') %></td>
         <td class="amount strong <%= b < 0 ? 'expense' : '' %>"><%= euro(b) %></td>
+        <td class="amount <%= p < 0 ? 'expense' : 'muted' %>"><%= a.archived ? '' : euro(p) %></td>
       </tr>
     <% }) %>
     </tbody>

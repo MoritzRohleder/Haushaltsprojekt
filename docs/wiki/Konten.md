@@ -26,6 +26,29 @@ Ein Konto ist ein Ort, an dem Geld liegt und auf den gebucht wird: Girokonto, Sp
 
 Ein Klick auf den Kontonamen zeigt alle Buchungen des Kontos (inklusive Transfers) mit **laufendem Saldo**, also dem Kontostand nach jeder Buchung. Von hier kannst du direkt eine Einnahme, Ausgabe oder einen Transfer für dieses Konto erfassen.
 
+### Voraussichtlicher Stand am Monatsende
+
+Der **Kontostand heute** enthält nur Buchungen bis zum heutigen Tag – [vorgemerkte Buchungen](Buchungen#vorgemerkte-buchungen) mit späterem Datum zählen erst ab ihrem Datum.
+
+Daneben steht, wie viel **voraussichtlich am Monatsende** auf dem Konto ist: der heutige Stand plus alle [regelmäßigen Buchungen](Regelmäßige-Buchungen), die in diesem Monat noch anstehen, plus die vorgemerkten Buchungen dieses Monats. Darunter steht, wie viel noch hereinkommt (grün) und abgeht (rot).
+
+Die Kontenliste zeigt diesen Wert für jedes Konto in der Spalte **Voraussichtlich am Monatsende**.
+
+### Regelmäßige Buchungen des Kontos
+
+Darunter stehen alle regelmäßigen Buchungen, die das Konto betreffen – **aus Sicht dieses Kontos**:
+
+- Alles, was **abgeht**, ist ein Minus: Ausgaben, aber auch Transfers auf andere Konten und Sparraten in Anlagen.
+- Alles, was **ankommt**, ist ein Plus: Einnahmen und Transfers von anderen Konten.
+
+| Angabe | Bedeutung |
+|--------|-----------|
+| Eingänge / Abgänge pro Monat | umgerechnet auf einen Durchschnittsmonat (wie in der Übersicht **Regelmäßig**) |
+| Saldo pro Monat | Eingänge minus Abgänge – reicht das, was regelmäßig hereinkommt, für das, was regelmäßig abgeht? |
+| Noch in diesem Monat | Betrag und Termine, die bis Monatsende noch gebucht werden |
+
+Pausierte und beendete Einträge werden blass angezeigt und zählen nicht mit.
+
 ## Archivieren und löschen
 
 - **Archivieren** blendet ein Konto aus den Auswahllisten und der Übersicht aus, die Buchungen bleiben erhalten. Archivierte Konten findest du unter **Konten** → „Archivierte Konten“ und kannst sie dort **wiederherstellen**.

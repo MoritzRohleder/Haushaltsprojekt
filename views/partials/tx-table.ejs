@@ -17,8 +17,8 @@
   </thead>
   <tbody>
   <% rows.forEach((t) => { const k = ctx.kindClass(t); %>
-    <tr class="row-<%= k %>">
-      <td><%= date(t.date) %></td>
+    <tr class="row-<%= k %><%= t.date > today ? ' planned' : '' %>">
+      <td><%= date(t.date) %><% if (t.date > today) { %><br><span class="badge muted" title="Liegt in der Zukunft und zählt erst ab diesem Tag zum Kontostand">vorgemerkt</span><% } %></td>
       <td>
         <%= t.description %>
         <% if (t.recurring_id) { %> <span class="badge muted" title="aus regelmäßiger Buchung">↻</span><% } %>

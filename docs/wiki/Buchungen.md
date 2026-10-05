@@ -4,7 +4,7 @@ Die Knöpfe **+ Einnahme**, **+ Ausgabe** und **⇄ Transfer** findest du in der
 
 | Feld | Bedeutung |
 |------|-----------|
-| Datum | Buchungsdatum (vorbelegt mit heute) |
+| Datum | Buchungsdatum (vorbelegt mit heute; ein Datum in der Zukunft macht die Buchung zur [vorgemerkten Buchung](#vorgemerkte-buchungen)) |
 | Betrag in € | immer positiv eingeben |
 | Konto | eines deiner Konten (zuletzt verwendetes ist vorausgewählt) |
 | Kategorie | passend zur Art; optional. Kategorien mit 🛒 sind [Einkaufs-Kategorien](Kategorien#einkaufs-kategorien) |
@@ -45,6 +45,17 @@ Unter **Kassenzettel und Artikel** (aufklappen) kannst du zu einer Ausgabe festh
 - Wie oft du einen Artikel gekauft hast und zu welchem Preis, siehst du in der [Auswertung](Übersicht-und-Auswertung#artikel).
 
 Bei **regelmäßigen** Buchungen gibt es keine Kassenzettel und Artikel, weil sie zu einem einzelnen Einkauf gehören. Das Geschäft wird dagegen übernommen.
+
+## Vorgemerkte Buchungen
+
+Weißt du schon, dass in Zukunft etwas abgebucht wird oder eingeht – z. B. eine einmalige Steuer im nächsten Monat –, erfasse die Buchung einfach mit dem **künftigen Datum**.
+
+- Sie zählt erst **ab ihrem Datum** zum Kontostand, zum Gesamtvermögen und zum Wert einer Anlage. Bis dahin bleibt der Kontostand unverändert.
+- In allen Listen steht sie mit dem Hinweis **vorgemerkt**; die Übersicht zeigt sie im Abschnitt **Vorgemerkt**.
+- In der Kontoansicht steht unter dem Kontostand, wie viele vorgemerkte Buchungen noch nicht enthalten sind. Die Prognose [Voraussichtlich am Monatsende](Konten#voraussichtlicher-stand-am-monatsende) berücksichtigt die vorgemerkten Buchungen dieses Monats.
+- Die Monatsübersicht eines Monats enthält alle Buchungen dieses Monats – auch die noch vorgemerkten.
+
+Für Beträge, die sich regelmäßig wiederholen, sind [regelmäßige Buchungen](Regelmäßige-Buchungen) besser geeignet.
 
 ## Buchung bearbeiten oder löschen
 
