@@ -25,6 +25,9 @@ Das **Datum** oben im Formular ist das **Startdatum**: Der erste Termin ist der 
 | Alle 20 Tage | Alle `20` Tage |
 
 - Gibt es den Tag in einem Monat nicht (z. B. der 31. im April), wird der **Monatsletzte** genommen.
+- Fällt ein Termin auf einen Tag, an dem Banken nicht buchen, wird er wie bei einem Dauerauftrag am **nächsten Banktag** gebucht. Beispiel: Miete am 1., der 01.11.2026 ist ein Sonntag → gebucht am Montag, 02.11. Die Übersicht zeigt dann „nächster: 02.11.2026 (planmäßig 01.11.)“.
+  Keine Banktage sind Samstag, Sonntag, die bundesweiten Feiertage (Neujahr, Karfreitag, Ostermontag, 1. Mai, Christi Himmelfahrt, Pfingstmontag, 3. Oktober, 1. und 2. Weihnachtstag) sowie der 24. und 31. Dezember – so wie Sparkassen und Volksbanken buchen. Regionale Feiertage wie Fronleichnam zählen nicht.
+  Der Rhythmus selbst bleibt unverändert: Der Termin danach ist wieder planmäßig der 1.
 - Liegt das Startdatum in der Vergangenheit, werden alle bisherigen Termine sofort **rückwirkend** gebucht.
 - Lässt du „Am Tag“ leer, gilt der Tag des Startdatums.
 

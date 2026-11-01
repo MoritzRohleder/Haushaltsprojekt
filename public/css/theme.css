@@ -237,6 +237,8 @@ button.small, [role=button].small { padding: 0.1rem 0.5rem; font-size: 0.85em; w
 
 /* Ausgaben: Kassenzettel und Artikel */
 details.purchase { margin-bottom: var(--pico-spacing); }
+details.collapsible { margin-bottom: var(--pico-spacing); }
+details.collapsible > summary { font-weight: 600; }
 details.purchase > summary { font-weight: 600; }
 .items { border: 0; padding: 0; margin-top: var(--pico-spacing); }
 .items-table { margin-bottom: 0.5rem; }

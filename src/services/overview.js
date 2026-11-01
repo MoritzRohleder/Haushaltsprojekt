@@ -10,7 +10,7 @@ const { monthRange, addMonths, parts, toIso, today: todayIso } = require('../uti
  * und stellt Hilfsfunktionen zur Einordnung und Beschriftung von Buchungen bereit.
  */
 async function loadContext(repos, userId, { assetStaleMonths = 6, today = todayIso() } = {}) {
-  const [accounts, assets, allAccounts, allAssets, categories, transactions, values] = await Promise.all([
+  const [accounts, assets, allAccounts, allAssets, categories, transactions, values, users] = await Promise.all([
     visibleAccounts(repos, userId),
     visibleAssets(repos, userId),
     repos.accounts.findAll(),
@@ -18,6 +18,7 @@ async function loadContext(repos, userId, { assetStaleMonths = 6, today = todayI
     repos.categories.findAll(),
     repos.transactions.findAll(),
     repos.assetValues.findAll(),
+    repos.users.findAll(),
   ]);
 
   const accountIds = new Set(accounts.map((a) => a.id));
@@ -25,6 +26,7 @@ async function loadContext(repos, userId, { assetStaleMonths = 6, today = todayI
   const accountsById = new Map(allAccounts.map((a) => [a.id, a]));
   const assetsById = new Map(allAssets.map((a) => [a.id, a]));
   const categoriesById = new Map(categories.map((c) => [c.id, c]));
+  const usernames = new Map(users.map((u) => [u.id, u.username]));
   const rows = transactions.filter((t) => accountIds.has(t.account_id));
 
   /**
@@ -76,6 +78,14 @@ async function loadContext(repos, userId, { assetStaleMonths = 6, today = todayI
     accountIds, assetIds, accountsById, assetsById, categoriesById,
     classify, kindClass, label, categoryName, counterName,
     today,
+    /** Name des Nutzers, der die Buchung erfasst hat (bei automatischen: Ersteller der Vorlage). */
+    createdBy: (t) => usernames.get(t.created_by) ?? null,
+    /**
+     * Ersteller anzeigen? Bei Gemeinschaftskonten und Transfers, damit erkennbar ist,
+     * wer den Eintrag gemacht hat (Spec F-55a).
+     */
+    showCreator: (t) => Boolean(t.created_by && usernames.has(t.created_by)
+      && (t.type === 'transfer' || (accountsById.get(t.account_id)?.owner_ids?.length ?? 0) > 1)),
     /** Kontostand am Stichtag – ohne Angabe heute, also ohne vorgemerkte Buchungen. */
     balance: (account, asOf = today) => accountBalance(account, rows, asOf),
     /** Vorgemerkte Buchungen (Datum nach heute), optional nur eines Kontos. */

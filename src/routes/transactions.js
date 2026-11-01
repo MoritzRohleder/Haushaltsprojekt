@@ -192,8 +192,11 @@ module.exports = (repos) => {
     const input = { ...req.body, type, receiptUpload: req.file };
     await handleForm(res, async () => {
       const result = await recurring.createFromForm(repos, req.session.user.id, input);
-      const accountId = type === 'transfer' ? tx.parseEndpoint(input.from)?.id : input.account_id;
-      req.session.lastAccountId = accountId;
+      // Betroffenes Konto: bei Transfers das Quellkonto, bei einer Auszahlung aus einer Anlage das Zielkonto
+      const accountId = type === 'transfer'
+        ? [tx.parseEndpoint(input.from), tx.parseEndpoint(input.to)].find((e) => e?.kind === 'account')?.id
+        : input.account_id;
+      if (accountId) req.session.lastAccountId = accountId;
       if (result.recurring) {
         flash(req, `Regelmäßige Buchung „${result.recurring.description}“ angelegt (${recurring.describeInterval(result.recurring)}).`);
       } else {
@@ -203,6 +206,8 @@ module.exports = (repos) => {
         const typ = Object.keys(TYPES).find((k) => TYPES[k] === type);
         return res.redirect(`/buchungen/neu?typ=${typ}`);
       }
+      // Danach in die Ansicht des betroffenen Kontos (dort steht die neue Buchung mit Saldo)
+      if (accountId) return res.redirect(`/konten/${accountId}`);
       const { year, month } = parts(input.date);
       res.redirect(`/buchungen?monat=${year}-${String(month).padStart(2, '0')}`);
     }, (errors) => renderForm(req, res, { type, values: req.body, errors }));

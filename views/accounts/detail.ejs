@@ -41,18 +41,21 @@
   <article><span class="label">Abgänge pro Monat</span><span class="value expense"><%= euro(s.monthlyOut, { sign: true }) %></span><small class="muted">Ausgaben und Transfers von diesem Konto</small></article>
   <article><span class="label">Saldo pro Monat</span><span class="value <%= s.monthlyNet < 0 ? 'expense' : 'income' %>"><%= euro(s.monthlyNet, { sign: true }) %></span><small class="muted">Eingänge minus Abgänge</small></article>
 </div>
+<% const pendingCount = f.rows.filter((r) => r.pending_dates.length).length; %>
+<details class="collapsible">
+<summary><%= f.rows.length %> regelmäßige Buchung<%= f.rows.length === 1 ? '' : 'en' %> anzeigen<% if (pendingCount) { %> <span class="muted">· <%= pendingCount %> noch in diesem Monat</span><% } %></summary>
 <div class="table-wrap">
 <table class="striped">
   <thead><tr><th>Beschreibung</th><th>Von / an</th><th>Turnus<br><small>nächster Termin</small></th><th class="amount">Betrag<br><small>pro Monat</small></th><th class="amount">Noch in diesem Monat</th><th></th></tr></thead>
   <tbody>
   <% f.rows.forEach((r) => { %>
     <tr class="<%= r.status !== 'laufend' ? 'inactive' : '' %>">
-      <td><%= r.description %><% if (r.category) { %><br><small class="muted"><%= r.category %></small><% } %></td>
+      <td><%= r.description %><% if (r.category || r.creator) { %><br><small class="muted"><%= [r.category, r.creator && `👤 ${r.creator}`].filter(Boolean).join(' · ') %></small><% } %></td>
       <td><%= r.type === 'transfer' ? r.route : (r.direction === 'in' ? 'Einnahme' : 'Ausgabe') %></td>
       <td>
         <%= r.rhythm %><br>
         <% if (r.status === 'pausiert') { %><span class="badge warning">pausiert</span>
-        <% } else if (r.next) { %><small class="muted nowrap">nächster: <%= date(r.next) %></small>
+        <% } else if (r.next) { %><small class="muted nowrap">nächster: <%= date(r.next) %></small><% if (r.next_planned && r.next_planned !== r.next) { %><br><small class="muted nowrap" title="Der planmäßige Termin ist kein Banktag">(planmäßig <%= date(r.next_planned).slice(0, 6) %>)</small><% } %>
         <% } else { %><span class="badge muted">beendet</span><% } %>
       </td>
       <td class="amount <%= r.direction === 'in' ? 'income' : 'expense' %>">
@@ -68,6 +71,7 @@
   </tbody>
 </table>
 </div>
+</details>
 <p><small class="muted">„Voraussichtlich“ = alle bis Monatsende erfassten Buchungen plus die regelmäßigen Termine, die in diesem Monat noch anstehen. Pausierte zählen nicht. <a href="/wiederkehrend?konto=<%= account.id %>">In der Übersicht „Regelmäßig“ öffnen</a></small></p>
 <% } %>
 

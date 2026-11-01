@@ -26,6 +26,7 @@
         <% if (t.items && t.items.length) { %> <span class="badge muted" title="<%= t.items.map((i) => i.name).join(', ') %>"><%= t.items.length %> Artikel</span><% } %>
         <% if (t.merchant) { %><br><small class="muted">🛒 <%= t.merchant %></small><% } %>
         <% if (t.note) { %><br><small class="muted"><%= t.note %></small><% } %>
+        <% if (ctx.showCreator(t)) { %><br><small class="muted" title="erfasst von <%= ctx.createdBy(t) %>">👤 <%= ctx.createdBy(t) %></small><% } %>
       </td>
       <% if (withAccount) { %><td class="hide-mobile"><%= ctx.accountsById.get(t.account_id)?.name %></td><% } %>
       <td><%= ctx.label(t) %></td>
