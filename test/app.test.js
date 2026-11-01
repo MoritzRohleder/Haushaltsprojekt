@@ -238,4 +238,13 @@ test('Nach dem Erfassen geht es in die Ansicht des betroffenen Kontos; Ersteller
   const own = (await anna.request(`/konten/${giro}`)).html;
   assert.doesNotMatch(own, /Erstattung[^<]*<br><small class="muted" title="erfasst von/);
   assert.match(own, /Umbuchung[\s\S]*?👤 anna/);
+
+  // Farblich hervorgehoben: für ben sind annas Einträge auf dem Gemeinschaftskonto „von jemand anderem“
+  assert.equal((page.match(/class="row-[a-z]+ by-other"/g) || []).length, 2);
+  const annasView = (await anna.request(`/konten/${joint}`)).html;
+  assert.doesNotMatch(annasView, /by-other/); // die eigenen Einträge nicht
+  // Bens eigener Eintrag wird bei anna hervorgehoben
+  const benToken = await ben.csrf('/');
+  await ben.request('/buchungen', { method: 'POST', form: { _csrf: benToken, type: 'expense', date: '2026-02-06', amount: '7', description: 'Milch', account_id: joint } });
+  assert.match((await anna.request(`/konten/${joint}`)).html, /class="row-expense by-other">\s*<td>06\.02\.2026/);
 });

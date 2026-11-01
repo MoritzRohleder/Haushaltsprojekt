@@ -26,8 +26,9 @@ Das Handbuch ist in Haushalt eingebaut – auch ohne Anmeldung, z. B. über den 
 | Grau | Transfers zwischen deinen eigenen Konten |
 | Violett | Anlagen, Sparraten, „In Anlagen gespart“, regelmäßiges Sparen |
 | Bernstein | Hinweise, z. B. „Stand veraltet“ |
+| Blau hinterlegt | Eintrag auf einem Gemeinschaftskonto, den **jemand anderes** erfasst hat – der Name (👤) steht ebenfalls in Blau |
 
-Beträge haben immer ein Vorzeichen (`+` / `−`), die Farbe ist nur eine zusätzliche Hilfe. Der farbige Streifen am Anfang einer Tabellenzeile zeigt die Art der Buchung. Das Symbol **↻** markiert Buchungen, die aus einer regelmäßigen Buchung entstanden sind.
+Beträge haben immer ein Vorzeichen (`+` / `−`), die Farbe ist nur eine zusätzliche Hilfe. Der farbige Streifen am Anfang einer Tabellenzeile zeigt die Art der Buchung. Das Symbol **↻** markiert Buchungen, die aus einer regelmäßigen Buchung entstanden sind, **👤** zeigt, wer einen Eintrag auf einem Gemeinschaftskonto oder einen Transfer erfasst hat.
 
 ## Filtern
 

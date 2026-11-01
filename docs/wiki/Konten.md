@@ -21,6 +21,7 @@ Ein Konto ist ein Ort, an dem Geld liegt und auf den gebucht wird: Girokonto, Sp
 - **Alle Inhaber sehen alles** auf dem Konto und dürfen alles ändern: Konto bearbeiten, Buchungen erfassen, ändern und löschen, Inhaber hinzufügen oder entfernen.
 - Jeder Inhaber sieht den **vollen** Kontostand eines Gemeinschaftskontos in seiner Übersicht.
 - Bei Buchungen auf einem Gemeinschaftskonto und bei allen Transfers steht, **wer** sie erfasst hat (z. B. „👤 ben“). Automatisch erzeugte regelmäßige Buchungen zeigen die Person, die die regelmäßige Buchung angelegt hat.
+- Einträge, die **jemand anderes** auf einem Gemeinschaftskonto erfasst hat, sind **blau hinterlegt** – so siehst du auf einen Blick, was die anderen Inhaber gebucht haben. Das gilt auch für regelmäßige Buchungen.
 - Ein Konto, dessen Inhaber du nicht bist, siehst du gar nicht.
 
 ## Kontoansicht

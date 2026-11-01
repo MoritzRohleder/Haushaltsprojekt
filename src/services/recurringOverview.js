@@ -85,6 +85,7 @@ function describe(ctx, rec) {
     status,
     ...nextDates(rec, status),
     creator: ctx.showCreator?.(rec) ? ctx.createdBy(rec) : null,
+    by_other: Boolean(ctx.byOther?.(rec) || (rec.to_account_id && ctx.byOther?.({ ...rec, account_id: rec.to_account_id }))),
     signed_cents: sign * rec.amount_cents,
     monthly_cents: sign * monthlyCents(rec),
     saves_into: saving?.into ?? null,

@@ -49,8 +49,8 @@
   <thead><tr><th>Beschreibung</th><th>Von / an</th><th>Turnus<br><small>nächster Termin</small></th><th class="amount">Betrag<br><small>pro Monat</small></th><th class="amount">Noch in diesem Monat</th><th></th></tr></thead>
   <tbody>
   <% f.rows.forEach((r) => { %>
-    <tr class="<%= r.status !== 'laufend' ? 'inactive' : '' %>">
-      <td><%= r.description %><% if (r.category || r.creator) { %><br><small class="muted"><%= [r.category, r.creator && `👤 ${r.creator}`].filter(Boolean).join(' · ') %></small><% } %></td>
+    <tr class="<%= r.status !== 'laufend' ? 'inactive' : '' %><%= r.by_other ? ' by-other' : '' %>">
+      <td><%= r.description %><% if (r.category || r.creator) { %><br><small class="muted"><%= r.category || '' %><% if (r.category && r.creator) { %> · <% } %><% if (r.creator) { %><span class="creator">👤 <%= r.creator %></span><% } %></small><% } %></td>
       <td><%= r.type === 'transfer' ? r.route : (r.direction === 'in' ? 'Einnahme' : 'Ausgabe') %></td>
       <td>
         <%= r.rhythm %><br>

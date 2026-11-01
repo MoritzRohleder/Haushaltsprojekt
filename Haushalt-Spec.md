@@ -487,7 +487,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-53 | Monatsübersicht aufgeschlüsselt nach Konto | M |
 | F-54 | **Transfers des Monats** als eigene Liste (Von → Nach, Betrag) | M |
 | F-55 | **Kontoübersicht**: alle Buchungen eines Kontos inkl. Transfers mit laufendem Saldo | M |
-| F-55a | Bei Buchungen auf Gemeinschaftskonten und bei Transfers wird angezeigt, wer sie erfasst hat (`created_by`; bei automatisch erzeugten: Ersteller der Vorlage); die Liste der regelmäßigen Buchungen in der Kontoübersicht ist aufklappbar, die Summen bleiben sichtbar | S |
+| F-55a | Bei Buchungen auf Gemeinschaftskonten und bei Transfers wird angezeigt, wer sie erfasst hat (`created_by`; bei automatisch erzeugten: Ersteller der Vorlage); Einträge (auch Vorlagen) auf Gemeinschaftskonten, die ein anderer Nutzer erfasst hat, sind farblich hervorgehoben (`--hh-other`); die Liste der regelmäßigen Buchungen in der Kontoübersicht ist aufklappbar, die Summen bleiben sichtbar | S |
 | F-55b | Nach dem Erfassen einer Buchung öffnet sich die Ansicht des betroffenen Kontos (bei Transfers das Quellkonto bzw. bei Auszahlung aus einer Anlage das Zielkonto) | S |
 | F-56 | Vergleich über mehrere Monate (Tabelle: Monat × Einnahmen/Ausgaben/Saldo) | S |
 | F-57 | Diagramme (Ausgaben nach Kategorie, Verlauf Gesamtvermögen) | K |

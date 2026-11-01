@@ -12,6 +12,8 @@
   --hh-transfer: #475569;
   --hh-asset: #6d28d9;
   --hh-warning: #b45309;
+  --hh-other: #0369a1;
+  --hh-other-bg: rgba(3, 105, 161, 0.08);
 
   --pico-primary: var(--hh-primary);
   --pico-primary-background: var(--hh-primary);
@@ -34,6 +36,8 @@
     --hh-transfer: #94a3b8;
     --hh-asset: #a78bfa;
     --hh-warning: #fbbf24;
+  --hh-other: #38bdf8;
+  --hh-other-bg: rgba(56, 189, 248, 0.10);
 
     --pico-primary: var(--hh-primary);
     --pico-primary-background: var(--hh-primary);
@@ -56,6 +60,8 @@
   --hh-transfer: #94a3b8;
   --hh-asset: #a78bfa;
   --hh-warning: #fbbf24;
+  --hh-other: #38bdf8;
+  --hh-other-bg: rgba(56, 189, 248, 0.10);
 
   --pico-primary: var(--hh-primary);
   --pico-primary-background: var(--hh-primary);
@@ -84,6 +90,11 @@ tr.row-income > td:first-child { box-shadow: inset 4px 0 0 var(--hh-income); }
 tr.row-expense > td:first-child { box-shadow: inset 4px 0 0 var(--hh-expense); }
 tr.row-transfer > td:first-child { box-shadow: inset 4px 0 0 var(--hh-transfer); }
 tr.row-asset > td:first-child { box-shadow: inset 4px 0 0 var(--hh-asset); }
+/* Buchung auf einem Gemeinschaftskonto, die jemand anderes erfasst hat */
+table tbody tr.by-other > td,
+table.striped tbody tr.by-other > td { background-color: var(--hh-other-bg); }
+tr.by-other .creator { color: var(--hh-other); font-weight: 600; }
+.creator { white-space: nowrap; }
 
 /* Kennzahlen */
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--pico-spacing); margin-bottom: var(--pico-spacing); }

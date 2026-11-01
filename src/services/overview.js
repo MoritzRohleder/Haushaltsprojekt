@@ -84,6 +84,9 @@ async function loadContext(repos, userId, { assetStaleMonths = 6, today = todayI
      * Ersteller anzeigen? Bei Gemeinschaftskonten und Transfers, damit erkennbar ist,
      * wer den Eintrag gemacht hat (Spec F-55a).
      */
+    /** Auf einem Gemeinschaftskonto von jemand anderem erfasst (wird farblich hervorgehoben). */
+    byOther: (t) => Boolean(t.created_by && t.created_by !== userId
+      && (accountsById.get(t.account_id)?.owner_ids?.length ?? 0) > 1),
     showCreator: (t) => Boolean(t.created_by && usernames.has(t.created_by)
       && (t.type === 'transfer' || (accountsById.get(t.account_id)?.owner_ids?.length ?? 0) > 1)),
     /** Kontostand am Stichtag – ohne Angabe heute, also ohne vorgemerkte Buchungen. */
