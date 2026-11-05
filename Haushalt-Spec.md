@@ -401,6 +401,15 @@ Für ein einzelnes Konto (F-36) zählt die **Richtung** aus Sicht des Kontos, ni
 - **Noch ausstehend in diesem Monat**: alle Termine laufender Vorlagen nach `last_generated_date` bis einschließlich Monatsletztem (unter Beachtung von `end_date`).
 - **Voraussichtlich am Monatsende** = Kontostand mit allen Buchungen bis zum Monatsletzten (inkl. bereits erfasster künftiger Buchungen dieses Monats) + Summe der noch ausstehenden Termine.
 
+### 6.9 Banktage
+
+Fällt ein planmäßiger Termin einer regelmäßigen Buchung nicht auf einen Banktag, wird er am **nächsten Banktag** gebucht (wie ein Dauerauftrag).
+
+- **Kein Banktag** (wie bei Sparkassen und Volksbanken): Samstag, Sonntag, bundesweite gesetzliche Feiertage (Neujahr, Karfreitag, Ostermontag, 1. Mai, Christi Himmelfahrt, Pfingstmontag, 3. Oktober, 25. und 26. Dezember) sowie 24. und 31. Dezember. Regionale Feiertage zählen nicht. Ostern nach dem gregorianischen Osteralgorithmus.
+- Gebucht wird erst, wenn der verschobene Tag erreicht ist. `last_generated_date` speichert den **planmäßigen** Termin; der Rhythmus verschiebt sich dadurch nicht.
+- Anzeigen („nächster Termin“) und die Prognose zum Monatsende (6.8) verwenden den verschobenen Buchungstag. Ein Termin am Monatsende, der auf ein Wochenende fällt, gehört damit in den Folgemonat.
+- Bereits erzeugte Buchungen werden nicht nachträglich verschoben.
+
 ## 7. Funktionale Anforderungen
 
 Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (später).
@@ -452,6 +461,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-32 | Übersicht aller wiederkehrenden Buchungen auf den eigenen Konten; bearbeiten, pausieren, beenden | M |
 | F-33 | Eine automatisch erzeugte Buchung kann einzeln geändert oder gelöscht werden, ohne die Vorlage zu ändern | M |
 | F-34 | Änderungen an der Vorlage gelten nur für künftige Termine | M |
+| F-34a | Termine regelmäßiger Buchungen, die nicht auf einen Banktag fallen, werden am nächsten Banktag gebucht (6.9) | M |
 | F-35 | **Übersicht der regelmäßigen Buchungen**: Betrag umgerechnet auf einen Monat, Summen pro Monat (Einnahmen, Ausgaben, Saldo, Gespart nach Sparkonten und Anlagen) über alle laufenden Einträge der gefilterten Liste; **filtern** (Mehrfachauswahl, 9.1) nach Konto/Anlage, Turnus (Einheit), Art (aus Sicht des Nutzers, 6.2, zusätzlich „Sparen“) und Status; **sortieren** nach Beschreibung, Konto, Turnus, nächstem Termin, Betrag und Betrag pro Monat (6.7) | S |
 | F-36 | **Regelmäßige Buchungen je Konto**: in der Kontoübersicht alle Vorlagen des Kontos mit Vorzeichen aus Sicht des Kontos (alles, was abgeht, auch Transfers, ist ein Minus), Eingänge/Abgänge/Saldo pro Monat, noch ausstehende Termine des Monats und **voraussichtlicher Kontostand am Monatsende**; die Kontenliste zeigt diesen Stand je Konto (6.8) | S |
 
@@ -477,6 +487,8 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-53 | Monatsübersicht aufgeschlüsselt nach Konto | M |
 | F-54 | **Transfers des Monats** als eigene Liste (Von → Nach, Betrag) | M |
 | F-55 | **Kontoübersicht**: alle Buchungen eines Kontos inkl. Transfers mit laufendem Saldo | M |
+| F-55a | Bei Buchungen auf Gemeinschaftskonten und bei Transfers wird angezeigt, wer sie erfasst hat (`created_by`; bei automatisch erzeugten: Ersteller der Vorlage); Einträge (auch Vorlagen) auf Gemeinschaftskonten, die ein anderer Nutzer erfasst hat, sind farblich hervorgehoben (`--hh-other`); die Liste der regelmäßigen Buchungen in der Kontoübersicht ist aufklappbar, die Summen bleiben sichtbar | S |
+| F-55b | Nach dem Erfassen einer Buchung öffnet sich die Ansicht des betroffenen Kontos (bei Transfers das Quellkonto bzw. bei Auszahlung aus einer Anlage das Zielkonto) | S |
 | F-56 | Vergleich über mehrere Monate (Tabelle: Monat × Einnahmen/Ausgaben/Saldo) | S |
 | F-57 | Diagramme (Ausgaben nach Kategorie, Verlauf Gesamtvermögen) | K |
 | F-58 | Monatsübersicht: **Ausgaben nach Geschäft**; Buchungsliste und CSV mit Filter/Spalte „Geschäft“, Suche auch in Artikeln | S |

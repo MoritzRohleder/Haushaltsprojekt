@@ -16,7 +16,7 @@ Die Knöpfe **+ Einnahme**, **+ Ausgabe** und **⇄ Transfer** findest du in der
 
 Beim Tippen ins Feld **Geschäft** schlägt Haushalt die Geschäfte vor, die du schon einmal eingetragen hast – so bleibt die Schreibweise einheitlich und die Auswertung nach Geschäft stimmt.
 
-- **Speichern** speichert und zeigt die Buchungsliste des Monats.
+- **Speichern** speichert und öffnet die Ansicht des betroffenen Kontos – bei einem Transfer die des Kontos, von dem das Geld abgeht.
 - **Speichern & weitere erfassen** speichert und öffnet sofort ein leeres Formular – praktisch zum Nachtragen mehrerer Belege.
 
 ## Kassenzettel und Artikel

@@ -46,6 +46,10 @@ test('Noch ausstehende Termine bis Monatsende', () => {
   assert.deepEqual(pendingDates(rule, '2026-10-31'), ['2026-10-15', '2026-10-22', '2026-10-29']);
   assert.deepEqual(pendingDates({ ...rule, end_date: '2026-10-20' }, '2026-10-31'), ['2026-10-15']);
   assert.deepEqual(pendingDates({ ...rule, last_generated_date: '2026-10-29' }, '2026-10-31'), []);
+  // Monatsletzter auf einem Samstag: gebucht wird am Montag – also nicht mehr in diesem Monat
+  const monthly = { start_date: '2026-08-31', interval_unit: 'month', interval_count: 1, last_generated_date: '2026-09-30' };
+  assert.deepEqual(pendingDates(monthly, '2026-10-31'), []);
+  assert.deepEqual(pendingDates(monthly, '2026-11-30'), ['2026-11-02', '2026-11-30']);
 });
 
 test('Konto: alles, was abgeht, ist ein Minus – auch Transfers', async (t) => {

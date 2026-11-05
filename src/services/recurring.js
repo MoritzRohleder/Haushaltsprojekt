@@ -10,6 +10,7 @@ const {
   prepareBooking, prepareTransfer, createBooking, createTransfer, parseEndpoint,
 } = require('./transactions');
 const { visibleAccounts, isOwner } = require('./visibility');
+const { nextBankDay } = require('../utils/bankdays');
 
 /** Wiederkehrende Buchungen (Spec 5.2, 8.4). */
 
@@ -152,24 +153,29 @@ function toInput(rec, date) {
   };
 }
 
-/** Bucht alle fälligen Termine einer Vorlage bis einschließlich `today`. */
+/**
+ * Bucht alle fälligen Termine einer Vorlage. Fällt ein Termin nicht auf einen Banktag,
+ * wird er am nächsten Banktag gebucht (Spec 6.9) – also erst, wenn dieser erreicht ist.
+ * `last_generated_date` merkt sich den planmäßigen Termin, nicht das Buchungsdatum.
+ */
 async function generateFor(repos, rec, today) {
   if (!rec.active) return 0;
-  const until = rec.end_date && rec.end_date < today ? rec.end_date : today;
   const actor = { userId: rec.created_by, system: true };
   let created = 0;
   let last = rec.last_generated_date;
 
   for (let n = 0; n < MAX_ITERATIONS; n++) {
     const date = occurrence(rec, n);
-    if (date > until) break;
+    if (date > today || (rec.end_date && date > rec.end_date)) break;
     if (last && date <= last) continue;
+    const bookingDate = nextBankDay(date);
+    if (bookingDate > today) break;
     const create = rec.type === 'transfer' ? createTransfer : createBooking;
     try {
-      await create(repos, actor, toInput(rec, date));
+      await create(repos, actor, toInput(rec, bookingDate));
     } catch (err) {
       if (err instanceof ValidationError) {
-        console.warn(`Regelmäßige Buchung „${rec.description}“ (${date}) übersprungen: ${err.message}`);
+        console.warn(`Regelmäßige Buchung „${rec.description}“ (${bookingDate}) übersprungen: ${err.message}`);
         break; // z. B. Konto archiviert – später erneut versuchen
       }
       throw err;

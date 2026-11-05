@@ -2,6 +2,7 @@
 
 const { nextOccurrenceAfter, monthRange, parts, today: todayIso } = require('../utils/dates');
 const { describe, monthlyCents } = require('./recurringOverview');
+const { nextBankDay } = require('../utils/bankdays');
 
 /**
  * Regelmäßige Buchungen aus Sicht eines Kontos und voraussichtlicher Kontostand am
@@ -9,15 +10,21 @@ const { describe, monthlyCents } = require('./recurringOverview');
  * Transfers an andere Konten oder Anlagen –, ist ein Minus; alles, was ankommt, ein Plus.
  */
 
-/** Noch nicht gebuchte Termine einer Vorlage bis einschließlich `until`. */
+/**
+ * Buchungstage der noch nicht gebuchten Termine bis einschließlich `until` – jeweils
+ * auf den nächsten Banktag verschoben (Spec 6.9). Ein Termin am Monatsletzten, der auf
+ * ein Wochenende fällt, wird also erst im Folgemonat gebucht.
+ */
 function pendingDates(rec, until) {
   const dates = [];
   let after = rec.last_generated_date;
   for (let i = 0; i < 400; i++) {
-    const next = nextOccurrenceAfter(rec, after);
-    if (!next || next > until) break;
-    dates.push(next);
-    after = next;
+    const planned = nextOccurrenceAfter(rec, after);
+    if (!planned) break;
+    const booked = nextBankDay(planned);
+    if (booked > until) break;
+    dates.push(booked);
+    after = planned;
   }
   return dates;
 }

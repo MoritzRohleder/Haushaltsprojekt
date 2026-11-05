@@ -206,3 +206,47 @@ test('Mehrfachauswahl: mehrere Konten und Arten filtern, Export übernimmt die A
   assert.equal(csv.trim().split('\n').length, 1 + 4);
   assert.equal((await c.request('/wiederkehrend?konto=x&konto=y&turnus=month&turnus=year&art=sparen&status=laufend')).status, 200);
 });
+
+test('Nach dem Erfassen geht es in die Ansicht des betroffenen Kontos; Ersteller sichtbar', async (t) => {
+  const { base, repos } = await start(t);
+  const anna = client(base);
+  await anna.request('/registrieren', { method: 'POST', form: { username: 'anna', password: 'geheim123', passwordRepeat: 'geheim123' } });
+  const ben = client(base);
+  await ben.request('/registrieren', { method: 'POST', form: { username: 'ben', password: 'geheim123', passwordRepeat: 'geheim123' } });
+  const users = await repos.users.findAll();
+  const id = (name) => users.find((u) => u.username === name).id;
+  const token = await anna.csrf('/');
+  const make = async (name, owners) => (await anna.request('/konten', { method: 'POST', form: new URLSearchParams([
+    ['_csrf', token], ['name', name], ['type', 'giro'], ['opening_balance', '0'], ['opening_date', '2026-01-01'],
+    ...owners.map((o) => ['owner_ids', id(o)]),
+  ]) })).location.split('/').pop();
+  const giro = await make('Giro', ['anna']);
+  const joint = await make('Gemeinsam', ['anna', 'ben']);
+
+  let res = await anna.request('/buchungen', { method: 'POST', form: { _csrf: token, type: 'expense', date: '2026-02-03', amount: '5', description: 'Brot', account_id: joint } });
+  assert.equal(res.location, `/konten/${joint}`);
+  res = await anna.request('/buchungen', { method: 'POST', form: { _csrf: token, type: 'transfer', date: '2026-02-04', amount: '50', description: 'Umbuchung', from: `account:${giro}`, to: `account:${joint}` } });
+  assert.equal(res.location, `/konten/${giro}`);
+  res = await anna.request('/buchungen', { method: 'POST', form: { _csrf: token, type: 'income', date: '2026-02-05', amount: '9', description: 'Erstattung', account_id: giro, weitere: '1' } });
+  assert.match(res.location, /^\/buchungen\/neu\?typ=einnahme/); // „Speichern und weitere“ bleibt im Formular
+
+  // Ben sieht auf dem Gemeinschaftskonto, dass anna die Einträge gemacht hat
+  const page = (await ben.request(`/konten/${joint}`)).html;
+  assert.match(page, /Brot[\s\S]*?👤 anna/);
+  assert.match(page, /Umbuchung[\s\S]*?👤 anna/);
+  // Auf ihrem eigenen Konto sieht anna bei normalen Buchungen keinen Ersteller, bei Transfers schon
+  const own = (await anna.request(`/konten/${giro}`)).html;
+  const ownBooking = own.split('</tr>').find((row) => row.includes('Erstattung'));
+  assert.ok(ownBooking);
+  assert.doesNotMatch(ownBooking, /title="erfasst von/);
+  assert.match(own, /Umbuchung[\s\S]*?👤 anna/);
+
+  // Farblich hervorgehoben: für ben sind annas Einträge auf dem Gemeinschaftskonto „von jemand anderem“
+  assert.equal((page.match(/class="row-[a-z]+ by-other"/g) || []).length, 2);
+  const annasView = (await anna.request(`/konten/${joint}`)).html;
+  assert.doesNotMatch(annasView, /by-other/); // die eigenen Einträge nicht
+  // Bens eigener Eintrag wird bei anna hervorgehoben
+  const benToken = await ben.csrf('/');
+  await ben.request('/buchungen', { method: 'POST', form: { _csrf: benToken, type: 'expense', date: '2026-02-06', amount: '7', description: 'Milch', account_id: joint } });
+  assert.match((await anna.request(`/konten/${joint}`)).html, /class="row-expense by-other">\s*<td>06\.02\.2026/);
+});

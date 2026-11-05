@@ -76,13 +76,13 @@
   </tr></thead>
   <tbody>
   <% rows.forEach((r) => { %>
-    <tr class="<%= r.status !== 'laufend' ? 'inactive' : '' %>">
-      <td><%= r.description %><br><small class="muted"><span class="<%= r.kindClass %>"><%= kindLabel(r) %></span><% if (r.category) { %> · <%= r.category %><% } %><% if (r.merchant) { %> · <%= r.merchant %><% } %></small></td>
+    <tr class="<%= r.status !== 'laufend' ? 'inactive' : '' %><%= r.by_other ? ' by-other' : '' %>">
+      <td><%= r.description %><br><small class="muted"><span class="<%= r.kindClass %>"><%= kindLabel(r) %></span><% if (r.category) { %> · <%= r.category %><% } %><% if (r.merchant) { %> · <%= r.merchant %><% } %><% if (r.creator) { %> · <span class="creator">👤 <%= r.creator %></span><% } %></small></td>
       <td><%= r.route %></td>
       <td>
         <%= r.rhythm %><% if (r.end_date) { %>, bis <%= date(r.end_date) %><% } %><br>
         <% if (r.status === 'pausiert') { %><span class="badge warning">pausiert</span>
-        <% } else if (r.next) { %><small class="muted nowrap">nächster: <%= date(r.next) %></small>
+        <% } else if (r.next) { %><small class="muted nowrap">nächster: <%= date(r.next) %></small><% if (r.next_planned && r.next_planned !== r.next) { %><br><small class="muted nowrap" title="Der planmäßige Termin ist kein Banktag">(planmäßig <%= date(r.next_planned).slice(0, 6) %>)</small><% } %>
         <% } else { %><span class="badge muted">beendet</span><% } %>
       </td>
       <td class="amount <%= r.kindClass %>">

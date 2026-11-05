@@ -228,13 +228,18 @@ test('Regelmäßige Buchung: sofort und rückwirkend gebucht, dann täglich', as
   assert.deepEqual(rows.map((r) => r.date).sort(), ['2026-07-31', '2026-08-31', '2026-09-30']);
 
   assert.equal(await recurring.generateDue(h.repos, '2026-10-30'), 0);
-  assert.equal(await recurring.generateDue(h.repos, '2026-10-31'), 1);
-  assert.equal(await recurring.generateDue(h.repos, '2026-10-31'), 0); // nicht doppelt
+  // 31.10.2026 ist ein Samstag: gebucht wird erst am Montag, 02.11.
+  assert.equal(await recurring.generateDue(h.repos, '2026-10-31'), 0);
+  assert.equal(await recurring.generateDue(h.repos, '2026-11-01'), 0);
+  assert.equal(await recurring.generateDue(h.repos, '2026-11-02'), 1);
+  assert.equal(await recurring.generateDue(h.repos, '2026-11-02'), 0); // nicht doppelt
+  rows = await h.repos.transactions.findAll({ recurring_id: rec.id });
+  assert.ok(rows.some((r) => r.date === '2026-11-02'));
+  assert.equal((await h.repos.recurring.findById(rec.id)).last_generated_date, '2026-10-31'); // planmäßiger Termin
 
   // Gelöschte Einzelbuchung wird nicht neu erzeugt.
-  rows = await h.repos.transactions.findAll({ recurring_id: rec.id });
   await tx.deleteTransaction(h.repos, h.a.id, rows.find((r) => r.date === '2026-08-31').id);
-  assert.equal(await recurring.generateDue(h.repos, '2026-10-31'), 0);
+  assert.equal(await recurring.generateDue(h.repos, '2026-11-02'), 0);
   assert.equal((await h.repos.transactions.findAll({ recurring_id: rec.id })).length, 3);
 });
 
@@ -262,7 +267,7 @@ test('Pausieren und Fortsetzen: keine Nachbuchung der Pause', async (t) => {
   await recurring.generateDue(h.repos, '2026-05-10');
   await recurring.setActive(h.repos, h.a.id, rec.id, true, '2026-06-01');
   const dates = (await h.repos.transactions.findAll({ recurring_id: rec.id })).map((r) => r.date).sort();
-  assert.deepEqual(dates, ['2026-01-01', '2026-06-01']);
+  assert.deepEqual(dates, ['2026-01-02', '2026-06-01']); // 01.01. ist Neujahr → nächster Banktag
 });
 
 test('Ungültige Rhythmus-Angaben speichern nichts', async (t) => {
@@ -283,7 +288,7 @@ test('Regelmäßig am 20. des Monats bzw. jährlich am 01.10.', async (t) => {
   }, '2026-10-25');
   assert.equal(recurring.describeInterval(monthly), 'jeden Monat am 20.');
   assert.deepEqual((await h.repos.transactions.findAll({ recurring_id: monthly.id })).map((r) => r.date).sort(),
-    ['2026-09-20', '2026-10-20']);
+    ['2026-09-21', '2026-10-20']); // 20.09.2026 ist ein Sonntag
 
   const { recurring: yearly } = await recurring.createFromForm(h.repos, h.a.id, {
     type: 'expense', date: '2026-01-01', amount: '120', description: 'Kfz-Versicherung', account_id: h.giroA.id,

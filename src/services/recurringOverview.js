@@ -1,6 +1,7 @@
 'use strict';
 
 const { INTERVAL_UNITS, nextOccurrenceAfter } = require('../utils/dates');
+const { nextBankDay } = require('../utils/bankdays');
 const { describeInterval } = require('./recurring');
 const { multi, allows } = require('../utils/filters');
 
@@ -51,6 +52,13 @@ function savingsOf(ctx, rec, kind) {
   return null;
 }
 
+/** Nächster planmäßiger Termin und der Tag, an dem er gebucht wird (nächster Banktag, Spec 6.9). */
+function nextDates(rec, status) {
+  if (status !== 'laufend') return { next: null, next_planned: null };
+  const planned = nextOccurrenceAfter(rec, rec.last_generated_date);
+  return { next: nextBankDay(planned), next_planned: planned };
+}
+
 function statusOf(rec) {
   if (!rec.active) return 'pausiert';
   return nextOccurrenceAfter(rec, rec.last_generated_date) ? 'laufend' : 'beendet';
@@ -75,7 +83,9 @@ function describe(ctx, rec) {
     category: ctx.categoriesById.get(rec.category_id)?.name ?? (rec.type === 'transfer' && kind !== 'transfer' ? 'Übertrag' : ''),
     rhythm: describeInterval(rec),
     status,
-    next: status === 'laufend' ? nextOccurrenceAfter(rec, rec.last_generated_date) : null,
+    ...nextDates(rec, status),
+    creator: ctx.showCreator?.(rec) ? ctx.createdBy(rec) : null,
+    by_other: Boolean(ctx.byOther?.(rec) || (rec.to_account_id && ctx.byOther?.({ ...rec, account_id: rec.to_account_id }))),
     signed_cents: sign * rec.amount_cents,
     monthly_cents: sign * monthlyCents(rec),
     saves_into: saving?.into ?? null,
