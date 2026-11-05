@@ -236,7 +236,9 @@ test('Nach dem Erfassen geht es in die Ansicht des betroffenen Kontos; Ersteller
   assert.match(page, /Umbuchung[\s\S]*?👤 anna/);
   // Auf ihrem eigenen Konto sieht anna bei normalen Buchungen keinen Ersteller, bei Transfers schon
   const own = (await anna.request(`/konten/${giro}`)).html;
-  assert.doesNotMatch(own, /Erstattung[^<]*<br><small class="muted" title="erfasst von/);
+  const ownBooking = own.split('</tr>').find((row) => row.includes('Erstattung'));
+  assert.ok(ownBooking);
+  assert.doesNotMatch(ownBooking, /title="erfasst von/);
   assert.match(own, /Umbuchung[\s\S]*?👤 anna/);
 
   // Farblich hervorgehoben: für ben sind annas Einträge auf dem Gemeinschaftskonto „von jemand anderem“
