@@ -72,9 +72,11 @@ Ein Klick auf eine Spaltenüberschrift sortiert danach, ein zweiter Klick dreht 
 ## Verwalten
 
 - **✎ Bearbeiten**: Betrag, Beschreibung, Notiz, Rhythmus und Enddatum ändern. Änderungen gelten **ab dem nächsten Termin** – bereits gebuchte Termine bleiben unverändert, und im laufenden Monat wird nichts doppelt gebucht.
+- **Startdatum ändern** (im Bearbeiten-Formular): wirkt **rückwirkend**, als wäre das neue Datum von Anfang an eingetragen gewesen. Liegt es später, werden die Termine davor gelöscht; liegt es früher, werden die fehlenden Termine nachgebucht. Einzeln geänderte Buchungen bleiben dabei unangetastet, und Termine, die du einzeln gelöscht hast, kommen nicht zurück. Welcher Tag im Monat gebucht wird, bestimmt weiterhin **Am Tag**.
 - **⏸ Pausieren / ▶ Fortsetzen**: Während der Pause wird nichts gebucht. Beim Fortsetzen werden die Termine aus der Pause **nicht** nachgeholt.
 - **Löschen** (im Bearbeiten-Formular): Die Vorlage verschwindet, bereits gebuchte Termine bleiben erhalten.
-- Eine einzelne automatisch erzeugte Buchung kannst du wie jede andere Buchung ändern oder löschen, ohne die Vorlage zu verändern. Eine gelöschte Einzelbuchung wird nicht erneut erzeugt.
+- **Einen einzelnen Termin ändern:** Im Bearbeiten-Formular stehen unter **Gebuchte Termine** alle bereits gebuchten Termine. Mit **✎** änderst du Datum, Betrag oder Text **nur dieses einen Termins** – vorherige und folgende bleiben, wie sie sind. Dasselbe geht über ✎ in jeder Buchungsliste; ein Hinweis oben im Formular erinnert daran, dass nur diese eine Buchung geändert wird. Einzeln geänderte Termine erkennst du am Zeichen **↻ ✎**.
+- Eine gelöschte Einzelbuchung wird nicht erneut erzeugt.
 
 ---
 

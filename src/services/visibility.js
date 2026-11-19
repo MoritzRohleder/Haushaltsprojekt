@@ -27,17 +27,41 @@ async function getVisibleAsset(repos, userId, id) {
 }
 
 /**
- * Standard-Kategorien (ohne owner_id) und die eigenen Kategorien des Nutzers.
+ * Nutzer, deren eigene Kategorien `userId` sieht (Spec 4, F-13a): er selbst und alle,
+ * mit denen er mindestens ein Konto gemeinsam hat (Mitinhaber, auch bei archivierten Konten).
+ */
+async function categoryOwnerIds(repos, userId) {
+  const ids = new Set([userId]);
+  for (const account of await repos.accounts.findAll()) {
+    if (isOwner(account, userId)) account.owner_ids.forEach((id) => ids.add(id));
+  }
+  return ids;
+}
+
+/** Darf `userId` diese Kategorie verwenden? Standard-, eigene und Kategorien von Mitinhabern. */
+async function canUseCategory(repos, userId, category) {
+  if (!category) return false;
+  if (category.owner_id === null || category.owner_id === userId) return true;
+  return (await categoryOwnerIds(repos, userId)).has(category.owner_id);
+}
+
+/**
+ * Standard-Kategorien (ohne owner_id), die eigenen und die der Mitinhaber.
+ * Kategorien anderer tragen `shared_by` (Name des Erstellers).
  * Vom Nutzer ausgeblendete Standard-Kategorien (F-15) fehlen, außer mit includeHidden.
  */
 async function visibleCategories(repos, userId, { kind, includeArchived = false, includeHidden = false } = {}) {
-  const user = await repos.users.findById(userId);
+  const [user, owners, users] = await Promise.all([
+    repos.users.findById(userId), categoryOwnerIds(repos, userId), repos.users.findAll(),
+  ]);
+  const names = new Map(users.map((u) => [u.id, u.username]));
   const hidden = new Set(includeHidden ? [] : user?.hidden_category_ids || []);
   return (await repos.categories.findAll())
-    .filter((c) => c.owner_id === null || c.owner_id === userId)
+    .filter((c) => c.owner_id === null || owners.has(c.owner_id))
     .filter((c) => !hidden.has(c.id))
     .filter((c) => !kind || c.kind === kind)
     .filter((c) => includeArchived || !c.archived)
+    .map((c) => (c.owner_id && c.owner_id !== userId ? { ...c, shared_by: names.get(c.owner_id) ?? '?' } : c))
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 }
 
@@ -52,5 +76,5 @@ async function getVisibleTransaction(repos, userId, id) {
 
 module.exports = {
   isOwner, visibleAccounts, visibleAssets, getVisibleAccount, getVisibleAsset,
-  visibleCategories, getVisibleTransaction,
+  visibleCategories, categoryOwnerIds, canUseCategory, getVisibleTransaction,
 };

@@ -100,3 +100,38 @@ test('Veralteter Anlagenstand wird erkannt', async (t) => {
   assert.equal((await loadContext(env.repos, a.id, { today: '2026-07-02' })).assetSummary(fund).stale, true);
   assert.equal((await loadContext(env.repos, a.id, { today: '2026-07-02', assetStaleMonths: 12 })).assetSummary(fund).stale, false);
 });
+
+test('Kategorien werden mit Mitinhabern geteilt, ändern darf nur der Ersteller', async (t) => {
+  const { setup, user, account } = require('./helpers');
+  const categories = require('../src/services/categories');
+  const tx = require('../src/services/transactions');
+  const { visibleCategories } = require('../src/services/visibility');
+  const env = await setup();
+  t.after(env.cleanup);
+  const a = await user(env.repos, 'anna');
+  const b = await user(env.repos, 'ben');
+  const c = await user(env.repos, 'carla');
+  const joint = await account(env.repos, 'Gemeinsam', [a.id, b.id]);
+  await account(env.repos, 'Carlas Konto', [c.id]);
+  const dog = await categories.createCategory(env.repos, b.id, { name: 'Hund', kind: 'expense' });
+  await categories.createCategory(env.repos, c.id, { name: 'Pferd', kind: 'expense' });
+
+  const names = async (userId) => (await visibleCategories(env.repos, userId, { kind: 'expense' })).filter((x) => x.owner_id).map((x) => `${x.name}${x.shared_by ? ` (${x.shared_by})` : ''}`);
+  assert.deepEqual(await names(a.id), ['Hund (ben)']);    // Mitinhaberin sieht bens Kategorie
+  assert.deepEqual(await names(b.id), ['Hund']);          // für ben selbst ohne Zusatz
+  assert.deepEqual(await names(c.id), ['Pferd']);         // carla teilt kein Konto
+
+  // anna darf sie verwenden, carla nicht
+  const booking = await tx.createBooking(env.repos, { userId: a.id }, { type: 'expense', date: '2026-02-01', amount: '30', description: 'Futter', account_id: joint.id, category_id: dog.id });
+  assert.equal(booking.category_id, dog.id);
+  const carlaAcc = (await env.repos.accounts.findAll()).find((x) => x.name === 'Carlas Konto');
+  await assert.rejects(tx.createBooking(env.repos, { userId: c.id }, { type: 'expense', date: '2026-02-01', amount: '1', description: 'x', account_id: carlaAcc.id, category_id: dog.id }), /Kategorie ist ungültig/);
+  // Ändern nur durch ben
+  await assert.rejects(categories.renameCategory(env.repos, a.id, dog.id, { name: 'Katze' }), /nicht gefunden/);
+
+  // ben verlässt das Konto: anna sieht die Kategorie nicht mehr, ihre Buchung bleibt aber bearbeitbar
+  await env.repos.accounts.update(joint.id, { owner_ids: [a.id] });
+  assert.deepEqual(await names(a.id), []);
+  const updated = await tx.updateTransaction(env.repos, a.id, booking.id, { date: '2026-02-01', amount: '35', description: 'Futter', account_id: joint.id, category_id: dog.id });
+  assert.equal(updated.amount_cents, -3500);
+});

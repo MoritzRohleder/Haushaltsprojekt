@@ -21,7 +21,7 @@
       <td><%= date(t.date) %><% if (t.date > today) { %><br><span class="badge muted" title="Liegt in der Zukunft und zählt erst ab diesem Tag zum Kontostand">vorgemerkt</span><% } %></td>
       <td>
         <%= t.description %>
-        <% if (t.recurring_id) { %> <span class="badge muted" title="aus regelmäßiger Buchung">↻</span><% } %>
+        <% if (t.recurring_id) { %> <span class="badge muted" title="<%= t.recurring_changed ? 'aus regelmäßiger Buchung, einzeln geändert' : 'aus regelmäßiger Buchung' %>">↻<%= t.recurring_changed ? ' ✎' : '' %></span><% } %>
         <% if (t.receipt) { %> <a href="/buchungen/<%= t.id %>/beleg" target="_blank" rel="noopener" class="badge muted" title="Kassenzettel ansehen">🧾</a><% } %>
         <% if (t.items && t.items.length) { %> <span class="badge muted" title="<%= t.items.map((i) => i.name).join(', ') %>"><%= t.items.length %> Artikel</span><% } %>
         <% if (t.merchant) { %><br><small class="muted">🛒 <%= t.merchant %></small><% } %>

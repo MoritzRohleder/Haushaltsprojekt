@@ -4,7 +4,7 @@ const v = require('../utils/validate');
 const { centsToInput } = require('../utils/money');
 const { ValidationError, NotFoundError } = require('../utils/errors');
 const {
-  INTERVAL_UNITS, occurrence, nextOccurrenceAfter, addDays, parts, daysInMonth, isValidDate, today: todayIso,
+  INTERVAL_UNITS, occurrence, nextOccurrenceAfter, addDays, parts, daysInMonth, isValidDate, formatDate, today: todayIso,
 } = require('../utils/dates');
 const {
   prepareBooking, prepareTransfer, createBooking, createTransfer, parseEndpoint,
@@ -133,11 +133,12 @@ async function createFromForm(repos, userId, input, today = todayIso()) {
   });
 }
 
-/** Formularwerte für eine Buchung aus der Vorlage. */
-function toInput(rec, date) {
+/** Formularwerte für eine Buchung aus der Vorlage; `planned` ist der planmäßige Termin. */
+function toInput(rec, date, planned = date) {
   const base = {
     type: rec.type,
     date,
+    recurring_date: planned,
     amount: centsToInput(rec.amount_cents),
     description: rec.description,
     note: rec.note,
@@ -172,7 +173,7 @@ async function generateFor(repos, rec, today) {
     if (bookingDate > today) break;
     const create = rec.type === 'transfer' ? createTransfer : createBooking;
     try {
-      await create(repos, actor, toInput(rec, bookingDate));
+      await create(repos, actor, toInput(rec, bookingDate, date));
     } catch (err) {
       if (err instanceof ValidationError) {
         console.warn(`Regelmäßige Buchung „${rec.description}“ (${bookingDate}) übersprungen: ${err.message}`);
@@ -214,23 +215,115 @@ async function getForUser(repos, userId, id) {
 
 const RHYTHM_FIELDS = ['interval_count', 'interval_unit', 'day_of_month', 'month_of_year'];
 
+/** Planmäßiger Termin einer erzeugten Buchung: gespeichert oder aus dem Rhythmus erschlossen. */
+function plannedDateOf(rule, row) {
+  if (row.recurring_date) return row.recurring_date;
+  for (let n = 0; n < MAX_ITERATIONS; n++) {
+    const date = occurrence(rule, n);
+    if (date > row.date) return null;
+    if (date === row.date || nextBankDay(date) === row.date) return date;
+  }
+  return null;
+}
+
+/** Planmäßige Termine einer Regel, deren Buchungstag bis `today` erreicht ist (höchstens bis `until`). */
+function dueDates(rule, today, until = null) {
+  const dates = [];
+  for (let n = 0; n < MAX_ITERATIONS; n++) {
+    const date = occurrence(rule, n);
+    if (date > today || (rule.end_date && date > rule.end_date) || (until && date > until)) break;
+    if (nextBankDay(date) > today) break;
+    dates.push(date);
+  }
+  return dates;
+}
+
+/**
+ * Neues Startdatum rückwirkend anwenden (Spec 8.4, F-34b) – als wäre es von Anfang an
+ * eingetragen gewesen: Erzeugte Termine, die es mit dem neuen Start nicht gibt, werden
+ * gelöscht; fehlende werden nachgebucht. Einzeln geänderte Buchungen bleiben, ebenso
+ * Lücken, die durch bewusst gelöschte Einzelbuchungen entstanden sind.
+ */
+async function rebuildFromStart(repos, rec, updated, today) {
+  // Pausiert: nichts über den bisherigen Stand hinaus nachbuchen
+  const until = updated.active ? null : rec.last_generated_date;
+  const newDue = updated.active || until ? dueDates(updated, today, until) : [];
+  const wanted = new Set(newDue);
+  const previouslyDue = new Set(rec.last_generated_date ? dueDates(rec, today, rec.last_generated_date) : []);
+
+  const groups = new Map(); // Transfer-Hälften gemeinsam behandeln
+  for (const row of await repos.transactions.findAll({ recurring_id: rec.id })) {
+    const key = row.transfer_id || row.id;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  }
+
+  const covered = new Set();
+  let removed = 0;
+  for (const rows of groups.values()) {
+    const planned = plannedDateOf(rec, rows[0]);
+    const changed = rows.some((r) => r.recurring_changed) || planned === null;
+    if (changed || wanted.has(planned)) {
+      if (planned) covered.add(planned);
+      continue;
+    }
+    for (const r of rows) await repos.transactions.remove(r.id);
+    removed++;
+  }
+
+  const actor = { userId: rec.created_by, system: true };
+  const create = rec.type === 'transfer' ? createTransfer : createBooking;
+  let created = 0;
+  for (const date of newDue) {
+    // Schon vorhanden, oder früher fällig und vom Nutzer bewusst gelöscht
+    if (covered.has(date) || previouslyDue.has(date)) continue;
+    try {
+      await create(repos, actor, toInput(updated, nextBankDay(date), date));
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        throw new ValidationError(`Termin ${formatDate(date)} kann nicht gebucht werden: ${err.errors.join(' ')}`);
+      }
+      throw err;
+    }
+    created++;
+  }
+  return { removed, created, last: newDue.at(-1) ?? null };
+}
+
 /**
  * Änderungen gelten nur für künftige Termine (F-34). Ändert sich der Rhythmus,
  * gilt der neue ab dem nächsten Termin nach altem Rhythmus – so entsteht im
  * laufenden Monat keine zweite Buchung.
+ * Ein geändertes Startdatum wird dagegen rückwirkend angewendet (F-34b).
+ * Das Ergebnis trägt in `rebuild` die Anzahl gelöschter und nachgebuchter Termine.
  */
-async function updateRecurring(repos, userId, id, input) {
+async function updateRecurring(repos, userId, id, input, today = todayIso()) {
   const rec = await getForUser(repos, userId, id);
   const errors = [];
   const amount_cents = v.positiveAmount(input.amount, 'Betrag', errors);
   const description = v.text(input.description, { label: 'Beschreibung', required: true, max: 120 }, errors);
   const note = v.text(input.note, { label: 'Notiz', max: 500 }, errors);
   const merchant = v.text(input.merchant, { label: 'Geschäft', max: 80 }, errors);
-  const interval = readInterval(input, errors, rec.start_date);
+  const start_date = input.start_date === undefined
+    ? rec.start_date
+    : v.date(input.start_date, 'Startdatum', errors);
+  const interval = readInterval(input, errors, start_date || rec.start_date);
+  if (start_date && interval.end_date && interval.end_date < start_date) errors.push('Das Enddatum liegt vor dem Startdatum.');
   if (errors.length) throw new ValidationError(errors);
 
   const changes = { amount_cents, description, note, ...interval };
   if (rec.type === 'expense') changes.merchant = merchant;
+
+  if (start_date !== rec.start_date) {
+    changes.start_date = start_date;
+    return repos.transaction(async () => {
+      const updated = { ...rec, ...changes };
+      const rebuild = await rebuildFromStart(repos, rec, updated, today);
+      const saved = await repos.recurring.update(rec.id, { ...changes, last_generated_date: rebuild.last });
+      return Object.assign(saved, { rebuild });
+    });
+  }
+
   const rhythmChanged = RHYTHM_FIELDS.some((f) => (rec[f] ?? null) !== (interval[f] ?? null));
   if (rhythmChanged && rec.last_generated_date) {
     const next = nextOccurrenceAfter({ ...rec, end_date: null }, rec.last_generated_date);

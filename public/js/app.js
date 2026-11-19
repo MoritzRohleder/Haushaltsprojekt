@@ -174,3 +174,17 @@ document.addEventListener('keydown', (event) => {
     box.querySelector('summary').focus();
   });
 });
+
+// Handy-Menü: ☰ klappt die Menüpunkte auf und zu
+document.querySelectorAll('[data-nav-toggle]').forEach((button) => {
+  const nav = button.closest('[data-site-nav]');
+  const setOpen = (open) => {
+    nav.classList.toggle('menu-open', open);
+    button.setAttribute('aria-expanded', String(open));
+    button.setAttribute('aria-label', open ? 'Menü schließen' : 'Menü öffnen');
+  };
+  button.addEventListener('click', () => setOpen(!nav.classList.contains('menu-open')));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && nav.classList.contains('menu-open')) { setOpen(false); button.focus(); }
+  });
+});

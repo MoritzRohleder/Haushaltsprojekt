@@ -8,13 +8,15 @@
   <link rel="stylesheet" href="/vendor/pico/pico.min.css">
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="/js/head.js"></script>
 </head>
 <body>
   <header class="container">
-    <nav>
-      <ul><li><a href="/" class="brand"><strong>Haushalt</strong></a></li></ul>
+    <nav class="site-nav" data-site-nav>
+      <ul class="nav-brand"><li><a href="/" class="brand"><strong>Haushalt</strong></a></li></ul>
       <% if (currentUser) { %>
-      <ul>
+      <div class="nav-right">
+      <ul class="nav-links" id="hauptmenue">
         <li><a href="/" <%= path === '/' ? 'aria-current=page' : '' %>>Übersicht</a></li>
         <li><a href="/monat" <%= path.startsWith('/monat') ? 'aria-current=page' : '' %>>Monat</a></li>
         <li><a href="/buchungen" <%= path.startsWith('/buchungen') ? 'aria-current=page' : '' %>>Buchungen</a></li>
@@ -22,6 +24,8 @@
         <li><a href="/konten" <%= path.startsWith('/konten') ? 'aria-current=page' : '' %>>Konten</a></li>
         <li><a href="/anlagen" <%= path.startsWith('/anlagen') ? 'aria-current=page' : '' %>>Anlagen</a></li>
         <li><a href="/auswertung" <%= path.startsWith('/auswertung') ? 'aria-current=page' : '' %>>Auswertung</a></li>
+      </ul>
+      <ul class="nav-tools">
         <li><a href="<%= helpUrl %>" class="help-link" aria-label="Handbuch (Hilfe zu dieser Seite)" title="Handbuch – Hilfe zu dieser Seite">?</a></li>
         <li>
           <form method="post" action="/einstellungen/darstellung" class="inline-form" data-theme-toggle data-theme-current="<%= theme %>">
@@ -50,7 +54,13 @@
             </ul>
           </details>
         </li>
+        <li class="nav-toggle-item">
+          <button type="button" class="nav-toggle" data-nav-toggle aria-controls="hauptmenue" aria-expanded="false" aria-label="Menü öffnen">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="icon-menu" d="M3 6h18M3 12h18M3 18h18"/><path class="icon-close" d="M5 5l14 14M19 5L5 19"/></svg>
+          </button>
+        </li>
       </ul>
+      </div>
       <% } else { %>
       <ul><li><a href="/handbuch" <%= path.startsWith('/handbuch') ? 'aria-current=page' : '' %>>Handbuch</a></li></ul>
       <% } %>

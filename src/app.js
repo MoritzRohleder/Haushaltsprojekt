@@ -50,7 +50,7 @@ function createApp({ config, repos, sessionStore, loginThrottle = new LoginThrot
     storage: multer.memoryStorage(),
     limits: { fileSize: MAX_RECEIPT_BYTES, files: 1, fields: 2000 },
   }).single('receipt');
-  app.use(mw.requireLogin, mw.multipart(receiptUpload), mw.csrf, mw.recurringDaily(repos));
+  app.use(mw.requireLogin, mw.multipart(receiptUpload), mw.csrf, mw.backLink, mw.recurringDaily(repos));
   app.use(require('./routes/dashboard')(repos));
   app.use(require('./routes/month')(repos));
   app.use(require('./routes/transactions')(repos));

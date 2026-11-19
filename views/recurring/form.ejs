@@ -1,22 +1,51 @@
 <%- include('../partials/head') %>
 <h1><%= title %></h1>
-<p class="muted"><%= rec.route %><% if (rec.category) { %> · <%= rec.category %><% } %> · gültig ab <%= date(rec.start_date) %>. Änderungen gelten ab dem nächsten Termin.</p>
+<p class="muted"><%= rec.route %><% if (rec.category) { %> · <%= rec.category %><% } %> · <%= rec.rhythm.replace(/\.$/, "") %>. Änderungen an Betrag, Text und Rhythmus gelten ab dem nächsten Termin.</p>
 <%- include('../partials/errors') %>
 <form method="post" action="/wiederkehrend/<%= rec.id %>/bearbeiten">
-  <%- include('../partials/csrf') %>
+  <%- include('../partials/csrf') %><%- include('../partials/back') %>
   <div class="grid">
     <label>Beschreibung <input name="description" required maxlength="120" value="<%= values.description || '' %>"></label>
     <label>Betrag in € <input name="amount" inputmode="decimal" required value="<%= values.amount || '' %>"></label>
   </div>
   <label>Notiz <textarea name="note" rows="2" maxlength="500"><%= values.note || '' %></textarea></label>
+  <label>Startdatum
+    <input type="date" name="start_date" required value="<%= values.start_date || '' %>" aria-describedby="start-hint">
+    <small id="start-hint">Wird das Startdatum geändert, werden die bisherigen Termine <strong>rückwirkend</strong> korrigiert: Termine vor dem neuen Start werden gelöscht, fehlende nachgebucht. Einzeln geänderte Buchungen bleiben erhalten. Den Tag im Monat bestimmt weiterhin „Am Tag“.</small>
+  </label>
   <%- include('../partials/interval') %>
   <div class="actions">
     <button type="submit">Speichern</button>
-    <a href="/wiederkehrend" role="button" class="secondary outline">Abbrechen</a>
+    <a href="<%= back || '/wiederkehrend' %>" role="button" class="secondary outline">Abbrechen</a>
   </div>
 </form>
+<h2>Gebuchte Termine</h2>
+<% if (!booked.length) { %>
+  <p class="muted">Noch keine Termine gebucht.</p>
+<% } else { %>
+<p class="muted"><small>Einen einzelnen Termin änderst du mit ✎ – Datum, Betrag und Text gelten dann nur für diese eine Buchung, vorherige und folgende bleiben unverändert.</small></p>
+<details class="collapsible"<%= booked.length <= 6 ? ' open' : '' %>>
+<summary><%= booked.length %> gebuchte<%= booked.length === 1 ? 'r Termin' : ' Termine' %> anzeigen</summary>
+<div class="table-wrap">
+<table class="striped">
+  <thead><tr><th>Datum</th><th>Beschreibung</th><th class="amount">Betrag</th><th></th></tr></thead>
+  <tbody>
+  <% booked.forEach((t) => { %>
+    <tr class="<%= t.date > today ? 'planned' : '' %>">
+      <td><%= date(t.date) %><% if (t.recurring_date && t.recurring_date !== t.date) { %><br><small class="muted nowrap">planmäßig <%= date(t.recurring_date).slice(0, 6) %></small><% } %></td>
+      <td><%= t.description %><% if (t.recurring_changed) { %> <span class="badge muted" title="Diese Buchung wurde einzeln geändert">einzeln geändert</span><% } %></td>
+      <td class="amount <%= ctx.kindClass(t) %>"><%= euro(t.amount_cents, { sign: true }) %></td>
+      <td><a href="/buchungen/<%= t.id %>/bearbeiten?zurueck=<%= encodeURIComponent(selfUrl) %>" aria-label="Diesen Termin bearbeiten">✎</a></td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+</div>
+</details>
+<% } %>
+
 <form method="post" action="/wiederkehrend/<%= rec.id %>/loeschen" data-confirm="Regelmäßige Buchung löschen? Bereits gebuchte Termine bleiben erhalten.">
-  <%- include('../partials/csrf') %>
+  <%- include('../partials/csrf') %><%- include('../partials/back') %>
   <button type="submit" class="secondary outline">Löschen</button>
 </form>
 <%- include('../partials/foot') %>

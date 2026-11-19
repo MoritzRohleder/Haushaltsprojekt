@@ -4,7 +4,7 @@ const express = require('express');
 const assets = require('../services/assets');
 const { loadContext } = require('../services/overview');
 const { getVisibleAsset } = require('../services/visibility');
-const { flash } = require('../middleware');
+const { flash, backOr } = require('../middleware');
 const { centsToInput } = require('../utils/money');
 const { today, formatDate } = require('../utils/dates');
 const { lineChart } = require('../utils/charts');
@@ -57,7 +57,7 @@ module.exports = (repos) => {
     await handleForm(res, async () => {
       const asset = await assets.createAsset(repos, req.session.user.id, req.body);
       flash(req, `Anlage „${asset.name}“ angelegt.`);
-      res.redirect(`/anlagen/${asset.id}`);
+      res.redirect(backOr(req, `/anlagen/${asset.id}`));
     }, (errors) => renderForm(req, res, { values: req.body, errors }));
   });
 
@@ -84,7 +84,9 @@ module.exports = (repos) => {
     await handleForm(res, async () => {
       const updated = await assets.updateAsset(repos, req.session.user.id, asset.id, req.body);
       flash(req, 'Anlage gespeichert.');
-      res.redirect(updated.owner_ids.includes(req.session.user.id) ? `/anlagen/${asset.id}` : '/anlagen');
+      res.redirect(updated.owner_ids.includes(req.session.user.id)
+        ? backOr(req, `/anlagen/${asset.id}`)
+        : backOr(req, '/anlagen', { avoid: [`/anlagen/${asset.id}`] }));
     }, (errors) => renderForm(req, res, { asset, values: req.body, errors }));
   });
 
@@ -114,27 +116,27 @@ module.exports = (repos) => {
     await handleForm(res, async () => {
       await assets.addValue(repos, req.session.user.id, asset.id, req.body);
       flash(req, 'Stand gespeichert.');
-      res.redirect(`/anlagen/${asset.id}`);
+      res.redirect(backOr(req, `/anlagen/${asset.id}`));
     }, (errors) => renderValueForm(req, res, { asset, values: req.body, errors }));
   });
 
   router.post('/anlagen/:id/staende/:valueId/loeschen', async (req, res) => {
     await assets.deleteValue(repos, req.session.user.id, req.params.id, req.params.valueId);
     flash(req, 'Stand gelöscht.');
-    res.redirect(`/anlagen/${req.params.id}`);
+    res.redirect(backOr(req, `/anlagen/${req.params.id}`));
   });
 
   router.post('/anlagen/:id/archivieren', async (req, res) => {
     const archived = req.body.archived === 'true';
     await assets.setArchived(repos, req.session.user.id, req.params.id, archived);
     flash(req, archived ? 'Anlage archiviert.' : 'Anlage wiederhergestellt.');
-    res.redirect(`/anlagen/${req.params.id}`);
+    res.redirect(backOr(req, `/anlagen/${req.params.id}`));
   });
 
   router.post('/anlagen/:id/loeschen', async (req, res) => {
     await assets.deleteAsset(repos, req.session.user.id, req.params.id);
     flash(req, 'Anlage gelöscht.');
-    res.redirect('/anlagen');
+    res.redirect(backOr(req, '/anlagen', { avoid: [`/anlagen/${req.params.id}`] }));
   });
 
   return router;

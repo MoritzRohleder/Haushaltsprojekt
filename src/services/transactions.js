@@ -3,7 +3,7 @@
 const { randomUUID } = require('node:crypto');
 const v = require('../utils/validate');
 const { ValidationError } = require('../utils/errors');
-const { isOwner, getVisibleTransaction } = require('./visibility');
+const { isOwner, getVisibleTransaction, canUseCategory } = require('./visibility');
 const purchase = require('./purchase');
 
 /**
@@ -40,11 +40,15 @@ function checkOpeningDate(account, date, errors) {
   }
 }
 
-/** Kategorie prüfen; gibt die Kategorie zurück (oder null, wenn keine gewählt ist). */
-async function checkCategory(repos, categoryId, kind, actor, errors) {
+/**
+ * Kategorie prüfen; gibt die Kategorie zurück (oder null, wenn keine gewählt ist).
+ * `keepId`: die bisherige Kategorie einer Buchung bleibt beim Bearbeiten immer erlaubt
+ * (z. B. wenn der Mitinhaber, dem sie gehört, nicht mehr Inhaber ist).
+ */
+async function checkCategory(repos, categoryId, kind, actor, errors, { keepId = null } = {}) {
   if (!categoryId) return null;
   const category = await repos.categories.findById(categoryId);
-  const visible = category && (category.owner_id === null || actor.system || category.owner_id === actor.userId);
+  const visible = category && (actor.system || categoryId === keepId || await canUseCategory(repos, actor.userId, category));
   if (!visible || category.kind !== kind) {
     errors.push('Kategorie ist ungültig.');
     return null;
@@ -99,6 +103,8 @@ async function prepareBooking(repos, actor, input) {
     description: f.description,
     note: f.note,
     recurring_id: input.recurring_id || null,
+    // Planmäßiger Termin der regelmäßigen Buchung (kann vom Buchungstag abweichen, Spec 6.9)
+    recurring_date: input.recurring_id ? input.recurring_date || input.date : null,
     created_by: actor.userId,
   };
   if (p) Object.assign(row, { merchant: p.merchant, items: p.items, receipt: null });
@@ -161,6 +167,8 @@ async function prepareTransfer(repos, actor, input) {
     description: f.description,
     note: f.note,
     recurring_id: input.recurring_id || null,
+    // Planmäßiger Termin der regelmäßigen Buchung (kann vom Buchungstag abweichen, Spec 6.9)
+    recurring_date: input.recurring_id ? input.recurring_date || input.date : null,
     created_by: actor.userId,
   };
 
@@ -216,6 +224,7 @@ async function updateTransaction(repos, userId, id, input) {
           amount_cents: Math.sign(r.amount_cents) * f.amount,
           description: f.description,
           note: f.note,
+          ...(r.recurring_id ? { recurring_changed: true } : {}),
         });
       }
       return repos.transactions.findById(row.id);
@@ -226,12 +235,13 @@ async function updateTransaction(repos, userId, id, input) {
   const account = await loadAccount(repos, input.account_id, actor, errors, 'Konto', {
     allowArchived: input.account_id === row.account_id,
   });
-  const category = await checkCategory(repos, input.category_id, row.type, actor, errors);
+  const category = await checkCategory(repos, input.category_id, row.type, actor, errors, { keepId: row.category_id });
   checkOpeningDate(account, f.date, errors);
   const p = row.type === 'expense' ? readPurchase(input, category, actor, errors) : null;
   if (errors.length) throw new ValidationError(errors);
 
-  const changes = {};
+  // Einzeln geänderte Termine einer regelmäßigen Buchung bleiben bei späteren Korrekturen der Vorlage unangetastet
+  const changes = row.recurring_id ? { recurring_changed: true } : {};
   const oldFile = row.receipt?.file || null;
   let newFile = null;
   if (p) {
