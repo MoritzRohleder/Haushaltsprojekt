@@ -250,3 +250,52 @@ test('Nach dem Erfassen geht es in die Ansicht des betroffenen Kontos; Ersteller
   await ben.request('/buchungen', { method: 'POST', form: { _csrf: benToken, type: 'expense', date: '2026-02-06', amount: '7', description: 'Milch', account_id: joint } });
   assert.match((await anna.request(`/konten/${joint}`)).html, /class="row-expense by-other">\s*<td>06\.02\.2026/);
 });
+
+test('Zurück, woher man kam: nach Speichern, Löschen und Abbrechen', async (t) => {
+  const { base, repos } = await start(t);
+  const c = client(base);
+  await c.request('/registrieren', { method: 'POST', form: { username: 'anna', password: 'geheim123', passwordRepeat: 'geheim123' } });
+  const userId = (await repos.users.findAll())[0].id;
+  const token = await c.csrf('/');
+  const giro = (await c.request('/konten', { method: 'POST', form: { _csrf: token, name: 'Giro', type: 'giro', opening_balance: '0', opening_date: '2026-01-01', owner_ids: userId } })).location.split('/').pop();
+  const get = (path, referer) => fetch(base + path, { headers: { cookie: c.cookie(), ...(referer ? { referer } : {}) } }).then((r) => r.text());
+  // Feld „back“ des Formulars (direkt nach dem CSRF-Feld) – nicht das des Hell/Dunkel-Knopfs in der Navigation
+  const backField = (html) => /name="_csrf" value="[^"]*">\s*<input type="hidden" name="back" value="([^"]*)"/.exec(html)?.[1].replace(/&amp;/g, '&');
+
+  // Formular aus der Buchungsliste geöffnet → merkt sich die Liste samt Filter
+  let html = await get('/buchungen/neu?typ=ausgabe', `${base}/buchungen?monat=2026-02&art=expense`);
+  assert.equal(backField(html), '/buchungen?monat=2026-02&art=expense');
+  assert.match(html, /href="\/buchungen\?monat=2026-02&amp;art=expense" role="button" class="secondary outline">Abbrechen/);
+  let res = await c.request('/buchungen', { method: 'POST', form: { _csrf: token, type: 'expense', date: '2026-02-03', amount: '5', description: 'Brot', account_id: giro, back: '/buchungen?monat=2026-02&art=expense' } });
+  assert.equal(res.location, '/buchungen?monat=2026-02&art=expense');
+
+  // „Speichern & weitere“ behält die Herkunft für das nächste Formular
+  res = await c.request('/buchungen', { method: 'POST', form: { _csrf: token, type: 'expense', date: '2026-02-04', amount: '6', description: 'Milch', account_id: giro, weitere: '1', back: '/' } });
+  assert.equal(res.location, '/buchungen/neu?typ=ausgabe&zurueck=%2F');
+  assert.equal(backField(await get(res.location)), '/');
+
+  // Bearbeiten aus der Übersicht, dann löschen → zurück in die Übersicht
+  const row = (await repos.transactions.findAll()).find((r) => r.description === 'Brot');
+  html = await get(`/buchungen/${row.id}/bearbeiten`, `${base}/`);
+  assert.equal(backField(html), '/');
+  res = await c.request(`/buchungen/${row.id}/loeschen`, { method: 'POST', form: { _csrf: token, back: '/' } });
+  assert.equal(res.location, '/');
+
+  // Ohne Herkunft: wie bisher in die Kontoansicht; fremde Ziele werden ignoriert
+  const milk = (await repos.transactions.findAll()).find((r) => r.description === 'Milch');
+  res = await c.request(`/buchungen/${milk.id}/loeschen`, { method: 'POST', form: { _csrf: token, back: '//evil.example/x' } });
+  assert.equal(res.location, `/konten/${giro}`);
+  assert.equal(backField(await get('/buchungen/neu?typ=ausgabe', 'https://evil.example/konten')), undefined);
+  // Nie zurück auf ein Formular
+  assert.equal(backField(await get('/buchungen/neu?typ=ausgabe', `${base}/konten/neu`)), undefined);
+
+  // Aktion auf einer Seite (Pausieren in der gefilterten Liste) → zurück auf genau diese Seite
+  await c.request('/buchungen', { method: 'POST', form: { _csrf: token, type: 'expense', date: '2026-02-01', amount: '9', description: 'Abo', account_id: giro, recurring: '1', interval_count: '1', interval_unit: 'month' } });
+  const rec = (await repos.recurring.findAll())[0];
+  const paused = await fetch(`${base}/wiederkehrend/${rec.id}/aktiv`, {
+    method: 'POST', redirect: 'manual',
+    headers: { cookie: c.cookie(), referer: `${base}/wiederkehrend?art=expense`, 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ _csrf: token, active: 'false' }).toString(),
+  });
+  assert.equal(paused.headers.get('location'), '/wiederkehrend?art=expense');
+});

@@ -2,7 +2,7 @@
 <h1><%= title %></h1>
 <%- include('../partials/errors') %>
 <form method="post" action="<%= account ? `/konten/${account.id}/bearbeiten` : '/konten' %>">
-  <%- include('../partials/csrf') %>
+  <%- include('../partials/csrf') %><%- include('../partials/back') %>
   <div class="grid">
     <label>Name <input name="name" required maxlength="80" value="<%= values.name || '' %>"></label>
     <label>Typ
@@ -28,7 +28,7 @@
   <%- include('../partials/owners') %>
   <div class="actions">
     <button type="submit">Speichern</button>
-    <a href="<%= account ? `/konten/${account.id}` : '/konten' %>" role="button" class="secondary outline">Abbrechen</a>
+    <a href="<%= back || (account ? `/konten/${account.id}` : '/konten') %>" role="button" class="secondary outline">Abbrechen</a>
   </div>
 </form>
 <%- include('../partials/foot') %>

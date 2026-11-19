@@ -23,8 +23,9 @@
 </article>
 
 <h2>Eigene Kategorien</h2>
+<p class="muted"><small>Eigene Kategorien sehen und verwenden auch alle, mit denen du ein Konto gemeinsam hast. Ändern kannst nur du.</small></p>
 <% if (!own.length) { %>
-  <p class="muted">Noch keine eigenen Kategorien. Sie sind nur für dich sichtbar.</p>
+  <p class="muted">Noch keine eigenen Kategorien.</p>
 <% } else { %>
 <div class="table-wrap">
 <table>
@@ -54,6 +55,25 @@
           </form>
         </div>
       </td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+</div>
+<% } %>
+
+<% if (shared.length) { %>
+<h2>Kategorien von Mitinhabern</h2>
+<p class="muted"><small>Angelegt von Personen, mit denen du ein Konto teilst. Du kannst sie verwenden; ändern kann sie nur, wer sie angelegt hat.</small></p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Name</th><th>Art</th><th>Angelegt von</th></tr></thead>
+  <tbody>
+  <% shared.forEach((c) => { %>
+    <tr>
+      <td><%= c.name %><% if (c.merchant_required) { %> 🛒<% } %></td>
+      <td><%= kinds[c.kind] %><% if (c.archived) { %> <span class="badge muted">archiviert</span><% } %></td>
+      <td>👤 <%= c.shared_by %></td>
     </tr>
   <% }) %>
   </tbody>

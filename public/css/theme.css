@@ -137,6 +137,29 @@ table.sortable .actions { flex-wrap: nowrap; align-items: center; }
 nav .brand { color: var(--hh-primary); }
 nav ul { flex-wrap: wrap; }
 
+/* Hauptnavigation: Menüpunkte und Werkzeuge (?, Hell/Dunkel, Nutzer) rechts */
+.site-nav .nav-right { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+.nav-toggle-item { display: none; }
+.nav-toggle { padding: 0.35rem 0.5rem; margin: 0; width: auto; line-height: 1; background: transparent; border-color: var(--pico-muted-border-color); color: var(--hh-primary); }
+.nav-toggle svg { display: block; stroke: currentColor; stroke-width: 2; stroke-linecap: round; fill: none; }
+.nav-toggle .icon-close, .site-nav.menu-open .nav-toggle .icon-menu { display: none; }
+.site-nav.menu-open .nav-toggle .icon-close { display: inline; }
+
+/* Handy: eine Zeile mit Name und Werkzeugen, Menüpunkte hinter ☰ als Liste */
+@media (max-width: 767.98px) {
+  .site-nav { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .site-nav .nav-right { display: contents; }
+  .site-nav .nav-brand { order: 1; flex: 1; }
+  .site-nav .nav-tools { order: 2; flex-wrap: nowrap; margin-left: 0; }
+  .site-nav .nav-tools > li { padding-left: 0.25rem; padding-right: 0.25rem; }
+  .site-nav .nav-toggle-item { display: list-item; }
+  .site-nav .nav-links { order: 3; width: 100%; flex-direction: column; align-items: stretch; margin: 0 0 0.5rem; padding: 0; }
+  .site-nav .nav-links > li { padding: 0; }
+  .site-nav .nav-links > li > a { display: block; margin: 0; padding: 0.65rem 0.5rem; border-top: 1px solid var(--pico-muted-border-color); border-radius: 0; }
+  .site-nav .nav-links > li > a[aria-current=page] { background: var(--pico-primary-focus); font-weight: 600; }
+  html.js .site-nav:not(.menu-open) .nav-links { display: none; }
+}
+
 /* Schmale Bildschirme */
 /* Mittlere Breiten: Navigation unter den Namen der App, statt ungleichmäßig umzubrechen */
 /* Bis 1279px ist Picos Inhaltsbreite nur 950px – dann passt die Navigation nicht in eine Zeile */
@@ -144,6 +167,9 @@ nav ul { flex-wrap: wrap; }
   nav { flex-direction: column; align-items: flex-start; }
   nav ul:last-child { margin-left: 0; }
   nav ul:last-child > li { padding-left: 0.4rem; padding-right: 0.4rem; }
+  .site-nav .nav-right { justify-content: flex-start; }
+  .site-nav .nav-links { margin-left: 0; }
+  .site-nav .nav-right li { padding-left: 0.4rem; padding-right: 0.4rem; }
 }
 @media (max-width: 1024px) {
   .grid.cards { grid-template-columns: 1fr; }
@@ -249,6 +275,7 @@ button.small, [role=button].small { padding: 0.1rem 0.5rem; font-size: 0.85em; w
 /* Ausgaben: Kassenzettel und Artikel */
 details.purchase { margin-bottom: var(--pico-spacing); }
 details.collapsible { margin-bottom: var(--pico-spacing); }
+article.notice { padding: 0.75rem 1rem; border-left: 4px solid var(--hh-transfer); margin-bottom: var(--pico-spacing); }
 details.collapsible > summary { font-weight: 600; }
 details.purchase > summary { font-weight: 600; }
 .items { border: 0; padding: 0; margin-top: var(--pico-spacing); }

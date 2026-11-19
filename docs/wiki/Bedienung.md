@@ -13,6 +13,10 @@ Die Navigation oben enthält:
 | ☾ / ☀ | Zwischen hellem und dunklem Modus umschalten |
 | *dein Nutzername* | Kategorien, Profil, Handbuch, Abmelden |
 
+Auf dem **Handy** stehen oben nur „Haushalt“, **?**, ☾/☀, dein Nutzername und **☰**. Ein Tipp auf ☰ klappt die Menüpunkte als Liste auf, ✕ klappt sie wieder zu.
+
+**Nach dem Speichern oder Löschen** kommst du immer dorthin zurück, woher du gekommen bist: Hast du eine Buchung aus der gefilterten Buchungsliste geöffnet, landest du wieder in genau dieser Liste – aus der Übersicht wieder in der Übersicht, aus einem Konto wieder im Konto. Das gilt auch für **Abbrechen**. Öffnest du ein Formular direkt (z. B. über ein Lesezeichen), geht es in die Ansicht des betroffenen Kontos.
+
 ## Handbuch in der Anwendung
 
 Das Handbuch ist in Haushalt eingebaut – auch ohne Anmeldung, z. B. über den Link auf der Login-Seite. Links siehst du alle Kapitel, darüber ein Suchfeld für das ganze Handbuch. Am Ende jeder Seite blätterst du mit **Weiter** zum nächsten Kapitel. Ganz unten steht, auf welchem Stand das Handbuch ist.

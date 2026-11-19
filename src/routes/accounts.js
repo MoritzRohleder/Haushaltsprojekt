@@ -7,7 +7,7 @@ const { getVisibleAccount } = require('../services/visibility');
 const { ledger } = require('../services/balances');
 const recurring = require('../services/recurring');
 const { accountRecurring, projectedBalances } = require('../services/accountForecast');
-const { flash } = require('../middleware');
+const { flash, backOr } = require('../middleware');
 const { centsToInput } = require('../utils/money');
 const { today } = require('../utils/dates');
 const { handleForm, sortByName, contextOptions } = require('./helpers');
@@ -48,7 +48,7 @@ module.exports = (repos) => {
     await handleForm(res, async () => {
       const account = await accounts.createAccount(repos, req.session.user.id, req.body);
       flash(req, `Konto „${account.name}“ angelegt.`);
-      res.redirect(`/konten/${account.id}`);
+      res.redirect(backOr(req, `/konten/${account.id}`));
     }, (errors) => renderForm(req, res, { values: req.body, errors }));
   });
 
@@ -82,7 +82,10 @@ module.exports = (repos) => {
     await handleForm(res, async () => {
       const updated = await accounts.updateAccount(repos, req.session.user.id, account.id, req.body);
       flash(req, 'Konto gespeichert.');
-      res.redirect(updated.owner_ids.includes(req.session.user.id) ? `/konten/${account.id}` : '/konten');
+      // Wer sich selbst als Inhaber entfernt, sieht das Konto nicht mehr
+      res.redirect(updated.owner_ids.includes(req.session.user.id)
+        ? backOr(req, `/konten/${account.id}`)
+        : backOr(req, '/konten', { avoid: [`/konten/${account.id}`] }));
     }, (errors) => renderForm(req, res, { account, values: req.body, errors }));
   });
 
@@ -90,13 +93,13 @@ module.exports = (repos) => {
     const archived = req.body.archived === 'true';
     await accounts.setArchived(repos, req.session.user.id, req.params.id, archived);
     flash(req, archived ? 'Konto archiviert.' : 'Konto wiederhergestellt.');
-    res.redirect(`/konten/${req.params.id}`);
+    res.redirect(backOr(req, `/konten/${req.params.id}`));
   });
 
   router.post('/konten/:id/loeschen', async (req, res) => {
     await accounts.deleteAccount(repos, req.session.user.id, req.params.id);
     flash(req, 'Konto gelöscht.');
-    res.redirect('/konten');
+    res.redirect(backOr(req, '/konten', { avoid: [`/konten/${req.params.id}`] }));
   });
 
   return router;

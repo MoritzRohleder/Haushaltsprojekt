@@ -6,7 +6,7 @@ const { loadContext } = require('../services/overview');
 const { visibleCategories, getVisibleTransaction } = require('../services/visibility');
 const tx = require('../services/transactions');
 const recurring = require('../services/recurring');
-const { flash } = require('../middleware');
+const { flash, backOr } = require('../middleware');
 const { centsToInput, formatEuro } = require('../utils/money');
 const { today, parts, monthRange, formatDate, MONTH_NAMES } = require('../utils/dates');
 const { toCsv, centsToCsv } = require('../utils/csv');
@@ -60,6 +60,13 @@ module.exports = (repos) => {
       unitLabels: recurring.UNIT_LABELS,
       monthNames: MONTH_NAMES,
     };
+  }
+
+  /** Vorlage, aus der eine Buchung stammt (für den Hinweis „gilt nur für diese Buchung“). */
+  async function seriesInfo(row) {
+    if (!row.recurring_id) return null;
+    const rec = await repos.recurring.findById(row.recurring_id);
+    return rec ? { id: rec.id, description: rec.description, rhythm: recurring.describeInterval(rec) } : { id: null };
   }
 
   async function renderForm(req, res, { type, values, errors = [], editing = null }) {
@@ -204,12 +211,12 @@ module.exports = (repos) => {
       }
       if (req.body.weitere) {
         const typ = Object.keys(TYPES).find((k) => TYPES[k] === type);
-        return res.redirect(`/buchungen/neu?typ=${typ}`);
+        const zurueck = req.back ? `&zurueck=${encodeURIComponent(req.back)}` : '';
+        return res.redirect(`/buchungen/neu?typ=${typ}${zurueck}`);
       }
-      // Danach in die Ansicht des betroffenen Kontos (dort steht die neue Buchung mit Saldo)
-      if (accountId) return res.redirect(`/konten/${accountId}`);
+      // Zurück, woher man kam – sonst in die Ansicht des betroffenen Kontos
       const { year, month } = parts(input.date);
-      res.redirect(`/buchungen?monat=${year}-${String(month).padStart(2, '0')}`);
+      res.redirect(backOr(req, accountId ? `/konten/${accountId}` : `/buchungen?monat=${year}-${String(month).padStart(2, '0')}`));
     }, (errors) => renderForm(req, res, { type, values: req.body, errors }));
   });
 
@@ -220,7 +227,7 @@ module.exports = (repos) => {
     const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
     await renderForm(req, res, {
       type: row.type,
-      editing: { ...row, label: ctx.label(row), accountName: ctx.accountsById.get(row.account_id)?.name },
+      editing: { ...row, label: ctx.label(row), accountName: ctx.accountsById.get(row.account_id)?.name, series: await seriesInfo(row) },
       values: {
         date: row.date,
         amount: centsToInput(Math.abs(row.amount_cents)),
@@ -239,12 +246,12 @@ module.exports = (repos) => {
     await handleForm(res, async () => {
       const updated = await tx.updateTransaction(repos, req.session.user.id, row.id, { ...req.body, receiptUpload: req.file });
       savedMessage(req, updated, 'Buchung geändert.');
-      res.redirect(`/konten/${row.account_id}`);
+      res.redirect(backOr(req, `/konten/${row.account_id}`));
     }, async (errors) => {
       const ctx = await loadContext(repos, req.session.user.id, contextOptions(req));
       await renderForm(req, res, {
         type: row.type, values: req.body, errors,
-        editing: { ...row, label: ctx.label(row), accountName: ctx.accountsById.get(row.account_id)?.name },
+        editing: { ...row, label: ctx.label(row), accountName: ctx.accountsById.get(row.account_id)?.name, series: await seriesInfo(row) },
       });
     });
   });
@@ -268,7 +275,7 @@ module.exports = (repos) => {
     const row = await getVisibleTransaction(repos, req.session.user.id, req.params.id);
     await tx.deleteTransaction(repos, req.session.user.id, row.id);
     flash(req, row.transfer_id ? 'Transfer gelöscht (beide Seiten).' : 'Buchung gelöscht.');
-    res.redirect(`/konten/${row.account_id}`);
+    res.redirect(backOr(req, `/konten/${row.account_id}`));
   });
 
   return router;

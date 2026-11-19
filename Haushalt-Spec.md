@@ -82,7 +82,7 @@ Jeder Nutzer sieht nach dem Login **seine eigene Sicht**. Es gibt keine nutzerü
 | S-05 | Beim Erfassen eines **Transfers** stehen als Quelle und Ziel **nur Konten und Anlagen zur Auswahl, die der Nutzer selbst sieht**. Geld an ein Konto, das man nicht sieht (z. B. das Privatkonto des Partners), wird als **Ausgabe** gebucht. |
 | S-06 | Einen bestehenden Transfer darf jeder Inhaber **eines** der beteiligten Konten ändern oder löschen. Dabei werden immer beide Hälften geändert bzw. gelöscht. |
 | S-07 | Sieht ein Nutzer nur **eine Hälfte** eines Transfers (weil er nur eines der beiden Konten sieht), ist sie für ihn **eine ganz normale Buchung**: Ein Eingang zählt als Einnahme, ein Abgang als Ausgabe. Vom anderen Konto sieht er nur den Namen (z. B. „Übertrag von Giro A“). |
-| S-08 | **Standard-Kategorien** sieht jeder Nutzer. **Eigene Kategorien** sieht und verwendet nur der Nutzer, der sie angelegt hat. Ist eine Buchung auf einem Gemeinschaftskonto mit der eigenen Kategorie eines anderen Inhabers versehen, wird deren Name trotzdem angezeigt. |
+| S-08 | **Standard-Kategorien** sieht jeder Nutzer. **Eigene Kategorien** sieht und verwendet der Nutzer, der sie angelegt hat, und jeder, mit dem er mindestens ein Konto gemeinsam hat (F-13a); ändern darf sie nur der Ersteller. Der Name einer Kategorie wird an Buchungen immer angezeigt, auch wenn der Betrachter sie nicht (mehr) verwenden darf. |
 
 ### Beispiel
 
@@ -433,6 +433,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-11 | Inhaber eines Kontos verwalten: registrierte Nutzer hinzufügen und entfernen (S-03, S-04) | M |
 | F-12 | Standard-Kategorien beim ersten Start als Startdaten erzeugen (siehe 5.2, Kategorie) | M |
 | F-13 | Eigene Kategorien für Einnahmen und Ausgaben anlegen, bearbeiten, archivieren | M |
+| F-13a | Eigene Kategorien sind für Mitinhaber sichtbar und verwendbar (Nutzer, die mindestens ein Konto gemeinsam haben); ändern, archivieren und löschen nur durch den Ersteller. Die bisherige Kategorie einer Buchung bleibt beim Bearbeiten immer gültig | M |
 | F-14 | Löschen von Konten, Anlagen und Kategorien nur, wenn nichts mehr daran hängt (keine Buchungen/Stände) – sonst nur Archivieren | M |
 | F-15 | Standard-Kategorien für sich selbst ausblenden | K |
 
@@ -462,6 +463,8 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-33 | Eine automatisch erzeugte Buchung kann einzeln geändert oder gelöscht werden, ohne die Vorlage zu ändern | M |
 | F-34 | Änderungen an der Vorlage gelten nur für künftige Termine | M |
 | F-34a | Termine regelmäßiger Buchungen, die nicht auf einen Banktag fallen, werden am nächsten Banktag gebucht (6.9) | M |
+| F-34b | Startdatum einer Vorlage änderbar; wirkt **rückwirkend** (Kap. 8.4): erzeugte Termine, die es mit dem neuen Start nicht gibt, werden gelöscht, fehlende nachgebucht; einzeln geänderte (`recurring_changed`) bleiben, bewusst gelöschte kommen nicht zurück. Erzeugte Buchungen speichern ihren planmäßigen Termin (`recurring_date`) | M |
+| F-33a | Bearbeitungsseite einer Vorlage listet alle gebuchten Termine mit Link zum Bearbeiten; das Bearbeiten-Formular einer erzeugten Buchung weist darauf hin, dass nur diese eine Buchung geändert wird | S |
 | F-35 | **Übersicht der regelmäßigen Buchungen**: Betrag umgerechnet auf einen Monat, Summen pro Monat (Einnahmen, Ausgaben, Saldo, Gespart nach Sparkonten und Anlagen) über alle laufenden Einträge der gefilterten Liste; **filtern** (Mehrfachauswahl, 9.1) nach Konto/Anlage, Turnus (Einheit), Art (aus Sicht des Nutzers, 6.2, zusätzlich „Sparen“) und Status; **sortieren** nach Beschreibung, Konto, Turnus, nächstem Termin, Betrag und Betrag pro Monat (6.7) | S |
 | F-36 | **Regelmäßige Buchungen je Konto**: in der Kontoübersicht alle Vorlagen des Kontos mit Vorzeichen aus Sicht des Kontos (alles, was abgeht, auch Transfers, ist ein Minus), Eingänge/Abgänge/Saldo pro Monat, noch ausstehende Termine des Monats und **voraussichtlicher Kontostand am Monatsende**; die Kontenliste zeigt diesen Stand je Konto (6.8) | S |
 
@@ -489,6 +492,8 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | F-55 | **Kontoübersicht**: alle Buchungen eines Kontos inkl. Transfers mit laufendem Saldo | M |
 | F-55a | Bei Buchungen auf Gemeinschaftskonten und bei Transfers wird angezeigt, wer sie erfasst hat (`created_by`; bei automatisch erzeugten: Ersteller der Vorlage); Einträge (auch Vorlagen) auf Gemeinschaftskonten, die ein anderer Nutzer erfasst hat, sind farblich hervorgehoben (`--hh-other`); die Liste der regelmäßigen Buchungen in der Kontoübersicht ist aufklappbar, die Summen bleiben sichtbar | S |
 | F-55b | Nach dem Erfassen einer Buchung öffnet sich die Ansicht des betroffenen Kontos (bei Transfers das Quellkonto bzw. bei Auszahlung aus einer Anlage das Zielkonto) | S |
+| F-55c | **Zurück, woher man kam**: Nach Speichern, Löschen und Abbrechen geht es zur Ausgangsseite (Formularfeld `back`, Parameter `zurueck` oder Referer derselben Anwendung; nie auf Formularseiten, nur relative Pfade). Ohne Herkunft: Kontoansicht | S |
+| F-55d | Mobile Navigation (unter 768 px): Name, ?, Hell/Dunkel, Nutzer und ☰ in einer Zeile; ☰ klappt die Menüpunkte als Liste auf | S |
 | F-56 | Vergleich über mehrere Monate (Tabelle: Monat × Einnahmen/Ausgaben/Saldo) | S |
 | F-57 | Diagramme (Ausgaben nach Kategorie, Verlauf Gesamtvermögen) | K |
 | F-58 | Monatsübersicht: **Ausgaben nach Geschäft**; Buchungsliste und CSV mit Filter/Spalte „Geschäft“, Suche auch in Artikeln | S |
@@ -568,7 +573,7 @@ Priorität: **M** = Muss (MVP), **S** = Soll (kurz nach MVP), **K** = Kann (spä
 | Anlagedetail | `GET /anlagen/:id` | Verlauf aus Ständen und Ein-/Auszahlungen |
 | Stand erfassen | `GET/POST /anlagen/:id/stand` | |
 | Wiederkehrend | `GET /wiederkehrend?konto=&turnus=day\|week\|month\|year&art=income\|expense\|transfer\|sparen&status=laufend\|pausiert\|beendet&sort=&dir=asc\|desc` | Übersicht mit Summen pro Monat, Filter und Sortierung; Vorlagen verwalten (F-32, F-35) |
-| Kategorien | `GET /kategorien` | Standard-Kategorien (nur lesen) und eigene Kategorien |
+| Kategorien | `GET /kategorien` | Standard-Kategorien (nur lesen), eigene Kategorien und Kategorien von Mitinhabern (nur lesen) |
 | Auswertung | `GET /auswertung?monate=6\|12\|24` | Saldo je Monat, Verlauf Gesamtvermögen, Monatsvergleich (F-56, F-57) |
 | Kassenzettel | `GET /buchungen/:id/beleg` | Datei zur Buchung (nur für Inhaber des Kontos) |
 | CSV-Export | `GET /buchungen/export.csv` | Gefilterte Buchungen als CSV (gleiche Filter wie die Liste, `alle=1` = alle Monate) |

@@ -146,6 +146,53 @@ function safeBack(value, fallback = '/') {
   return text.startsWith('/') && !text.startsWith('//') && !text.includes('\\') ? text : fallback;
 }
 
+/**
+ * „Zurück, woher man kam“ (Spec F-55c): Formulare tragen die Seite, von der sie
+ * geöffnet wurden, im Feld `back` mit. Beim Öffnen kommt sie aus `?zurueck=` oder aus
+ * dem Referer (nur eigene Seiten), beim Absenden aus dem Formularfeld.
+ * In Views steht sie als `back` bereit, in Routen als `req.back`.
+ */
+function backLink(req, res, next) {
+  // Ausdrücklich mitgegeben (Formularfeld, ?zurueck=) – darf auch ein Formular sein,
+  // z. B. die Bearbeiten-Seite einer regelmäßigen Buchung, von der aus ein Termin geändert wird.
+  let back = safeBack(req.body?.back || req.query?.zurueck, null);
+  if (!back) {
+    // Sonst die Seite, auf der geklickt wurde – aber nie ein Formular (sonst landet man nach
+    // dem Speichern wieder im leeren Formular)
+    back = refererPath(req);
+    if (back && FORM_PAGE.test(back.split('?')[0])) back = null;
+  }
+  // Beim Öffnen einer Seite nie auf sie selbst zurück
+  if (back && req.method === 'GET' && back.split('?')[0] === req.path) back = null;
+  req.back = back;
+  res.locals.back = back;
+  next();
+}
+
+/** Formularseiten: dorthin geht es nach einer Aktion nie zurück. */
+const FORM_PAGE = /\/(neu|bearbeiten|stand)$/;
+
+/** Pfad samt Query des Referers, wenn er von dieser Anwendung stammt. */
+function refererPath(req) {
+  const referer = req.get('referer');
+  if (!referer) return null;
+  try {
+    const url = new URL(referer);
+    if (url.host !== req.get('host')) return null;
+    return safeBack(url.pathname + url.search, null);
+  } catch {
+    return null;
+  }
+}
+
+/** Ziel nach einer Aktion: die Herkunftsseite, sonst `fallback`. `avoid` schließt Seiten aus (z. B. gelöschte). */
+function backOr(req, fallback, { avoid = [] } = {}) {
+  const back = req.back;
+  if (!back) return fallback;
+  const path = back.split('?')[0];
+  return avoid.some((a) => path === a || path.startsWith(`${a}/`)) ? fallback : back;
+}
+
 function notFound(req, res) {
   res.status(404).render('error', { title: 'Nicht gefunden', message: 'Diese Seite gibt es nicht – oder du hast keinen Zugriff darauf.' });
 }
@@ -163,5 +210,5 @@ function errorHandler(err, req, res, _next) {
 }
 
 module.exports = {
-  locals, securityHeaders, requireLogin, multipart, csrf, recurringDaily, flash, safeBack, notFound, errorHandler,
+  locals, securityHeaders, requireLogin, multipart, csrf, recurringDaily, flash, safeBack, backLink, backOr, notFound, errorHandler,
 };

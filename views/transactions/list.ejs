@@ -10,7 +10,7 @@
     <%- include('../partials/multiselect', { name: 'konto', label: 'Konto', selected: filters.konto,
       options: accounts.map((a) => ({ value: a.id, label: a.name })) }) %>
     <%- include('../partials/multiselect', { name: 'kategorie', label: 'Kategorie', selected: filters.kategorie,
-      options: categories.map((c) => ({ value: c.id, label: c.name, group: c.kind === 'income' ? 'Einnahmen' : 'Ausgaben' }))
+      options: categories.map((c) => ({ value: c.id, label: c.shared_by ? `${c.name} (${c.shared_by})` : c.name, group: c.kind === 'income' ? 'Einnahmen' : 'Ausgaben' }))
         .sort((a, b) => (a.group === b.group ? 0 : a.group === 'Einnahmen' ? -1 : 1)) }) %>
     <%- include('../partials/multiselect', { name: 'art', label: 'Art', selected: filters.art, options: [
       { value: 'income', label: 'Einnahmen' }, { value: 'expense', label: 'Ausgaben' }, { value: 'transfer', label: 'Transfers' },

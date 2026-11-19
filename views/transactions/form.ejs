@@ -2,6 +2,13 @@
 <h1><%= title %></h1>
 <%- include('../partials/errors') %>
 
+<% if (editing && editing.series) { %>
+  <article class="notice">
+    <strong>↻ Termin einer regelmäßigen Buchung<% if (editing.series.description) { %> „<%= editing.series.description %>“ (<%= editing.series.rhythm %>)<% } %>.</strong>
+    Änderungen an Datum, Betrag oder Text gelten <strong>nur für diese eine Buchung</strong> – vorherige und folgende Termine bleiben unverändert.
+    <% if (editing.series.id) { %><a href="/wiederkehrend/<%= editing.series.id %>/bearbeiten">Alle künftigen Termine ändern →</a><% } %>
+  </article>
+<% } %>
 <% if (editing && editing.type === 'transfer') { %>
   <p class="muted">
     <%= editing.accountName %>: <%= editing.label %>.
@@ -11,7 +18,7 @@
 <% } %>
 
 <form method="post" action="<%= editing ? `/buchungen/${editing.id}/bearbeiten` : '/buchungen' %>"<% if (type === 'expense') { %> enctype="multipart/form-data"<% } %>>
-  <%- include('../partials/csrf') %>
+  <%- include('../partials/csrf') %><%- include('../partials/back') %>
   <input type="hidden" name="type" value="<%= type %>">
 
   <div class="grid">
@@ -64,7 +71,7 @@
       <label>Kategorie
         <select name="category_id" data-category-select>
           <option value="">Ohne Kategorie</option>
-          <% categories.forEach((c) => { %><option value="<%= c.id %>" <%= c.merchant_required ? 'data-shopping' : '' %> <%= values.category_id === c.id ? 'selected' : '' %>><%= c.name %><%= c.merchant_required ? ' 🛒' : '' %><%= c.owner_id ? ' (eigene)' : '' %></option><% }) %>
+          <% categories.forEach((c) => { %><option value="<%= c.id %>" <%= c.merchant_required ? 'data-shopping' : '' %> <%= values.category_id === c.id ? 'selected' : '' %>><%= c.name %><%= c.merchant_required ? ' 🛒' : '' %><%= c.shared_by ? ` (${c.shared_by})` : (c.owner_id ? ' (eigene)' : '') %></option><% }) %>
         </select>
       </label>
     </div>
@@ -98,14 +105,14 @@
   <div class="actions">
     <button type="submit">Speichern</button>
     <% if (!editing) { %><button type="submit" name="weitere" value="1" class="secondary">Speichern &amp; weitere erfassen</button><% } %>
-    <a href="<%= editing ? `/konten/${editing.account_id}` : '/buchungen' %>" role="button" class="secondary outline">Abbrechen</a>
+    <a href="<%= back || (editing ? `/konten/${editing.account_id}` : '/buchungen') %>" role="button" class="secondary outline">Abbrechen</a>
   </div>
 </form>
 
 <% if (editing) { %>
   <p><a href="/buchungen/neu?vorlage=<%= editing.id %>">↻ Nochmal buchen</a> <span class="muted">– neue Buchung mit diesen Werten und heutigem Datum</span></p>
   <form method="post" action="/buchungen/<%= editing.id %>/loeschen" data-confirm="<%= editing.transfer_id ? 'Transfer wirklich löschen? Beide Seiten werden gelöscht.' : 'Buchung wirklich löschen?' %>">
-    <%- include('../partials/csrf') %>
+    <%- include('../partials/csrf') %><%- include('../partials/back') %>
     <button type="submit" class="secondary outline">Löschen</button>
   </form>
 <% } %>
